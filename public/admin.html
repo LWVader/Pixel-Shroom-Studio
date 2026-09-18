@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pixel Shroom Studio Admin</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-page">
+<!-- SECTION: Administrator header and sign-in gate -->
+<main class="admin-wrap">
+<header class="admin-top">
+<a class="brand" href="/">
+<img class="brand-logo" src="/assets/pixel-shroom-logo.jpg" alt="Pixel Shroom Studio logo">
+<span>Pixel Shroom <b>Studio</b></span>
+</a>
+<a href="/">View storefront ↗</a>
+</header>
+<section class="panel login-panel" id="login-panel">
+<span class="eyebrow">SOLE ADMIN</span>
+<h1>Administrator sign in</h1>
+<form id="login-form" class="form-grid single">
+<label>Email<input name="email" type="email" value="phantasmocazdor@gmail.com" autocomplete="username" required>
+</label>
+<label>Password<input name="password" type="password" autocomplete="current-password" required>
+</label>
+<button type="submit">Sign in</button>
+<p class="message" id="login-message">
+</p>
+</form>
+</section>
+<!-- SECTION: Authenticated administrator dashboard -->
+<section id="dashboard" hidden>
+<div class="dashboard-heading">
+<div>
+<span class="eyebrow">ADMIN CONSOLE</span>
+<h1>Store management</h1>
+</div>
+<div class="admin-actions">
+<button id="change-password-button" class="secondary">Change password</button>
+<button id="logout-button" class="secondary">Sign out</button>
+</div>
+</div>
+<div class="stat-grid" id="stats">
+</div>
+<nav class="admin-nav">
+<a href="#catalog-section">Artwork & NFTs</a>
+<a href="#article-section">Articles</a>
+<a href="#orders-section">Orders</a>
+</nav>
+<!-- SECTION: Artwork and NFT catalog management -->
+<section class="panel" id="catalog-section">
+<span class="eyebrow">CATALOG</span>
+<h2>Add artwork or NFT</h2>
+<p>The website hotlink and private original must be two different Postimages files. Only the permanently watermarked preview is public.</p>
+<form id="art-form" class="form-grid">
+<input name="id" type="hidden">
+<label>Title<input name="title" required>
+</label>
+<label>Artist<input name="artist" required>
+</label>
+<label>Artwork serial number<input name="serialNumber" placeholder="LWV-3249949452" pattern="[A-Za-z0-9-]{4,40}" required>
+<small>Enter the identifier already embedded in the finished artwork.</small>
+</label>
+<label>Genre<select name="category">
+<option>Portrait</option>
+<option>Fantasy</option>
+<option>Landscape</option>
+<option>Sci-Fi</option>
+<option>Abstract</option>
+<option>Dreamscape</option>
+<option>NFT</option>
+</select>
+</label>
+<label>Price ($)<input name="price" type="number" min="1" step="0.01" required>
+</label>
+<label>Display width (px)<input name="displayWidth" type="number" min="160" max="1600" value="600" required>
+</label>
+<label>Display height (px)<input name="displayHeight" type="number" min="120" max="1600" value="250" required>
+</label>
+<label class="wide">Postimages Hotlink for websites — watermarked preview<textarea name="previewUrl" rows="3" placeholder="Paste the full Hotlink for websites code or only its https://i.postimg.cc/… image URL"></textarea>
+<small>This public image appears in the storefront. Upload a resized copy with its watermark permanently applied.</small>
+<small id="hotlink-status" class="field-status">Waiting for a Postimages hotlink.</small>
+</label>
+<label>Private original PNG — Postimages direct link<input name="originalKey" type="password" autocomplete="new-password" placeholder="https://i.postimg.cc/…/original-artwork.png">
+<small>Server-only secret. It is stored in SQLite and released through an expiring download only after verified payment. Optional for NFT email orders.</small>
+</label>
+<label>Status<select name="status">
+<option value="published">Published</option>
+<option value="draft">Draft</option>
+<option value="archived">Archived</option>
+</select>
+</label>
+<button id="save-button" type="submit">Publish listing</button>
+<button id="cancel-edit" type="button" class="secondary" hidden>Cancel edit</button>
+<p class="message" id="form-message">
+</p>
+</form>
+<h2 class="subheading">Edit current catalog</h2>
+<div id="admin-catalog">
+</div>
+</section>
+<!-- SECTION: Editorial article management -->
+<section class="panel" id="article-section">
+<span class="eyebrow">EDITORIAL</span>
+<h2>Add article</h2>
+<form id="article-form" class="form-grid">
+<label>Title<input name="title" required>
+</label>
+<label>Summary<textarea name="excerpt" required>
+</textarea>
+</label>
+<label class="wide">Article body<textarea name="body" rows="6" required>
+</textarea>
+</label>
+<button type="submit">Publish article</button>
+<p class="message" id="article-message">
+</p>
+</form>
+<div id="admin-articles">
+</div>
+</section>
+<!-- SECTION: Payment and fulfillment records -->
+<section class="panel" id="orders-section">
+<span class="eyebrow">FULFILLMENT</span>
+<h2>Orders & licenses</h2>
+<p>Orders become paid only after a verified payment webhook.</p>
+<div id="admin-orders" class="orders-list">
+</div>
+<div class="security-flow">
+<div>
+<b>1</b>
+<span>
+<strong>Pending</strong>Checkout starts</span>
+</div>
+<div>
+<b>2</b>
+<span>
+<strong>Verified</strong>Signature checked</span>
+</div>
+<div>
+<b>3</b>
+<span>
+<strong>Fulfillment</strong>Download or NFT email</span>
+</div>
+<div>
+<b>4</b>
+<span>
+<strong>Delivered</strong>Signed link or emailed ZIP</span>
+</div>
+</div>
+</section>
+</section>
+</main>
+<!-- SECTION: Administrator password change dialog -->
+<dialog id="password-dialog">
+<form id="password-form" class="form-grid single">
+<h2>Change password</h2>
+<label>Current password<input name="currentPassword" type="password" required>
+</label>
+<label>New password<input name="newPassword" type="password" minlength="12" required>
+</label>
+<button type="submit">Save new password</button>
+<button type="button" id="close-password" class="secondary">Cancel</button>
+<p class="message" id="password-message">
+</p>
+</form>
+</dialog>
+<script src="admin.js" defer>
+</script>
+</body>
+</html>

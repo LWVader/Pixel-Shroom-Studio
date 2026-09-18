@@ -1,0 +1,326 @@
+/* SECTION: Storefront catalog and independently scrolling editorial sidebar */
+.store-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--editorial-width);
+  align-items: start;
+  gap: var(--catalog-gap);
+}
+.article-section {
+  position: sticky;
+  top: 18px;
+  max-height: 760px;
+  margin: 34px 0 38px;
+  padding: 18px 12px 18px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--soft);
+}
+.article-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.article-grid article {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 22px;
+}
+.article-grid article > span {
+  font-size: 11px;
+  color: var(--blue);
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.article-grid h3 {
+  font-size: 18px;
+  margin: 8px 0;
+}
+.article-grid p,
+.article-grid details {
+  color: var(--muted);
+}
+.article-grid summary {
+  color: var(--blue);
+  font-weight: 700;
+  cursor: pointer;
+}
+.article-grid details div {
+  white-space: pre-wrap;
+  margin-top: 12px;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 40px;
+}
+.footer-grid a {
+  display: block;
+  color: var(--muted);
+  margin: 7px 0;
+}
+.footer-brand {
+  display: flex !important;
+  color: var(--ink) !important;
+}
+/* SECTION: Dedicated genre pages */
+.genre-header {
+  border-bottom: 1px solid var(--line);
+  background: #07110d;
+}
+.genre-header .shell {
+  height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.genre-header .shell > a:last-child {
+  font-weight: 700;
+  color: var(--blue);
+}
+.genre-page {
+  padding-bottom: 55px;
+}
+/* SECTION: Genre listing viewport parity with the home catalog column */
+.genre-listings {
+  width: calc(100% - var(--editorial-width) - var(--catalog-gap));
+}
+.genre-breadcrumb {
+  display: flex;
+  gap: 10px;
+  padding: 22px 0;
+  color: var(--muted);
+}
+.genre-hero {
+  background:
+    linear-gradient(
+      135deg,
+      #07110d,
+      #154631);
+  color: var(--ink);
+  border-radius: 18px;
+  padding: 46px;
+}
+.genre-hero > span {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+.genre-hero h1 {
+  font-size: 54px;
+  letter-spacing: -.05em;
+  margin: 7px 0;
+}
+.genre-hero p {
+  max-width: 720px;
+  color: #d8e6de;
+  margin: 0;
+}
+.genre-tabs {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  padding: 18px 0;
+}
+.genre-tabs a {
+  background: var(--soft);
+  border: 1px solid var(--line);
+  padding: 9px 13px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 14px;
+}
+.genre-tabs a.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--navy);
+}
+/* SECTION: Administrator statistics, navigation, articles, and fulfillment */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.stat-grid > div {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+}
+.stat-grid span,
+.stat-grid small {
+  display: block;
+  color: var(--muted);
+}
+.stat-grid strong {
+  display: block;
+  font-size: 34px;
+  line-height: 1.2;
+  margin: 7px 0;
+}
+.admin-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.admin-nav a {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 13px;
+  font-weight: 700;
+}
+.subheading {
+  margin-top: 30px;
+}
+.form-grid textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 6px;
+  resize: vertical;
+}
+.message.success {
+  color: #70d6ff;
+}
+.article-admin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding: 13px 4px;
+}
+.article-admin-row small {
+  display: block;
+  color: var(--muted);
+}
+.article-admin-row button {
+  border: 0;
+  background: var(--blue);
+  color: var(--navy);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-weight: 700;
+}
+.security-flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.security-flow > div {
+  display: flex;
+  gap: 10px;
+  background: var(--soft);
+  border-radius: 10px;
+  padding: 15px;
+}
+.security-flow b {
+  display: grid;
+  place-items: center;
+  min-width: 27px;
+  height: 27px;
+  background: var(--blue);
+  color: var(--navy);
+  border-radius: 50%;
+}
+.security-flow span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.security-flow strong {
+  display: block;
+  color: var(--ink);
+}
+.login-panel {
+  max-width: 650px;
+  margin-inline: auto;
+}
+/* SECTION: NFT email-order workflow and order records */
+.nft-order-form {
+  display: grid;
+  gap: 9px;
+  padding-top: 4px;
+}
+.nft-order-form label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.nft-order-form input,
+.nft-order-form select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--surface-strong);
+  color: var(--ink);
+}
+.nft-order-form small {
+  color: var(--muted);
+}
+.orders-list {
+  margin: 18px 0;
+}
+.order-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding: 13px 4px;
+}
+.order-row small {
+  display: block;
+  color: var(--muted);
+}
+.order-row button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: var(--blue);
+  color: var(--navy);
+  font-weight: 700;
+  cursor: pointer;
+}
+/* SECTION: Responsive parity adjustments */
+@media (max-width: 900px) {
+  .store-layout {
+    grid-template-columns: 1fr;
+  }
+  .article-section {
+    position: static;
+    max-height: 520px;
+    margin-top: 0;
+  }
+  .genre-listings {
+    width: 100%;
+  }
+  .stat-grid,
+  .security-flow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 620px) {
+  .stat-grid,
+  .security-flow,
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+  .genre-hero {
+    padding: 30px 24px;
+  }
+  .genre-hero h1 {
+    font-size: 40px;
+  }
+}
