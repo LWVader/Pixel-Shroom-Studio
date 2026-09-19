@@ -1,5 +1,5 @@
 // SECTION: Dashboard state and shared helpers
-import { mapArtwork, supabase } from "./supabase-client.js";
+import { supabase } from "./supabase-client.js";
 const loginPanel = document.querySelector("#login-panel");
 const dashboard = document.querySelector("#dashboard");
 const loginForm = document.querySelector("#login-form");
@@ -24,13 +24,31 @@ function objectName(prefix, fileName) {
   return `${prefix}/${crypto.randomUUID()}-${safeName}`;
 }
 
+async function rowsFrom(query) {
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function saveRow(table, row, id = null) {
+  const query = id === null
+    ? supabase.from(table).insert(row)
+    : supabase.from(table).update(row).eq("id", id);
+  const { error } = await query;
+  if (error) throw error;
+}
+
 // SECTION: Sole-administrator authorization
 async function requireAdmin() {
-  const session = supabase.auth.user();
-  if (!session?.user?.id) throw new Error("Sign in required.");
-  const rows = await sb.table("admin_users", `?select=user_id&user_id=eq.${encodeURIComponent(session.user.id)}&limit=1`);
-  if (!rows.length) throw new Error("This account is not an administrator.");
-  return session.user;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Sign in required.");
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (error || !data) throw new Error("This account is not an administrator.");
+  return user;
 }
 
 // SECTION: Image reading and permanent watermark generation
@@ -117,12 +135,21 @@ async function uploadFiles(formData, current) {
   const previewPath = objectName("artworks", previewFile.name);
   const originalPath = objectName("artworks", originalFile.name);
 
-  await sb.upload("previews", previewPath, previewFile);
-  await sb.upload("originals", originalPath, originalFile);
+  const { error: previewError } = await supabase.storage
+    .from("previews")
+    .upload(previewPath, previewFile, { contentType: previewFile.type, upsert: false });
+  if (previewError) throw previewError;
+
+  const { error: originalError } = await supabase.storage
+    .from("originals")
+    .upload(originalPath, originalFile, { contentType: originalFile.type, upsert: false });
+  if (originalError) throw originalError;
+
+  const { data: publicPreview } = supabase.storage.from("previews").getPublicUrl(previewPath);
 
   return {
     previewPath,
-    previewUrl: sb.publicUrl("previews", previewPath),
+    previewUrl: publicPreview.publicUrl,
     originalPath,
     width: preview.width,
     height: preview.height
@@ -131,7 +158,7 @@ async function uploadFiles(formData, current) {
 
 // SECTION: Catalog and dashboard data
 async function loadItems() {
-  items = await sb.table("artworks", "?select=*&order=created_at.desc");
+  items = await rowsFrom(supabase.from("artworks").select("*").order("created_at", { ascending: false }));
   adminCatalog.innerHTML = items.length ? items.map((item) => `
     <article class="admin-item">
       <img class="admin-thumb" src="${clean(item.preview_url)}" alt="${clean(item.title)} protected preview">
@@ -150,8 +177,8 @@ async function loadItems() {
 
 async function loadDashboard() {
   const [articles, orders] = await Promise.all([
-    sb.table("articles", "?select=*&order=created_at.desc"),
-    sb.table("orders", "?select=*,artworks(title,category,serial_number)&order=created_at.desc&limit=100")
+    rowsFrom(supabase.from("articles").select("*").order("created_at", { ascending: false })),
+    rowsFrom(supabase.from("orders").select("*,artworks(title,category,serial_number)").order("created_at", { ascending: false }).limit(100))
   ]);
   document.querySelector("#stats").innerHTML = `
     <div><strong>${items.length}</strong><span>Listings</span></div>
@@ -205,10 +232,14 @@ loginForm.addEventListener("submit", async (event) => {
   showMessage("#login-message", "Signing in…", true);
   const values = new FormData(loginForm);
   try {
-    await sb.signIn(values.get("email"), values.get("password"));
+    const { error } = await supabase.auth.signInWithPassword({
+      email: values.get("email"),
+      password: values.get("password")
+    });
+    if (error) throw error;
     await showDashboard();
   } catch (error) {
-    sb.signOut();
+    await supabase.auth.signOut();
     showMessage("#login-message", error.message);
   }
 });
@@ -232,7 +263,7 @@ artForm.addEventListener("submit", async (event) => {
       original_path: files.originalPath, updated_at: new Date().toISOString()
     };
     const wasEditing = Boolean(editingArtworkId);
-    await sb.mutate("artworks", wasEditing ? "PATCH" : "POST", wasEditing ? `?id=eq.${editingArtworkId}` : "", row);
+    await saveRow("artworks", row, wasEditing ? editingArtworkId : null);
     resetArtworkForm();
     showMessage("#form-message", wasEditing ? "Listing updated." : "Listing created.", true);
     await loadItems();
@@ -256,7 +287,7 @@ adminCatalog.addEventListener("click", async (event) => {
   }
   if (toggle) {
     const item = items.find((entry) => entry.id === Number(toggle.dataset.toggle));
-    await sb.mutate("artworks", "PATCH", `?id=eq.${item.id}`, { status: item.status === "published" ? "archived" : "published" });
+    await saveRow("artworks", { status: item.status === "published" ? "archived" : "published" }, item.id);
     await loadItems(); await loadDashboard();
   }
 });
@@ -268,26 +299,38 @@ document.querySelector("#new-listing-button").addEventListener("click", () => { 
 document.querySelector("#article-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const values = Object.fromEntries(new FormData(event.currentTarget));
-  await sb.mutate("articles", "POST", "", { ...values, status: "published" });
+  await saveRow("articles", { ...values, status: "published" });
   event.currentTarget.reset(); await loadDashboard();
 });
 document.querySelector("#admin-articles").addEventListener("click", async (event) => {
   const button = event.target.closest("[data-article]");
   if (!button) return;
-  await sb.mutate("articles", "PATCH", `?id=eq.${button.dataset.article}`, { status: button.dataset.next });
+  await saveRow("articles", { status: button.dataset.next }, button.dataset.article);
   await loadDashboard();
 });
 
 // SECTION: Session and password controls
-document.querySelector("#logout-button").addEventListener("click", () => { sb.signOut(); location.reload(); });
+document.querySelector("#logout-button").addEventListener("click", async () => {
+  await supabase.auth.signOut();
+  location.reload();
+});
 const dialog = document.querySelector("#password-dialog");
 document.querySelector("#change-password-button").addEventListener("click", () => dialog.showModal());
 document.querySelector("#close-password").addEventListener("click", () => dialog.close());
 document.querySelector("#password-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  try { await sb.updatePassword(new FormData(event.currentTarget).get("newPassword")); sb.signOut(); location.reload(); }
+  try {
+    const { error } = await supabase.auth.updateUser({ password: new FormData(event.currentTarget).get("newPassword") });
+    if (error) throw error;
+    await supabase.auth.signOut();
+    location.reload();
+  }
   catch (error) { showMessage("#password-message", error.message); }
 });
 
 // SECTION: Restore an existing authenticated session
-showDashboard().catch(() => { sb.signOut(); loginPanel.hidden = false; dashboard.hidden = true; });
+showDashboard().catch(async () => {
+  await supabase.auth.signOut();
+  loginPanel.hidden = false;
+  dashboard.hidden = true;
+});
