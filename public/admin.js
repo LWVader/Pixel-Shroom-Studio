@@ -1,5 +1,5 @@
 // SECTION: Dashboard state and shared helpers
-const sb = window.PixelShroomSupabase;
+import { mapArtwork, supabase } from "./supabase-client.js";
 const loginPanel = document.querySelector("#login-panel");
 const dashboard = document.querySelector("#dashboard");
 const loginForm = document.querySelector("#login-form");
@@ -26,7 +26,7 @@ function objectName(prefix, fileName) {
 
 // SECTION: Sole-administrator authorization
 async function requireAdmin() {
-  const session = sb.session();
+  const session = supabase.auth.user();
   if (!session?.user?.id) throw new Error("Sign in required.");
   const rows = await sb.table("admin_users", `?select=user_id&user_id=eq.${encodeURIComponent(session.user.id)}&limit=1`);
   if (!rows.length) throw new Error("This account is not an administrator.");
