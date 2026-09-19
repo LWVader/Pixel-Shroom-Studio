@@ -126,7 +126,6 @@ async function uploadFiles(formData, current) {
   if (!(originalFile instanceof File) || !originalFile.size) {
     if (!current?.preview_url || !current?.original_path) throw new Error("Select the serialized original image.");
     return {
-      previewPath: current.preview_path || "",
       previewUrl: current.preview_url,
       originalPath: current.original_path,
       width: current.display_width,
@@ -265,7 +264,7 @@ artForm.addEventListener("submit", async (event) => {
       title: values.get("title").trim(), artist: values.get("artist").trim(),
       serial_number: values.get("serialNumber").trim().toUpperCase(), category: values.get("category"),
       price: Number(values.get("price")), display_width: files.width, display_height: files.height,
-      status: values.get("status"), preview_path: files.previewPath, preview_url: files.previewUrl,
+      status: values.get("status"), preview_url: files.previewUrl,
       original_path: files.originalPath, updated_at: new Date().toISOString()
     };
     const wasEditing = Boolean(editingArtworkId);
