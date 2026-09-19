@@ -1,0 +1,11 @@
+[functions.create-checkout]
+verify_jwt = false
+[functions.order-status]
+verify_jwt = false
+[functions.paypal-capture]
+verify_jwt = false
+[functions.stripe-webhook]
+verify_jwt = false
+[functions.paypal-webhook]
+verify_jwt = false
+

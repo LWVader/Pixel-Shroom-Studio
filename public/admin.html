@@ -52,10 +52,12 @@
 <!-- SECTION: Artwork and NFT catalog management -->
 <section class="panel" id="catalog-section">
 <span class="eyebrow">CATALOG</span>
-<h2>Add artwork or NFT</h2>
-<p>The website hotlink and private original must be two different Postimages files. Only the permanently watermarked preview is public.</p>
+<div class="catalog-form-heading">
+<h2 id="art-form-title">Add artwork or NFT</h2>
+<button id="new-listing-button" type="button" class="secondary">Add new listing</button>
+</div>
+<p>Upload a reduced-resolution image with a permanent full-image watermark for the public preview, and upload the unwatermarked original to private Supabase Storage.</p>
 <form id="art-form" class="form-grid">
-<input name="id" type="hidden">
 <label>Title<input name="title" required>
 </label>
 <label>Artist<input name="artist" required>
@@ -79,12 +81,12 @@
 </label>
 <label>Display height (px)<input name="displayHeight" type="number" min="120" max="1600" value="250" required>
 </label>
-<label class="wide">Postimages Hotlink for websites — watermarked preview<textarea name="previewUrl" rows="3" placeholder="Paste the full Hotlink for websites code or only its https://i.postimg.cc/… image URL"></textarea>
-<small>This public image appears in the storefront. Upload a resized copy with its watermark permanently applied.</small>
-<small id="hotlink-status" class="field-status">Waiting for a Postimages hotlink.</small>
+<label class="wide">Public watermarked preview<input name="previewFile" type="file" accept="image/png,image/jpeg,image/webp">
+<small>Upload a reduced-resolution copy with the watermark baked into the pixels. Leave empty while editing to keep the existing preview.</small>
+<small id="hotlink-status" class="field-status">No preview selected.</small>
 </label>
-<label>Private original PNG — Postimages direct link<input name="originalKey" type="password" autocomplete="new-password" placeholder="https://i.postimg.cc/…/original-artwork.png">
-<small>Server-only secret. It is stored in SQLite and released through an expiring download only after verified payment. Optional for NFT email orders.</small>
+<label>Private original file<input name="originalFile" type="file" accept="image/png,image/jpeg,image/webp,application/zip">
+<small>Uploaded to a private Storage bucket. Leave empty while editing to keep the existing original. Optional for NFT email orders.</small>
 </label>
 <label>Status<select name="status">
 <option value="published">Published</option>
@@ -92,7 +94,7 @@
 <option value="archived">Archived</option>
 </select>
 </label>
-<button id="save-button" type="submit">Publish listing</button>
+<button id="save-button" type="submit">Publish new listing</button>
 <button id="cancel-edit" type="button" class="secondary" hidden>Cancel edit</button>
 <p class="message" id="form-message">
 </p>
@@ -167,7 +169,6 @@
 </p>
 </form>
 </dialog>
-<script src="admin.js" defer>
-</script>
+<script type="module" src="admin.js"></script>
 </body>
 </html>

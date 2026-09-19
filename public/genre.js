@@ -1,3 +1,5 @@
+import { invoke, mapArtwork, supabase } from "./supabase-client.js";
+
 // SECTION: Genre route definitions and page metadata
 const genres = {
   portrait: ["Portrait", "Explore protected AI portraits from independent artists."],
@@ -13,25 +15,25 @@ const escapeHtml = (value) => String(value ?? "").replace(
   /[&<>'"]/g,
   (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]
 );
-const slug = location.pathname.split("/").filter(Boolean).pop() || "portrait";
+const slug = new URLSearchParams(location.search).get("genre") || "portrait";
 const entry = genres[slug];
 if (!entry) {
-  location.replace("/");
+  location.replace("/genre.html?genre=portrait");
 }
 const [title, description] = entry || genres.portrait;
 document.title = `${title} Art \u2014 Pixel Shroom Studio`;
 document.querySelector("#genre-title").textContent = title;
 document.querySelector("#genre-crumb").textContent = title;
 document.querySelector("#genre-description").textContent = description;
-document.querySelector("#genre-tabs").innerHTML = Object.entries(genres).map(([key, value]) => `<a class="${key === slug ? "active" : ""}" href="/genre/${key}">${value[0]}</a>`).join("");
+document.querySelector("#genre-tabs").innerHTML = Object.entries(genres).map(([key, value]) => `<a class="${key === slug ? "active" : ""}" href="/genre.html?genre=${encodeURIComponent(key)}">${value[0]}</a>`).join("");
 function artworkPreview(item) {
   const image = item.previewUrl ? `<img src="${escapeHtml(item.previewUrl)}" alt="${escapeHtml(item.title)} watermarked preview">` : "";
-  return `<div class="art-preview" style="max-width:${item.displayWidth}px;height:${item.displayHeight}px">
+  return `<button class="art-preview preview-trigger" type="button" data-preview-url="${escapeHtml(item.previewUrl || "")}" data-preview-title="${escapeHtml(item.title)}" data-preview-serial="${escapeHtml(item.serialNumber)}" style="max-width:${item.displayWidth}px;height:${item.displayHeight}px" aria-label="Enlarge protected preview of ${escapeHtml(item.title)}">
     ${image}
     <div class="watermark" aria-hidden="true">
       ${Array.from({ length: 8 }, () => "<span>PIXEL SHROOM STUDIO \u2022 PREVIEW \u2022 LICENSE REQUIRED</span>").join("")}
     </div>
-  </div>`;
+  </button>`;
 }
 // SECTION: Standard-art and NFT-specific purchase controls
 function purchaseControl(item) {
@@ -48,7 +50,10 @@ function purchaseControl(item) {
       <small>The ZIP package is manually emailed after verified payment.</small>
     </form>`;
   }
-  return `<button class="buy-button" data-buy="${item.id}">License artwork</button>`;
+  return `<div class="payment-actions">
+    <button class="buy-button" data-buy="${item.id}" data-provider="stripe">Pay with Stripe</button>
+    <button class="buy-button secondary" data-buy="${item.id}" data-provider="paypal">Pay with PayPal</button>
+  </div>`;
 }
 function artworkCard(item) {
   return `<article class="art-card">
@@ -65,20 +70,14 @@ function artworkCard(item) {
   </article>`;
 }
 async function createOrder(artworkId, provider, buyerEmail = "") {
-  const response = await fetch("/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ artworkId, provider, buyerEmail })
-  });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "Order could not be created.");
-  return result;
+  return invoke("create-checkout", { artworkId, provider, buyerEmail });
 }
 // SECTION: Genre catalog loading
 async function load() {
   try {
-    const response = await fetch(`/api/artworks?category=${encodeURIComponent(title)}`);
-    const items = await response.json();
+    const { data, error } = await supabase.from("artworks").select("*").eq("status", "published").eq("category", title).order("created_at", { ascending: false });
+    if (error) throw error;
+    const items = data.map(mapArtwork);
     document.querySelector("#genre-count").textContent = `${items.length} ${title} listing${items.length === 1 ? "" : "s"}`;
     document.querySelector("#genre-catalog").innerHTML = items.length ? items.map(artworkCard).join("") : `<div class="empty"><h2>No listings yet</h2><p>The ${escapeHtml(title.toLowerCase())} collection is being prepared.</p></div>`;
   } catch {
@@ -95,7 +94,7 @@ document.querySelector("#genre-catalog").addEventListener("submit", async (event
   try {
     const data = new FormData(form);
     const result = await createOrder(Number(form.dataset.id), data.get("provider"), data.get("buyerEmail"));
-    alert(result.message);
+    location.assign(result.checkoutUrl);
   } catch (error) {
     alert(error.message);
   } finally {
@@ -104,17 +103,56 @@ document.querySelector("#genre-catalog").addEventListener("submit", async (event
 });
 // SECTION: Standard artwork checkout and image deterrents
 document.querySelector("#genre-catalog").addEventListener("click", async (event) => {
+  const previewTrigger = event.target.closest(".preview-trigger");
+  if (previewTrigger) {
+    openLargePreview(previewTrigger);
+    return;
+  }
   const button = event.target.closest("[data-buy]");
   if (!button) return;
   button.disabled = true;
   try {
-    const result = await createOrder(Number(button.dataset.buy), "stripe");
-    alert(result.message);
+    const result = await createOrder(Number(button.dataset.buy), button.dataset.provider || "stripe");
+    location.assign(result.checkoutUrl);
   } catch (error) {
     alert(error.message);
   } finally {
     button.disabled = false;
   }
+});
+// SECTION: Accessible large protected-preview dialog controls
+const previewDialog = document.querySelector("#image-preview-dialog");
+function openLargePreview(trigger) {
+  if (!trigger.dataset.previewUrl) return;
+  const image = document.querySelector("#large-preview-image");
+  const frame = document.querySelector("#large-preview-frame");
+  const overlay = document.querySelector("#large-art-preview .large-watermark");
+  document.querySelector("#preview-dialog-title").textContent = trigger.dataset.previewTitle;
+  document.querySelector("#preview-dialog-serial").textContent = `Serial: ${trigger.dataset.previewSerial} \u00B7 Watermarked preview only`;
+  overlay.innerHTML = Array.from({ length: 14 }, () => "<span>PIXEL SHROOM STUDIO \u2022 PROTECTED PREVIEW \u2022 PIXEL SHROOM STUDIO \u2022 PROTECTED PREVIEW</span>").join("");
+  overlay.hidden = true;
+  frame.removeAttribute("style");
+  image.onload = () => sizeLargePreviewFrame(image, frame);
+  image.src = trigger.dataset.previewUrl;
+  image.alt = `${trigger.dataset.previewTitle} enlarged watermarked preview`;
+  previewDialog.showModal();
+  if (image.complete && image.naturalWidth) sizeLargePreviewFrame(image, frame);
+}
+function sizeLargePreviewFrame(image, frame) {
+  const container = document.querySelector("#large-art-preview");
+  const maximumWidth = container.clientWidth;
+  const maximumHeight = Math.floor(window.innerHeight * 0.72);
+  const scale = Math.min(maximumWidth / image.naturalWidth, maximumHeight / image.naturalHeight);
+  frame.style.width = `${Math.max(1, Math.round(image.naturalWidth * scale))}px`;
+  frame.style.height = `${Math.max(1, Math.round(image.naturalHeight * scale))}px`;
+}
+document.querySelector("#close-preview-dialog").addEventListener("click", () => previewDialog.close());
+previewDialog.addEventListener("click", (event) => {
+  if (event.target === previewDialog) previewDialog.close();
+});
+window.addEventListener("resize", () => {
+  if (!previewDialog.open) return;
+  sizeLargePreviewFrame(document.querySelector("#large-preview-image"), document.querySelector("#large-preview-frame"));
 });
 document.addEventListener("contextmenu", (event) => {
   if (event.target.closest("img,.art-preview")) event.preventDefault();

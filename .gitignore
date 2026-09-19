@@ -1,6 +1,5 @@
+node_modules/
 .env
-artvault.sqlite
-artvault.sqlite-shm
-artvault.sqlite-wal
-private-originals/*
-!private-originals/.gitkeep
+.supabase/
+.wrangler/
+

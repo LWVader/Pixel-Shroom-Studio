@@ -1,8 +1,9 @@
 {
-  "name": "artvault-vanilla",
-  "version": "1.0.0",
+  "name": "pixel-shroom-studio-static-supabase",
+  "version": "2.0.0",
   "private": true,
-  "type": "module",
-  "scripts": { "start": "node server.js", "reset-admin": "node reset-admin-password.js", "check": "node --check server.js && node --check reset-admin-password.js && node --check public/app.js && node --check public/admin.js && node --check public/genre.js" },
-  "engines": { "node": ">=22.13.0" }
+  "scripts": {
+    "dev": "npx serve public",
+    "check": "node --check public/app.js && node --check public/admin.js && node --check public/genre.js && node --check public/checkout-success.js"
+  }
 }
