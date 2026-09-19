@@ -52,14 +52,17 @@ async function requireAdmin() {
 }
 
 // SECTION: Image reading and permanent watermark generation
-function readImage(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
-    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error("The selected original is not a readable image.")); };
-    image.src = url;
-  });
+async function readImage(file) {
+  if (!(file instanceof File) || !file.size) {
+    throw new Error("Select an original image file.");
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    return { source: bitmap, width: bitmap.width, height: bitmap.height };
+  } catch {
+    throw new Error(`Could not decode ${file.name}. Confirm that it is a valid PNG, JPEG, or WebP image.`);
+  }
 }
 
 function toBlob(canvas) {
@@ -103,16 +106,18 @@ async function generatePreview(originalFile, serialNumber) {
     throw new Error("Select a PNG, JPEG, or WebP serialized original.");
   }
   const image = await readImage(originalFile);
-  const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
-  const width = Math.max(1, Math.round(image.naturalWidth * scale));
-  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d", { alpha: false });
-  context.drawImage(image, 0, 0, width, height);
+  context.drawImage(image.source, 0, 0, width, height);
   coverWithWatermark(context, width, height, serialNumber);
-  return { blob: await toBlob(canvas), width: image.naturalWidth, height: image.naturalHeight };
+  const blob = await toBlob(canvas);
+  image.source.close();
+  return { blob, width: image.width, height: image.height };
 }
 
 // SECTION: Private original and public derivative uploads
@@ -220,9 +225,10 @@ artForm.elements.originalFile.addEventListener("change", async () => {
   if (!file) { status.textContent = "No original selected."; return; }
   try {
     const image = await readImage(file);
-    artForm.elements.displayWidth.value = image.naturalWidth;
-    artForm.elements.displayHeight.value = image.naturalHeight;
-    status.textContent = `Selected: ${file.name} · ${image.naturalWidth} × ${image.naturalHeight}px`;
+    artForm.elements.displayWidth.value = image.width;
+    artForm.elements.displayHeight.value = image.height;
+    status.textContent = `Selected: ${file.name} · ${image.width} × ${image.height}px`;
+    image.source.close();
   } catch (error) { status.textContent = error.message; }
 });
 
