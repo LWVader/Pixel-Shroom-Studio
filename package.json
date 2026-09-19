@@ -5,5 +5,11 @@
   "scripts": {
     "dev": "npx serve public",
     "check": "node --check public/app.js && node --check public/admin.js && node --check public/genre.js && node --check public/checkout-success.js"
+  },
+  "dependencies": {
+    "stripe": "^22.6.2"
+  },
+  "devDependencies": {
+    "supabase": "^2.117.0"
   }
 }

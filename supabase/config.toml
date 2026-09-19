@@ -8,4 +8,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.paypal-webhook]
 verify_jwt = false
-
+[functions.download-original]
+verify_jwt = false

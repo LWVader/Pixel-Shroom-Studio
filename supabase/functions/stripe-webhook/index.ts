@@ -1,23 +1,103 @@
+// SECTION: Stripe SDK and shared Supabase utilities
 import Stripe from "npm:stripe@18";
 import { json, service } from "../_shared/common.ts";
-Deno.serve(async (request) => {
-  try {
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!);
-    const event = await stripe.webhooks.constructEventAsync(await request.text(), request.headers.get("stripe-signature") || "", Deno.env.get("STRIPE_WEBHOOK_SECRET")!);
-    const db = service(), { error: duplicate } = await db.from("webhook_events").insert({ provider: "stripe", event_id: event.id });
-    if (duplicate?.code === "23505") return json({ received: true });
-    if (duplicate) throw duplicate;
-    if (["checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(event.type)) {
-      const session = event.data.object as Stripe.Checkout.Session;
-      if (session.payment_status === "paid" && session.metadata?.order_id) {
-        const { data: order } = await db.from("orders").select("id,artwork_id,artworks(category)").eq("id", session.metadata.order_id).eq("provider_order_id", session.id).single();
-        if (order) {
-          await db.from("orders").update({ status: "paid", paid_at: new Date().toISOString(), buyer_email: session.customer_details?.email || null, fulfillment_status: order.artworks?.category === "NFT" ? "email_pending" : "ready" }).eq("id", order.id).eq("status", "pending");
-          if (order.artworks?.category !== "NFT") await db.from("licenses").upsert({ order_id: order.id, expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), download_limit: 3 });
-        }
-      }
-    }
-    return json({ received: true });
-  } catch (error) { console.error(error); return json({ error: "Invalid webhook." }, 400); }
-});
 
+const HANDLED_EVENTS = new Set([
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+]);
+
+// SECTION: Verified Stripe webhook endpoint
+Deno.serve(async (request: Request): Promise<Response> => {
+  if (request.method !== "POST") {
+    return json({ error: "Method not allowed." }, 405);
+  }
+
+  const signature = request.headers.get("stripe-signature");
+  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+
+  if (!signature || !stripeSecretKey || !webhookSecret) {
+    return json({ error: "Stripe webhook is not configured." }, 500);
+  }
+
+  const stripe = new Stripe(stripeSecretKey);
+  let event: Stripe.Event;
+
+  // SECTION: Verify Stripe signature against the unmodified request body
+  try {
+    const rawBody = await request.text();
+
+    event = await stripe.webhooks.constructEventAsync(
+      rawBody,
+      signature,
+      webhookSecret,
+    );
+  } catch (error) {
+    console.error("Stripe signature verification failed:", error);
+
+    return json({ error: "Invalid webhook signature." }, 400);
+  }
+
+  // SECTION: Ignore events that do not trigger fulfillment
+  if (!HANDLED_EVENTS.has(event.type)) {
+    return json({
+      received: true,
+      ignored: true,
+    });
+  }
+
+  try {
+    const session = event.data.object as Stripe.Checkout.Session;
+
+    if (session.payment_status !== "paid") {
+      return json({
+        received: true,
+        awaitingPayment: true,
+      });
+    }
+
+    // Supports either metadata naming format.
+    const orderId =
+      session.metadata?.order_id ??
+      session.metadata?.orderId;
+
+    if (!orderId) {
+      throw new Error("Stripe Checkout Session has no order ID.");
+    }
+
+    if (session.amount_total === null || !session.currency) {
+      throw new Error("Stripe Checkout Session has no payment amount.");
+    }
+
+    const database = service();
+
+    // SECTION: Atomically record the event and fulfill the order
+    const { data, error } = await database.rpc(
+      "fulfill_stripe_checkout",
+      {
+        payment_event_id: event.id,
+        checkout_session_id: session.id,
+        local_order_id: orderId,
+        paid_amount_cents: session.amount_total,
+        paid_currency: session.currency.toLowerCase(),
+        customer_email: session.customer_details?.email ?? null,
+      },
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return json({
+      received: true,
+      duplicate: data?.duplicate ?? false,
+      fulfilled: data?.fulfilled ?? false,
+    });
+  } catch (error) {
+    console.error("Stripe webhook fulfillment failed:", error);
+
+    // Returning 500 causes Stripe to retry temporary processing failures.
+    return json({ error: "Webhook processing failed." }, 500);
+  }
+});

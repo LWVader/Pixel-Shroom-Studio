@@ -56,7 +56,7 @@
 <h2 id="art-form-title">Add artwork or NFT</h2>
 <button id="new-listing-button" type="button" class="secondary">Add new listing</button>
 </div>
-<p>Upload a reduced-resolution image with a permanent full-image watermark for the public preview, and upload the unwatermarked original to private Supabase Storage.</p>
+<p>Upload the serialized original once. The admin browser creates a permanently watermarked, lower-resolution public preview before the original is stored in the private Supabase bucket.</p>
 <form id="art-form" class="form-grid">
 <label>Title<input name="title" required>
 </label>
@@ -81,12 +81,9 @@
 </label>
 <label>Display height (px)<input name="displayHeight" type="number" min="120" max="1600" value="250" required>
 </label>
-<label class="wide">Public watermarked preview<input name="previewFile" type="file" accept="image/png,image/jpeg,image/webp">
-<small>Upload a reduced-resolution copy with the watermark baked into the pixels. Leave empty while editing to keep the existing preview.</small>
-<small id="hotlink-status" class="field-status">No preview selected.</small>
-</label>
-<label>Private original file<input name="originalFile" type="file" accept="image/png,image/jpeg,image/webp,application/zip">
-<small>Uploaded to a private Storage bucket. Leave empty while editing to keep the existing original. Optional for NFT email orders.</small>
+<label class="wide">Serialized original artwork<input name="originalFile" type="file" accept="image/png,image/jpeg,image/webp">
+<small>The original is uploaded to the private Supabase bucket. A separate, permanently watermarked WebP preview is generated automatically for public display.</small>
+<small id="original-status" class="field-status">No original selected.</small>
 </label>
 <label>Status<select name="status">
 <option value="published">Published</option>
@@ -169,6 +166,9 @@
 </p>
 </form>
 </dialog>
-<script type="module" src="admin.js"></script>
+<script src="site-config.js"></script>
+<script src="supabase-client.js"></script>
+<script src="admin.js" defer>
+</script>
 </body>
 </html>
