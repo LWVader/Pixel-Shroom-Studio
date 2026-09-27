@@ -1,0 +1,94 @@
+/* SECTION: Public artwork verification page */
+.verify-page {
+  max-width: 900px;
+  padding-block: clamp(3rem, 8vw, 7rem);
+}
+
+.verify-intro {
+  max-width: 700px;
+  margin-bottom: 2rem;
+}
+
+.verify-intro h1 {
+  margin: .35rem 0 1rem;
+  font-size: clamp(2.4rem, 8vw, 5rem);
+  line-height: .95;
+}
+
+.verify-form,
+.verify-result {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 1rem;
+  background: rgba(14, 8, 30, .78);
+}
+
+.verify-form label {
+  display: grid;
+  gap: .5rem;
+  font-weight: 700;
+}
+
+.verify-form input {
+  width: 100%;
+}
+
+.verify-privacy {
+  margin: 0;
+  opacity: .75;
+  font-size: .9rem;
+}
+
+.verify-result {
+  margin-top: 1.5rem;
+}
+
+.verify-verdict {
+  padding: 1rem;
+  border-radius: .75rem;
+  font-weight: 800;
+}
+
+.verify-verdict.valid {
+  color: #d9ffe8;
+  background: rgba(40, 160, 95, .22);
+  border: 1px solid rgba(73, 222, 128, .45);
+}
+
+.verify-verdict.invalid {
+  color: #ffe0e0;
+  background: rgba(190, 45, 65, .2);
+  border: 1px solid rgba(255, 96, 112, .42);
+}
+
+.verify-details {
+  display: grid;
+  gap: .75rem;
+  margin: 0;
+}
+
+.verify-details div {
+  display: grid;
+  grid-template-columns: minmax(130px, .35fr) 1fr;
+  gap: 1rem;
+  padding-block: .7rem;
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+}
+
+.verify-details dt {
+  font-weight: 800;
+}
+
+.verify-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .verify-details div {
+    grid-template-columns: 1fr;
+    gap: .25rem;
+  }
+}

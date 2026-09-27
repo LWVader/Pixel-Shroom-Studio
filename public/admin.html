@@ -5,169 +5,104 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Pixel Shroom Studio Admin</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/admin-dashboard.css">
 </head>
 <body class="admin-page">
-<!-- SECTION: Administrator header and sign-in gate -->
-<main class="admin-wrap">
-<header class="admin-top">
-<a class="brand" href="/">
-<img class="brand-logo" src="/assets/pixel-shroom-logo.jpg" alt="Pixel Shroom Studio logo">
-<span>Pixel Shroom <b>Studio</b></span>
-</a>
-<a href="/">View storefront ↗</a>
-</header>
-<section class="panel login-panel" id="login-panel">
-<span class="eyebrow">SOLE ADMIN</span>
-<h1>Administrator sign in</h1>
-<form id="login-form" class="form-grid single">
-<label>Email<input name="email" type="email" value="phantasmocazdor@gmail.com" autocomplete="username" required>
-</label>
-<label>Password<input name="password" type="password" autocomplete="current-password" required>
-</label>
-<button type="submit">Sign in</button>
-<p class="message" id="login-message">
-</p>
-</form>
-</section>
-<!-- SECTION: Authenticated administrator dashboard -->
-<section id="dashboard" hidden>
-<div class="dashboard-heading">
-<div>
-<span class="eyebrow">ADMIN CONSOLE</span>
-<h1>Store management</h1>
-</div>
-<div class="admin-actions">
-<button id="change-password-button" class="secondary">Change password</button>
-<button id="logout-button" class="secondary">Sign out</button>
-</div>
-</div>
-<div class="stat-grid" id="stats">
-</div>
-<nav class="admin-nav">
-<a href="#catalog-section">Artwork & NFTs</a>
-<a href="#article-section">Articles</a>
-<a href="#orders-section">Orders</a>
-</nav>
-<!-- SECTION: Artwork and NFT catalog management -->
-<section class="panel" id="catalog-section">
-<span class="eyebrow">CATALOG</span>
-<div class="catalog-form-heading">
-<h2 id="art-form-title">Add artwork or NFT</h2>
-<button id="new-listing-button" type="button" class="secondary">Add new listing</button>
-</div>
-<p>Upload the serialized original once. The admin browser creates a permanently watermarked, lower-resolution public preview before the original is stored in the private Supabase bucket.</p>
-<form id="art-form" class="form-grid">
-<label>Title<input name="title" required>
-</label>
-<label>Artist<input name="artist" required>
-</label>
-<label>Artwork serial number<input name="serialNumber" placeholder="LWV-3249949452" pattern="[A-Za-z0-9-]{4,40}" required>
-<small>Enter the identifier already embedded in the finished artwork.</small>
-</label>
-<label>Genre<select name="category">
-<option>Portrait</option>
-<option>Fantasy</option>
-<option>Landscape</option>
-<option>Sci-Fi</option>
-<option>Abstract</option>
-<option>Dreamscape</option>
-<option>NFT</option>
-</select>
-</label>
-<label>Price ($)<input name="price" type="number" min="1" step="0.01" required>
-</label>
-<label>Display width (px)<input name="displayWidth" type="number" min="160" max="1600" value="600" required>
-</label>
-<label>Display height (px)<input name="displayHeight" type="number" min="120" max="1600" value="250" required>
-</label>
-<label class="wide">Serialized original artwork<input name="originalFile" type="file" accept="image/png,image/jpeg,image/webp">
-<small>The original is uploaded to the private Supabase bucket. A separate, permanently watermarked WebP preview is generated automatically for public display.</small>
-<small id="original-status" class="field-status">No original selected.</small>
-</label>
-<label>Status<select name="status">
-<option value="published">Published</option>
-<option value="draft">Draft</option>
-<option value="archived">Archived</option>
-</select>
-</label>
-<button id="save-button" type="submit">Publish new listing</button>
-<button id="cancel-edit" type="button" class="secondary" hidden>Cancel edit</button>
-<p class="message" id="form-message">
-</p>
-</form>
-<h2 class="subheading">Edit current catalog</h2>
-<div id="admin-catalog">
-</div>
-</section>
-<!-- SECTION: Editorial article management -->
-<section class="panel" id="article-section">
-<span class="eyebrow">EDITORIAL</span>
-<h2>Add article</h2>
-<form id="article-form" class="form-grid">
-<label>Title<input name="title" required>
-</label>
-<label>Summary<textarea name="excerpt" required>
-</textarea>
-</label>
-<label class="wide">Article body<textarea name="body" rows="6" required>
-</textarea>
-</label>
-<button type="submit">Publish article</button>
-<p class="message" id="article-message">
-</p>
-</form>
-<div id="admin-articles">
-</div>
-</section>
-<!-- SECTION: Payment and fulfillment records -->
-<section class="panel" id="orders-section">
-<span class="eyebrow">FULFILLMENT</span>
-<h2>Orders & licenses</h2>
-<p>Orders become paid only after a verified payment webhook.</p>
-<div id="admin-orders" class="orders-list">
-</div>
-<div class="security-flow">
-<div>
-<b>1</b>
-<span>
-<strong>Pending</strong>Checkout starts</span>
-</div>
-<div>
-<b>2</b>
-<span>
-<strong>Verified</strong>Signature checked</span>
-</div>
-<div>
-<b>3</b>
-<span>
-<strong>Fulfillment</strong>Download or NFT email</span>
-</div>
-<div>
-<b>4</b>
-<span>
-<strong>Delivered</strong>Signed link or emailed ZIP</span>
-</div>
-</div>
-</section>
-</section>
+<!-- SECTION: Administrator sign-in gate -->
+<main class="admin-login-wrap" id="login-panel">
+  <a class="brand admin-login-brand" href="/"><img class="brand-logo" src="/assets/pixel-shroom-logo.jpg" alt="Pixel Shroom Studio logo"><span>Pixel Shroom <b>Studio</b></span></a>
+  <section class="panel login-panel">
+    <span class="eyebrow">ADMIN CONSOLE</span><h1>Administrator sign in</h1>
+    <form id="login-form" class="form-grid single">
+      <label>Email<input name="email" type="email" value="phantasmocazdor@gmail.com" autocomplete="username" required></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Sign in</button><p class="message" id="login-message"></p>
+    </form>
+  </section>
 </main>
+
+<!-- SECTION: Five-view administrator application -->
+<div class="admin-shell" id="dashboard" hidden>
+  <aside class="admin-sidebar">
+    <a class="admin-sidebar-brand" href="/"><img src="/assets/pixel-shroom-logo.jpg" alt="Pixel Shroom Studio"><span>Pixel Shroom<br><b>Studio</b></span></a>
+    <nav class="admin-view-nav" aria-label="Administrator sections">
+      <button class="active" type="button" data-admin-view="dashboard-view"><span>⌂</span>Dashboard</button>
+      <button type="button" data-admin-view="customers-view"><span>♙</span>Customers</button>
+      <button type="button" data-admin-view="images-view"><span>▣</span>Images</button>
+      <button type="button" data-admin-view="analytics-view"><span>⌁</span>Analytics</button>
+      <button type="button" data-admin-view="messages-view"><span>✉</span>Messages <b class="nav-badge" id="message-badge" hidden>0</b></button>
+    </nav>
+    <a class="admin-store-link" href="/">View storefront ↗</a>
+  </aside>
+
+  <div class="admin-workspace">
+    <!-- SECTION: Shared top navigation -->
+    <header class="admin-topbar">
+      <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Toggle admin navigation">☰</button>
+      <div><span class="eyebrow">PIXEL SHROOM STUDIO</span><h1 id="view-heading">Dashboard</h1></div>
+      <div class="admin-top-actions"><button id="change-password-button" class="secondary" type="button">Change password</button><button id="logout-button" class="secondary" type="button">Sign out</button></div>
+    </header>
+
+    <main class="admin-main">
+      <!-- SECTION: Dashboard view -->
+      <section class="admin-view active" id="dashboard-view" data-title="Dashboard">
+        <div class="welcome-row"><div><span class="eyebrow">OVERVIEW</span><h2>Welcome back</h2><p>Sales, customers, artwork, and messages at a glance.</p></div><span class="date-chip" id="dashboard-date"></span></div>
+        <div class="dashboard-stat-grid" id="stats"></div>
+        <div class="dashboard-grid">
+          <section class="dashboard-card sales-card"><div class="card-heading"><div><span class="eyebrow">REVENUE</span><h3>Sales overview</h3></div><span>Last 7 days</span></div><div class="sales-chart" id="dashboard-sales-chart" aria-label="Sales during the last seven days"></div></section>
+          <section class="dashboard-card status-card"><div class="card-heading"><div><span class="eyebrow">ORDERS</span><h3>Order status</h3></div></div><div class="status-chart-wrap"><div class="status-donut" id="dashboard-status-donut"><span>0<small>orders</small></span></div><div class="status-legend" id="dashboard-status-legend"></div></div></section>
+          <section class="dashboard-card recent-card"><div class="card-heading"><div><span class="eyebrow">ACTIVITY</span><h3>Recent orders</h3></div><button type="button" class="text-button" data-open-view="analytics-view">View all →</button></div><div id="admin-recent-orders" class="compact-table"></div></section>
+          <section class="dashboard-card quick-card"><div class="card-heading"><div><span class="eyebrow">QUICK ACTION</span><h3>Add admin user</h3></div></div><form id="add-admin-form" class="quick-admin-form"><label>Administrator email<input name="email" type="email" placeholder="new-admin@example.com" required></label><button type="submit">Send admin invitation</button><p class="message" id="add-admin-message"></p></form></section>
+          <section class="dashboard-card message-preview-card"><div class="card-heading"><div><span class="eyebrow">INBOX</span><h3>Latest messages</h3></div><button type="button" class="text-button" data-open-view="messages-view">Open inbox →</button></div><div id="dashboard-message-preview"></div></section>
+        </div>
+      </section>
+
+      <!-- SECTION: Customers and purchased images -->
+      <section class="admin-view" id="customers-view" data-title="Customers" hidden>
+        <div class="page-heading"><div><span class="eyebrow">CUSTOMERS</span><h2>Customer purchase history</h2><p>Email addresses and images are recorded from webhook-verified paid orders.</p></div></div>
+        <section class="dashboard-card"><div id="admin-customers" class="data-table"></div></section>
+      </section>
+
+      <!-- SECTION: Image upload and site catalog -->
+      <section class="admin-view" id="images-view" data-title="Images" hidden>
+        <div class="page-heading"><div><span class="eyebrow">IMAGES</span><h2>Images listed on site</h2><p>Upload, sign, price, edit, and manage artwork and NFTs.</p></div><button id="new-listing-button" type="button" class="secondary">Add new image</button></div>
+        <section class="dashboard-card upload-card" id="catalog-section">
+          <div class="catalog-form-heading"><h3 id="art-form-title">Add artwork or NFT</h3></div>
+          <p>Select the finished source once. The localhost helper embeds its C2PA credential, then the browser creates the protected preview and stores only the signed original privately.</p>
+          <form id="art-form" class="form-grid">
+            <label>Title<input name="title" required></label><label>Artist<input name="artist" required></label>
+            <label>Artwork serial number<input name="serialNumber" placeholder="LWV-3249949452" pattern="[A-Za-z0-9-]{4,40}" required><small>Enter the identifier already embedded in the finished artwork.</small></label>
+            <label>Genre<select name="category"><option>Portrait</option><option>Fantasy</option><option>Landscape</option><option>Sci-Fi</option><option>Abstract</option><option>Dreamscape</option><option>NFT</option></select></label>
+            <label>Price ($)<input name="price" type="number" min="1" step="0.01" required></label><label>Display width (px)<input name="displayWidth" type="number" min="160" max="1600" value="600" required></label><label>Display height (px)<input name="displayHeight" type="number" min="120" max="1600" value="600" required></label>
+            <label class="wide">Finished source artwork<input name="originalFile" type="file" accept="image/png,image/jpeg,image/webp"><small>The local helper adds C2PA automatically. The browser fingerprints and signs the resulting serialized original before private upload.</small><small id="original-status" class="field-status">No original selected.</small></label>
+            <fieldset class="wide signing-fields"><legend>Cryptographic identity</legend><label class="wide">Local signing-helper token<input name="signingHelperToken" type="password" autocomplete="off" placeholder="Paste the token printed by start-signing-helper.ps1"><small>Kept only for this browser tab.</small></label><label>Private signing key (PKCS#8 PEM)<input name="privateSigningKey" type="file" accept=".pem,.key,application/x-pem-file"><small>Used locally only; never uploaded.</small></label><label>Public signing key (SPKI PEM)<input name="publicSigningKey" type="file" accept=".pem,.pub,application/x-pem-file"><small>Stored with the public verification record.</small></label><small id="signature-status" class="field-status wide">Start the local signing helper before selecting an original.</small></fieldset>
+            <button id="save-button" type="submit">Publish image</button><button id="cancel-edit" type="button" class="secondary" hidden>Cancel edit</button><p class="message" id="form-message"></p>
+          </form>
+        </section>
+        <section class="dashboard-card catalog-card"><div class="card-heading"><div><span class="eyebrow">LIVE CATALOG</span><h3>Current images</h3></div></div><div id="admin-catalog"></div></section>
+        <details class="dashboard-card editorial-manager"><summary>Editorial article manager</summary><form id="article-form" class="form-grid"><label>Title<input name="title" required></label><label>Summary<textarea name="excerpt" required></textarea></label><label class="wide">Article body<textarea name="body" rows="6" required></textarea></label><button type="submit">Publish article</button><p class="message" id="article-message"></p></form><div id="admin-articles"></div></details>
+      </section>
+
+      <!-- SECTION: Sales analytics and complete order status -->
+      <section class="admin-view" id="analytics-view" data-title="Analytics" hidden>
+        <div class="page-heading"><div><span class="eyebrow">ANALYTICS</span><h2>Sales and order status</h2><p>Revenue reflects webhook-verified paid orders.</p></div></div>
+        <div class="dashboard-stat-grid" id="analytics-stats"></div>
+        <div class="analytics-grid"><section class="dashboard-card"><div class="card-heading"><div><span class="eyebrow">SALES</span><h3>Sales overview</h3></div><span>Last 7 days</span></div><div class="sales-chart large" id="analytics-sales-chart"></div></section><section class="dashboard-card"><div class="card-heading"><div><span class="eyebrow">FULFILLMENT</span><h3>Order status</h3></div></div><div class="status-chart-wrap"><div class="status-donut" id="analytics-status-donut"><span>0<small>orders</small></span></div><div class="status-legend" id="analytics-status-legend"></div></div></section></div>
+        <section class="dashboard-card"><div class="card-heading"><div><span class="eyebrow">ORDERS</span><h3>All recent orders</h3></div></div><div id="admin-orders" class="data-table"></div></section>
+      </section>
+
+      <!-- SECTION: Customer message inbox -->
+      <section class="admin-view" id="messages-view" data-title="Messages" hidden>
+        <div class="page-heading"><div><span class="eyebrow">MESSAGES</span><h2>Customer inbox</h2><p>New contact messages trigger an email alert and remain available here.</p></div></div>
+        <section class="dashboard-card"><div id="admin-messages" class="message-list"></div></section>
+      </section>
+    </main>
+  </div>
+</div>
+
 <!-- SECTION: Administrator password change dialog -->
-<dialog id="password-dialog">
-<form id="password-form" class="form-grid single">
-<h2>Change password</h2>
-<label>Current password<input name="currentPassword" type="password" required>
-</label>
-<label>New password<input name="newPassword" type="password" minlength="12" required>
-</label>
-<button type="submit">Save new password</button>
-<button type="button" id="close-password" class="secondary">Cancel</button>
-<p class="message" id="password-message">
-</p>
-</form>
-</dialog>
-<!-- SECTION: Administrator application module -->
+<dialog id="password-dialog"><form id="password-form" class="form-grid single"><h2>Change password</h2><label>New password<input name="newPassword" type="password" minlength="12" required></label><button type="submit">Save new password</button><button type="button" id="close-password" class="secondary">Cancel</button><p class="message" id="password-message"></p></form></dialog>
 <script type="module" src="/admin.js"></script>
-</script>
 </body>
 </html>

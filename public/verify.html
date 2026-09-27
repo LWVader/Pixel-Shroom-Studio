@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Verify Pixel Shroom Studio artwork authenticity locally in your browser.">
+  <meta name="robots" content="index,follow">
+  <title>Verify Artwork — Pixel Shroom Studio</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/verify.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell header-main">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/assets/pixel-shroom-logo.jpg" alt="Pixel Shroom Studio logo">
+        <span>Pixel Shroom <b>Studio</b></span>
+      </a>
+      <a href="/">Return to storefront</a>
+    </div>
+  </header>
+
+  <main class="shell verify-page">
+    <section class="verify-intro">
+      <span class="eyebrow">PUBLIC AUTHENTICITY CHECK</span>
+      <h1>Verify an artwork</h1>
+      <p>Select the purchased original and enter its LWV serial. The file stays on your device; only its SHA-256 fingerprint is compared with Pixel Shroom Studio’s public signature record.</p>
+    </section>
+
+    <form id="verify-form" class="verify-form">
+      <label>LWV serial number
+        <input id="verify-serial" name="serialNumber" placeholder="LWV-6331074398" pattern="[A-Za-z0-9-]{4,40}" required>
+      </label>
+      <label>Original artwork file
+        <input id="verify-file" name="artworkFile" type="file" accept="image/png,image/jpeg,image/webp" required>
+      </label>
+      <button id="verify-button" type="submit">Verify authenticity</button>
+      <p id="verify-privacy" class="verify-privacy">Verification runs locally. The artwork file is not uploaded.</p>
+    </form>
+
+    <section id="verify-result" class="verify-result" hidden aria-live="polite">
+      <div id="verify-verdict" class="verify-verdict"></div>
+      <dl class="verify-details">
+        <div><dt>Serial</dt><dd id="result-serial">—</dd></div>
+        <div><dt>Creator</dt><dd id="result-creator">—</dd></div>
+        <div><dt>SHA-256</dt><dd id="result-hash">—</dd></div>
+        <div><dt>Studio signature</dt><dd id="result-signature">—</dd></div>
+        <div><dt>C2PA Content Credential</dt><dd id="result-c2pa">—</dd></div>
+        <div><dt>Registered</dt><dd id="result-date">—</dd></div>
+      </dl>
+    </section>
+  </main>
+
+  <script type="module" src="/verify.js"></script>
+</body>
+</html>

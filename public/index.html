@@ -6,6 +6,7 @@
 <meta name="description" content="Securely license protected AI artwork and NFTs.">
 <title>Pixel Shroom Studio — Licensed AI Art</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="contact.css">
 </head>
 <body>
 <!-- SECTION: Storefront header and genre navigation -->
@@ -84,6 +85,11 @@
 <span>
 <strong>Embedded serial identity</strong>Every finished artwork carries its own custom serial number</span>
 </div>
+<div>
+<b>⌁</b>
+<span>
+<strong>Public authenticity check</strong><a href="/verify.html">Verify an artwork locally</a></span>
+</div>
 </section>
 </main>
 <!-- SECTION: Site footer and genre links -->
@@ -95,6 +101,7 @@
 <span>Pixel Shroom <b>Studio</b></span>
 </a>
 <p>Each artwork receives a custom serial number embedded in the finished image.</p>
+<p><a href="/verify.html">Verify artwork authenticity</a></p>
 </div>
 <div>
 <h3>Genres</h3>
@@ -108,6 +115,19 @@
 <span>Pixel Shroom Studio</span>
 <a href="mailto:phantasmocazdor@gmail.com">phantasmocazdor@gmail.com</a>
 </address>
+<!-- SECTION: Customer message form and email-alert source -->
+<div class="footer-message-panel">
+<h3>Send a message</h3>
+<form id="contact-form" class="contact-form">
+<label>Name<input name="name" maxlength="100" required></label>
+<label>Email<input name="email" type="email" maxlength="254" required></label>
+<label>Subject<input name="subject" maxlength="160" required></label>
+<label>Message<textarea name="message" rows="4" minlength="10" maxlength="5000" required></textarea></label>
+<label class="contact-honeypot" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+<button type="submit">Send message</button>
+<p class="contact-message" id="contact-message" aria-live="polite"></p>
+</form>
+</div>
 </div>
 </footer>
 <!-- SECTION: Discreet owner access button -->
@@ -118,5 +138,6 @@
 </div>
 </div>
 <script type="module" src="app.js"></script>
+<script type="module" src="contact.js"></script>
 </body>
 </html>

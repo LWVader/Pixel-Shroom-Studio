@@ -1,90 +1,146 @@
-# Pixel Shroom Studio — static site + Supabase
+# Pixel Shroom Studio authenticity update
 
-This edition removes Express, SQLite, local private files, Sharp, and the always-on Node server. The `public/` folder is a static Cloudflare Pages site. Supabase provides Postgres, Auth, public preview storage, private original storage, Row Level Security, checkout functions, verified webhooks, and short-lived download URLs.
+This update adds four independent authenticity checks to each serialized original:
 
-## Architecture
+1. The existing `LWV-...` serial number.
+2. A SHA-256 fingerprint of the exact original file.
+3. A Pixel Shroom Studio P-256 cryptographic signature over the serial, creator, and SHA-256 fingerprint.
+4. An embedded C2PA Content Credential containing the LWV serial and AI-generated source declaration.
 
-- Static frontend: `public/`
-- Database and security policies: `supabase/migrations/202609180001_artvault.sql`
-- Private files: Supabase Storage bucket `originals`
-- Public watermarked previews: bucket `previews`
-- Server-only payment logic: `supabase/functions/`
-- Stripe and PayPal secrets exist only as Edge Function secrets
+The public verification page reads the buyer's selected file locally. It does **not** upload the artwork.
 
-The public Supabase URL and anon key are intentionally used by the browser. The service-role key, payment keys, webhook secrets, and original files must never be committed or placed in `public/`.
+## Files in this package
 
-## 1. Create and configure Supabase
+- `public/admin.html` — adds local signing-key controls to the artwork form.
+- `public/admin.js` — hashes and signs originals before private upload.
+- `public/index.html` — links to the public authenticity checker.
+- `public/verify.html`, `verify.css`, and `verify.js` — public verification page.
+- `public/admin-dashboard.css` — responsive five-section administrator layout.
+- `public/contact.css` and `contact.js` — storefront message form.
+- `supabase/migrations/202609270001_artwork_signatures.sql` — verification records and RLS.
+- `supabase/migrations/202609270002_admin_customers_messages.sql` — protected administrator inbox.
+- `supabase/functions/add-admin-user` — authenticated administrator invitations.
+- `supabase/functions/submit-message` — message storage and email alerts.
+- `tools/create-signing-identity.ps1` — one-time local P-256 key and certificate generation.
+- `tools/local-signing-server.mjs` — localhost-only helper used automatically by the admin upload.
+- `tools/start-signing-helper.ps1` — validates prerequisites and starts the helper.
+- `tools/sign-artwork-c2pa.ps1` — optional manual signing fallback.
 
-1. Create a Supabase project and install the Supabase CLI.
-2. From this project folder, run `supabase link --project-ref YOUR_PROJECT_REF`.
-3. Run `supabase db push` to create the tables, RLS policies, and Storage buckets.
-4. In Supabase Authentication, create the owner account with the email you want to use.
-5. In SQL Editor, add that account as the sole administrator:
+## 1. Apply the database migration
 
-```sql
-insert into public.admin_users (user_id)
-select id from auth.users where email = 'YOUR_ADMIN_EMAIL';
+Run the migration in the Supabase SQL Editor, or copy it into the project's `supabase/migrations` directory and run:
+
+```powershell
+npx.cmd supabase db push
 ```
 
-6. Copy `public/config.example.js` to `public/config.js`, then enter the project URL and public anon key.
+Apply both migrations in filename order.
 
-## 2. Configure secrets and deploy functions
+The table intentionally stores only public verification material. It never stores the private key or original artwork.
 
-Set secrets (do not use the literal placeholders):
+## 2. Create the studio signing identity once
 
-```bash
-supabase secrets set SITE_URL=https://YOUR-DOMAIN.example
-supabase secrets set STRIPE_SECRET_KEY=sk_test_REPLACE_ME
-supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_REPLACE_ME
-supabase secrets set PAYPAL_ENV=sandbox
-supabase secrets set PAYPAL_CLIENT_ID=REPLACE_ME
-supabase secrets set PAYPAL_CLIENT_SECRET=REPLACE_ME
-supabase secrets set PAYPAL_WEBHOOK_ID=REPLACE_ME
-supabase functions deploy
+Install OpenSSL, then run from the project root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\create-signing-identity.ps1
 ```
 
-`SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are automatically available to hosted Supabase Edge Functions.
+Back up `signing-private.pem` offline. Never commit it, upload it to Supabase, or place it in the public site. Add the supplied `.gitignore.additions` entries to the project's `.gitignore`.
 
-## 3. Configure verified webhooks
+The generated self-signed certificate establishes a studio-controlled cryptographic identity. It does not create third-party identity trust. A recognized C2PA trust-list certificate would be required later for externally vouched identity.
 
-Stripe endpoint:
+## 3. Start the automatic local signing helper
 
-`https://YOUR_PROJECT_REF.supabase.co/functions/v1/stripe-webhook`
+Install the official `c2patool`, then start the helper from the project root:
 
-Subscribe to `checkout.session.completed` and `checkout.session.async_payment_succeeded`. Put its signing secret in `STRIPE_WEBHOOK_SECRET`.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\start-signing-helper.ps1
+```
 
-PayPal endpoint:
+Keep that PowerShell window open. It displays a random admin-session token. Paste that token into the admin form, then select:
 
-`https://YOUR_PROJECT_REF.supabase.co/functions/v1/paypal-webhook`
+- the finished source artwork as the serialized original;
+- `signing-private.pem` as the private PKCS#8 key;
+- `signing-public.pem` as the public SPKI key.
 
-Subscribe to `PAYMENT.CAPTURE.COMPLETED`, then store the webhook ID in `PAYPAL_WEBHOOK_ID`. Start with PayPal sandbox values.
+When you publish, the admin page sends the source only to `http://127.0.0.1:4179`. The local helper invokes `c2patool`, embeds the title, AI source declaration, creator, and LWV serial, and returns the signed original to the browser. The browser then computes the signed file's SHA-256, signs its canonical identity record, generates the watermarked public preview, and uploads only the signed original to the private bucket.
 
-The checkout return page never marks an order paid. Only a successfully verified provider webhook changes `orders.status` to `paid` and creates a download license.
+The helper:
 
-## 4. Deploy the static site to Cloudflare Pages
+- binds only to the local loopback address;
+- accepts only configured storefront origins;
+- requires the random token shown in the PowerShell window;
+- invokes `c2patool` without a command shell;
+- deletes its temporary files after every operation;
+- never sends the private key to Cloudflare or Supabase.
 
-Connect the GitHub repository to Cloudflare Pages and use:
+Chrome or Edge may ask whether the live site can access a device on the local network. Allow that request while using the administrator page. Close the helper with `Ctrl+C` after publishing.
 
-- Framework preset: None
-- Build command: leave empty
-- Build output directory: `public`
-- Root directory: repository root
+If the live storefront domain changes, start the helper with the new allowed origin:
 
-The included `_headers` adds security headers and `_redirects` keeps old `/genre/fantasy`-style links working. After changing the production domain, update the `SITE_URL` Edge Function secret and the allowed redirect URLs in Supabase Authentication.
+```powershell
+$env:PIXEL_SIGNING_ALLOWED_ORIGINS = "https://your-new-domain.example"
+powershell -ExecutionPolicy Bypass -File .\tools\start-signing-helper.ps1
+```
 
-## Admin workflow
+### Manual fallback
 
-Open `/admin.html` and sign in with the Supabase Auth owner account. Upload a reduced-resolution preview with the watermark permanently baked into its pixels. Upload the clean original separately; it goes to the private `originals` bucket and has no public URL. NFT ZIP packages remain manual-email fulfillment.
+The original manual command remains available if the browser cannot connect to localhost:
 
-## Local preview
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\sign-artwork-c2pa.ps1 `
+  -InputFile ".\artwork-source.png" `
+  -OutputFile ".\artwork-LWV-6331074398.png" `
+  -Title "Iron Briars" `
+  -SerialNumber "LWV-6331074398"
+```
 
-Run `npm run dev`, then use the URL printed by the static server. Payment callbacks still require publicly reachable provider webhooks; use the provider CLIs or deploy the Edge Functions for end-to-end testing.
+## 4. Deploy
 
-## Security notes
+Copy the package's `public` files into the project's `public` directory and deploy through the existing GitHub/Cloudflare workflow. The site has no build step.
 
-- RLS permits anonymous users to read only published artwork and articles.
-- Only UUIDs listed in `admin_users` can manage catalog records, orders, and Storage uploads.
-- Prices are read from Postgres inside `create-checkout`; browser-supplied prices are ignored.
-- Originals are accessed only by the service-role Edge Function after paid-order and token checks.
-- Generated download URLs expire after five minutes. Licenses expire after 24 hours and allow three issued links.
-- Public previews must already contain a pixel-level watermark; CSS overlays are not treated as protection.
+Run the existing syntax check first:
+
+```powershell
+npm.cmd run check
+```
+
+Deploy the two additional Edge Functions:
+
+```powershell
+npx.cmd supabase functions deploy add-admin-user
+npx.cmd supabase functions deploy submit-message --no-verify-jwt
+```
+
+Configure message-alert secrets. `RESEND_FROM_EMAIL` must use a sender/domain verified in your Resend account:
+
+```powershell
+npx.cmd supabase secrets set `
+  RESEND_API_KEY="re_your_key" `
+  RESEND_FROM_EMAIL="Pixel Shroom Studio <messages@your-verified-domain.com>" `
+  ADMIN_ALERT_EMAIL="phantasmocazdor@gmail.com"
+```
+
+The redesigned administrator has exactly five sidebar sections: Dashboard, Customers, Images, Analytics, and Messages. Customer email/image history is calculated from webhook-verified paid orders. The only dashboard Quick Action is Add Admin User. The existing editorial manager remains available inside Images so its functionality is retained without creating a sixth section.
+
+If the Cloudflare Worker sets a Content Security Policy, allow the verifier's pinned SDK origin (`https://esm.sh`) plus WebAssembly. For stricter production control, download and self-host the pinned C2PA browser SDK instead.
+
+## 5. Verify a purchased original
+
+Open `/verify.html`, enter the LWV serial, and select the downloaded original. A complete valid result requires all of these to match:
+
+- local SHA-256 equals the registered fingerprint;
+- P-256 studio signature is valid;
+- a C2PA manifest is embedded;
+- the embedded C2PA data contains the same LWV serial.
+
+Changing even one byte in the original causes the SHA-256 and signature checks to fail.
+
+## Security boundary
+
+- `signing-private.pem` remains under the studio's control.
+- The Supabase `originals` bucket remains private.
+- Watermarked previews remain the only public artwork files.
+- The browser verifier hashes the buyer's file locally.
+- Supabase exposes only the public key, signature, serial, creator, and fingerprint.
