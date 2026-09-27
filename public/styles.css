@@ -347,6 +347,36 @@ button.art-preview {
   display: block;
   color: var(--ink);
 }
+.trust-strip .stripe-logo {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 9px 3px;
+  border-radius: 5px;
+  background: #635bff;
+  color: #fff;
+  font: 800 15px/1.2 Arial, sans-serif;
+  letter-spacing: -.04em;
+  text-transform: lowercase;
+}
+.trust-strip .verification-button {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: var(--blue);
+  color: var(--navy);
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+.trust-strip .verification-button:hover,
+.trust-strip .verification-button:focus-visible {
+  background: var(--gold);
+}
+.trust-strip .verification-button:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
 footer {
   background: var(--navy);
   color: var(--ink);
