@@ -76,10 +76,20 @@ async function inspectC2pa(file, serialNumber) {
       manifestStore?.validation_status ??
       manifestStore?.validationStatus ??
       [];
+    const statusCodes = Array.isArray(validationStatus)
+      ? validationStatus.map((entry) => String(
+        entry?.code ?? entry?.status ?? entry?.validationStatus ?? entry ?? ""
+      ))
+      : [];
+    const isSelfManagedTrustStatus = (code) =>
+      code.toLowerCase().replace(/[^a-z]/g, "") === "signingcredentialuntrusted";
+    const blockingStatuses = statusCodes.filter((code) => !isSelfManagedTrustStatus(code));
     return {
       present: true,
       serialFound: serialized.toUpperCase().includes(serialNumber.toUpperCase()),
-      valid: Array.isArray(validationStatus) && validationStatus.length === 0
+      valid: blockingStatuses.length === 0,
+      selfManagedIssuer: statusCodes.some(isSelfManagedTrustStatus),
+      statusCodes
     };
   } catch (error) {
     console.warn("C2PA inspection was unavailable:", error);
@@ -143,7 +153,9 @@ form.addEventListener("submit", async (event) => {
       : c2pa.present
         ? c2pa.serialFound
           ? c2pa.valid
-            ? "Manifest valid; LWV serial present"
+            ? c2pa.selfManagedIssuer
+              ? "Manifest valid; LWV serial present; self-managed studio issuer"
+              : "Manifest valid; LWV serial present"
             : "Manifest found, but C2PA validation reported an error"
           : "Manifest found; LWV serial not found"
         : "No embedded manifest found";

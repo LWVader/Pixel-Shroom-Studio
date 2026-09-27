@@ -1,5 +1,11 @@
 // SECTION: Local-only Pixel Shroom Studio C2PA signing service
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  createPrivateKey,
+  randomBytes,
+  timingSafeEqual,
+  X509Certificate
+} from "node:crypto";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import {
@@ -112,6 +118,50 @@ async function requireFile(path, label) {
   }
 }
 
+// SECTION: C2PA signing-identity preflight
+const C2PA_SIGNING_EKUS = new Set([
+  "1.3.6.1.5.5.7.3.4",  // id-kp-emailProtection
+  "1.3.6.1.5.5.7.3.36"  // id-kp-documentSigning
+]);
+
+async function validateSigningIdentity() {
+  await requireFile(PRIVATE_KEY, "Private signing key");
+  await requireFile(SIGNING_CERTIFICATE, "Signing certificate");
+
+  const [privateKeyPem, certificatePem] = await Promise.all([
+    readFile(PRIVATE_KEY, "utf8"),
+    readFile(SIGNING_CERTIFICATE, "utf8")
+  ]);
+  const certificate = new X509Certificate(certificatePem);
+  const privateKey = createPrivateKey(privateKeyPem);
+  const now = Date.now();
+
+  if (certificate.issuer === certificate.subject) {
+    throw new Error(
+      "The signing certificate is self-signed and cannot be used by c2patool. " +
+      "Run tools\\create-signing-identity.ps1 -ReplaceInvalidIdentity."
+    );
+  }
+  if (certificate.ca) {
+    throw new Error("The signing certificate is a CA certificate; a C2PA end-entity certificate is required.");
+  }
+  if (Date.parse(certificate.validFrom) > now || Date.parse(certificate.validTo) < now) {
+    throw new Error("The signing certificate is not currently valid.");
+  }
+  if (!certificate.checkPrivateKey(privateKey)) {
+    throw new Error("The signing certificate does not match signing-private.pem.");
+  }
+
+  const keyUsage = certificate.keyUsage || [];
+  if (!keyUsage.some((usage) => C2PA_SIGNING_EKUS.has(usage))) {
+    throw new Error(
+      "The signing certificate lacks the C2PA emailProtection or documentSigning EKU. " +
+      "Run tools\\create-signing-identity.ps1 -ReplaceInvalidIdentity."
+    );
+  }
+  return certificate;
+}
+
 async function loadOrCreateToken() {
   await mkdir(SIGNING_DIRECTORY, { recursive: true });
   try {
@@ -218,8 +268,7 @@ async function signArtwork(request, response, origin, expectedToken) {
     return sendJson(response, origin, 400, { error: "The artwork serial must begin with LWV-." });
   }
 
-  await requireFile(PRIVATE_KEY, "Private signing key");
-  await requireFile(SIGNING_CERTIFICATE, "Signing certificate");
+  await validateSigningIdentity();
   const sourceBytes = await readRequestBody(request);
   const temporaryDirectory = await mkdtemp(join(tmpdir(), "pixel-shroom-sign-"));
   const inputPath = join(temporaryDirectory, `source${expectedExtension}`);
@@ -253,6 +302,7 @@ async function signArtwork(request, response, origin, expectedToken) {
 }
 
 // SECTION: Local HTTP server
+await validateSigningIdentity();
 const signingToken = await loadOrCreateToken();
 
 const server = createServer(async (request, response) => {
@@ -271,8 +321,7 @@ const server = createServer(async (request, response) => {
 
   try {
     if (request.method === "GET" && request.url === "/health") {
-      await requireFile(PRIVATE_KEY, "Private signing key");
-      await requireFile(SIGNING_CERTIFICATE, "Signing certificate");
+      await validateSigningIdentity();
       return sendJson(response, origin, 200, { ready: true });
     }
     if (request.method === "POST" && request.url === "/sign") {
