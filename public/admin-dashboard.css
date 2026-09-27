@@ -1,6 +1,6 @@
 /* SECTION: Pixel Shroom Studio admin palette and application shell */
 .admin-page {
-  --admin-ink: #359d45;
+  --admin-ink: #102d24;
   --admin-ink-soft: #214a3c;
   --admin-gold: #d6a94f;
   --admin-cyan: #d6a94f;
@@ -11,6 +11,14 @@
   min-height: 100vh;
   background: #f2ecdf;
   color: var(--admin-ink);
+}
+
+/* SECTION: Authentication display state
+   Storefront layout rules must never override the native hidden attribute. */
+.admin-login-wrap[hidden],
+.admin-shell[hidden],
+.admin-view[hidden] {
+  display: none !important;
 }
 
 .admin-login-wrap { width: min(540px, calc(100% - 32px)); margin: 6vh auto; }
