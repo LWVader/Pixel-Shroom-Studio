@@ -125,7 +125,7 @@ select {
 .hero {
   height: 420px;
   aspect-ratio: 16 / 9;
-  margin-top: 24px;
+  margin-top: 0;
   border-radius: 18px;
   overflow: hidden;
   position: relative;
@@ -298,7 +298,7 @@ button.art-preview {
 }
 .trust-strip {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   border: 1px solid var(--line);
   border-radius: 15px;
   overflow: hidden;
@@ -309,6 +309,9 @@ button.art-preview {
   gap: 11px;
   padding: 21px;
   border-right: 1px solid var(--line);
+}
+.trust-strip > div:last-child {
+  border-right: 0;
 }
 .trust-strip b {
   display: grid;
@@ -331,7 +334,7 @@ footer {
   background: var(--navy);
   color: var(--ink);
   border-top: 1px solid var(--line);
-  padding: 42px 0;
+  padding: 38px 0;
 }
 footer p {
   color: var(--muted);
@@ -383,6 +386,7 @@ footer p {
 }
 /* SECTION: Storefront customer contact form */
 .footer-message-panel { min-width: min(100%,320px); }
+.footer-message-panel h3 { margin-top: 0; }
 .contact-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .contact-form label { display: grid; gap: 5px; font-size: 12px; font-style: normal; }
 .contact-form label:nth-of-type(3),
@@ -392,7 +396,7 @@ footer p {
 .contact-form input,
 .contact-form textarea { width: 100%; box-sizing: border-box; padding: 10px 11px; border: 1px solid rgba(255,255,255,.24); border-radius: 7px; background: rgba(255,255,255,.08); color: inherit; font: inherit; }
 .contact-form textarea { resize: vertical; }
-.contact-form button { width: fit-content; }
+.contact-form button { width: fit-content; border: 0; border-radius: 8px; padding: 10px 15px; background: var(--blue); color: var(--navy); font-weight: 800; cursor: pointer; }
 .contact-message { min-height: 1.2em; margin: 0; font-size: 12px; }
 .contact-message.success { color: #5ed6ae; }
 .contact-honeypot { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }

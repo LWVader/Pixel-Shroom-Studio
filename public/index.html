@@ -36,7 +36,8 @@
 </nav>
 </header>
 <main class="shell">
-<!-- SECTION: Storefront hero -->
+<!-- SECTION: Storefront hero and editorial rail -->
+<div class="hero-layout">
 <section class="hero">
 <img src="/assets/hero-1280.webp" width="1280" height="720" fetchpriority="high" decoding="async" alt="A luminous fantasy city above a river canyon at twilight">
 <div class="hero-shade">
@@ -47,8 +48,20 @@
 <p id="hero-text">License striking digital art and protected NFTs with clear rights and secure delivery.</p>
 </div>
 </section>
-<!-- SECTION: Storefront catalog and scrolling editorial sidebar -->
-<div class="store-layout">
+<!-- SECTION: Published editorial articles -->
+<aside class="article-section hero-editorial" id="journal" aria-label="Editorial journal">
+<div class="section-heading">
+<div>
+<span>FROM THE JOURNAL</span>
+<h2>Editorial</h2>
+</div>
+</div>
+<div class="article-grid" id="articles" aria-busy="true">
+<article class="article-skeleton" aria-hidden="true"></article>
+<article class="article-skeleton" aria-hidden="true"></article>
+</div>
+</aside>
+</div>
 <!-- SECTION: Searchable artwork and NFT catalog -->
 <section class="gallery-section" id="gallery">
 <div class="section-heading">
@@ -64,20 +77,6 @@
 <div class="catalog-skeleton" aria-hidden="true"></div>
 </div>
 </section>
-<!-- SECTION: Published editorial articles -->
-<aside class="article-section" id="journal" aria-label="Editorial journal">
-<div class="section-heading">
-<div>
-<span>FROM THE JOURNAL</span>
-<h2>Editorial</h2>
-</div>
-</div>
-<div class="article-grid" id="articles" aria-busy="true">
-<article class="article-skeleton" aria-hidden="true"></article>
-<article class="article-skeleton" aria-hidden="true"></article>
-</div>
-</aside>
-</div>
 <!-- SECTION: Purchase, serial, and delivery assurances -->
 <section class="trust-strip">
 <div>

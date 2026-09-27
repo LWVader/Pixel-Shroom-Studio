@@ -1,15 +1,14 @@
-/* SECTION: Storefront catalog and independently scrolling editorial sidebar */
-.store-layout {
+/* SECTION: Hero and independently scrolling editorial sidebar */
+.hero-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--editorial-width);
   align-items: start;
   gap: var(--catalog-gap);
+  margin-top: 24px;
 }
 .article-section {
-  position: sticky;
-  top: 18px;
-  max-height: 760px;
-  margin: 34px 0 38px;
+  height: 420px;
+  margin: 0;
   padding: 18px 12px 18px 18px;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -54,8 +53,9 @@
 }
 .footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 40px;
+  grid-template-columns: minmax(240px,1.3fr) minmax(110px,.55fr) minmax(210px,.85fr) minmax(300px,1.2fr);
+  align-items: start;
+  gap: clamp(24px,3vw,48px);
 }
 .footer-grid a {
   display: block;
@@ -318,14 +318,17 @@
   cursor: pointer;
 }
 /* SECTION: Responsive parity adjustments */
+@media (max-width: 1050px) {
+  .footer-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
 @media (max-width: 900px) {
-  .store-layout {
+  .hero-layout {
     grid-template-columns: 1fr;
   }
   .article-section {
-    position: static;
-    max-height: 520px;
-    margin-top: 0;
+    height: min(440px,65vh);
   }
   .genre-listings {
     width: 100%;
