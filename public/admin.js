@@ -436,7 +436,7 @@ function normalizedOrderState(order) {
 }
 
 function renderOrderStatus(donutSelector, legendSelector) {
-  const colors = { Delivered: "#35ced4", Ready: "#d8a84f", Paid: "#8a66b4", Pending: "#ef9e4d", Failed: "#e36d7f" };
+  const colors = { Delivered: "#4d806c", Ready: "#d6a94f", Paid: "#866b39", Pending: "#d88942", Failed: "#a75b46" };
   const counts = orders.reduce((result, order) => {
     const state = normalizedOrderState(order); result[state] = (result[state] || 0) + 1; return result;
   }, {});
