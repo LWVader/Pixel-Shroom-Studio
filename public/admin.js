@@ -255,7 +255,9 @@ function coverWithWatermark(context, width, height, serialNumber) {
   // SECTION: Uniform responsive coverage matching the approved preview
   // Keep each watermark stamp at the clean reference size. Larger canvases
   // receive more repeated stamps instead of larger lettering.
-  const tileSize = 160;
+  // 226px is approximately 160 × √2, which cuts the total repeated-stamp
+  // count in half while preserving the approved 14px lettering.
+  const tileSize = 226;
   const tile = document.createElement("canvas");
   tile.width = tileSize;
   tile.height = tileSize;
