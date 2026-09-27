@@ -112,6 +112,12 @@
 .genre-listings {
   width: calc(100% - var(--editorial-width) - var(--catalog-gap));
 }
+.genre-listings .product-grid {
+  align-items: start;
+}
+.genre-listings .art-preview {
+  height: 250px;
+}
 .genre-breadcrumb {
   display: flex;
   gap: 10px;

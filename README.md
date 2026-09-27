@@ -1,5 +1,51 @@
 # Pixel Shroom Studio authenticity update
 
+## Lighthouse performance update
+
+The storefront files in `public/` now include the performance fixes from the
+September 27 Lighthouse review:
+
+- `assets/hero-1280.webp` replaces the 2.6 MB hero PNG with a 124 KB WebP.
+- `assets/pixel-shroom-logo-128.webp` replaces the 249 KB logo at its actual
+  display size.
+- The LCP hero is preloaded and marked with `fetchpriority="high"`.
+- Image width and height attributes reserve space before decoding.
+- Genre navigation is rendered in the initial HTML instead of appearing after
+  the database response, eliminating the main page-wide layout shift.
+- Catalog and article placeholders reserve stable space while Supabase loads.
+- `app.js` and `contact.js` call the existing public Supabase REST and Edge
+  Function endpoints directly, so the storefront no longer loads the full
+  `supabase-js` dependency graph. The admin continues using `supabase-js`.
+- Text contrast and long-lived caching rules for versioned assets are improved.
+
+Copy the contents of this package's `public/` directory over the matching files
+in the project's `public/` directory, commit the changes, and redeploy the
+Cloudflare site. Do not delete the existing `config.js`, `supabase-client.js`,
+genre pages, or other assets that are not included in this update.
+
+## Safe listing deletion
+
+Run `supabase/migrations/202609270003_soft_delete_artworks.sql` once in the
+Supabase SQL Editor before deploying the updated admin files. The new Delete
+button performs a soft delete: it archives the listing and records
+`deleted_at`, removing it from the storefront and Current images without
+deleting the artwork row, orders, customers, signature, private original, or
+public preview from Supabase. Archived listings remain reversible; deleted
+listings remain available as historical records in Supabase.
+
+## Genre-page and category update
+
+Run `supabase/migrations/202609270004_artwork_categories.sql` once in the
+Supabase SQL Editor. Paste the SQL contents into the editor; do not paste the
+filename itself. The migration validates the complete category list and adds
+`Dark Fantasy` and `Horror`.
+
+Deploy the updated `public/index.html`, `public/genre.html`, `public/genre.js`,
+`public/parity.css`, `public/admin.html`, and `public/admin.js`. Genre pages now
+use the same compact 250-pixel preview viewport and three/two/one-column
+responsive card grid as the main catalog. Both query-string URLs such as
+`/genre.html?genre=dark-fantasy` and existing clean genre routes are supported.
+
 This update adds four independent authenticity checks to each serialized original:
 
 1. The existing `LWV-...` serial number.
@@ -46,9 +92,28 @@ Install OpenSSL, then run from the project root:
 powershell -ExecutionPolicy Bypass -File .\tools\create-signing-identity.ps1
 ```
 
-Back up `signing-private.pem` offline. Never commit it, upload it to Supabase, or place it in the public site. Add the supplied `.gitignore.additions` entries to the project's `.gitignore`.
+If an earlier version of this project already created a self-signed certificate,
+replace it safely with:
 
-The generated self-signed certificate establishes a studio-controlled cryptographic identity. It does not create third-party identity trust. A recognized C2PA trust-list certificate would be required later for externally vouched identity.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\create-signing-identity.ps1 `
+  -ReplaceInvalidIdentity
+```
+
+The switch moves the old identity into a timestamped backup directory before
+creating the replacement. It does not delete the old files.
+
+Back up `signing-private.pem` and `signing-root-private.pem` offline. Never
+commit them, upload them to Supabase, or place them in the public site. Add the
+supplied `.gitignore.additions` entries to the project's `.gitignore`.
+
+The generator creates a private Pixel Shroom Studio root and a separate,
+root-signed end-entity certificate with the C2PA-compatible
+`emailProtection` EKU. The root certificate is not included in the manifest.
+This establishes a self-managed studio identity but does not create third-party
+identity trust. A recognized C2PA trust-list certificate is still required for
+externally vouched identity. The public verifier reports this distinction as a
+"self-managed studio issuer" rather than treating it as content tampering.
 
 ## 3. Start the automatic local signing helper
 

@@ -3,71 +3,69 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Protected AI artwork by genre.">
+<meta name="description" content="Protected AI artwork by genre from Pixel Shroom Studio.">
 <title>Pixel Shroom Studio Genre</title>
-<link rel="stylesheet" href="/styles.css">
+<link rel="preconnect" href="https://decizwtgsqhjdgjiqbui.supabase.co" crossorigin>
+<link rel="stylesheet" href="/parity.css?v=4">
+<link rel="stylesheet" href="/styles.css?v=5">
 </head>
 <body>
 <!-- SECTION: Genre page header -->
 <header class="genre-header">
-<div class="shell">
-<a class="brand" href="/">
-<img class="brand-logo" src="/assets/pixel-shroom-logo.jpg" alt="Pixel Shroom Studio logo">
-<span>Pixel Shroom <b>Studio</b></span>
-</a>
-</div>
+  <div class="shell">
+    <a class="brand" href="/">
+      <img class="brand-logo" src="/assets/pixel-shroom-logo-128.webp" width="54" height="54" alt="Pixel Shroom Studio logo">
+      <span>Pixel Shroom <b>Studio</b></span>
+    </a>
+  </div>
 </header>
+
 <main class="shell genre-page">
-<nav class="genre-breadcrumb">
-<a href="/">Pixel Shroom Studio</a>
-<span>›</span>
-<strong id="genre-crumb">Genre</strong>
-</nav>
-<!-- SECTION: Genre title and purchase description -->
-<section class="genre-hero">
-<span>CURATED GENRE</span>
-<h1 id="genre-title">Artwork</h1>
-<p id="genre-description">
-</p>
-</section>
-<nav class="genre-tabs" id="genre-tabs">
-</nav>
-<!-- SECTION: Genre-specific individual artwork listings -->
-<section class="gallery-section genre-listings">
-<div class="section-heading">
-<div>
-<span>GENRE COLLECTION</span>
-<h2 id="genre-count">Loading listings…</h2>
-</div>
-</div>
-<div class="product-grid" id="genre-catalog">
-</div>
-</section>
+  <!-- SECTION: Genre breadcrumb and introduction -->
+  <nav class="genre-breadcrumb" aria-label="Breadcrumb">
+    <a href="/">Pixel Shroom Studio</a><span aria-hidden="true">›</span><strong id="genre-crumb">Genre</strong>
+  </nav>
+  <section class="genre-hero">
+    <span>CURATED GENRE</span>
+    <h1 id="genre-title">Artwork</h1>
+    <p id="genre-description"></p>
+  </section>
+
+  <!-- SECTION: Complete genre navigation -->
+  <nav class="genre-tabs" id="genre-tabs" aria-label="Art genres"></nav>
+
+  <!-- SECTION: Genre-specific artwork cards -->
+  <section class="gallery-section genre-listings">
+    <div class="section-heading">
+      <div><span>GENRE COLLECTION</span><h2 id="genre-count">Loading listings…</h2></div>
+    </div>
+    <div class="product-grid catalog-loading" id="genre-catalog" aria-live="polite" aria-busy="true">
+      <div class="catalog-skeleton" aria-hidden="true"></div>
+      <div class="catalog-skeleton" aria-hidden="true"></div>
+      <div class="catalog-skeleton" aria-hidden="true"></div>
+    </div>
+  </section>
 </main>
-<!-- SECTION: Watermarked large-preview dialog -->
+
+<!-- SECTION: Accessible enlarged protected preview -->
 <dialog class="image-preview-dialog" id="image-preview-dialog" aria-labelledby="preview-dialog-title">
-<div class="preview-dialog-header">
-<div>
-<span>PROTECTED PREVIEW</span>
-<h2 id="preview-dialog-title">Artwork preview</h2>
-</div>
-<button id="close-preview-dialog" type="button" aria-label="Close artwork preview">×</button>
-</div>
-<div class="large-art-preview" id="large-art-preview">
-<div class="large-preview-frame" id="large-preview-frame">
-<img id="large-preview-image" alt="">
-<div class="watermark large-watermark" aria-hidden="true">
-</div>
-</div>
-</div>
-<p id="preview-dialog-serial"></p>
+  <div class="preview-dialog-header">
+    <div><span>PROTECTED PREVIEW</span><h2 id="preview-dialog-title">Artwork preview</h2></div>
+    <button id="close-preview-dialog" type="button" aria-label="Close artwork preview">×</button>
+  </div>
+  <div class="large-art-preview" id="large-art-preview">
+    <div class="large-preview-frame" id="large-preview-frame"><img id="large-preview-image" alt=""></div>
+  </div>
+  <p id="preview-dialog-serial"></p>
 </dialog>
-<!-- SECTION: Discreet owner access button -->
+
+<!-- SECTION: Discreet owner access -->
 <div class="owner-access-row">
-<a class="owner-access" href="/admin.html" aria-label="Open private owner access">
-<img src="/assets/pixel-shroom-logo.jpg" alt="">
-</a>
+  <a class="owner-access" href="/admin.html" aria-label="Open private owner access">
+    <img src="/assets/pixel-shroom-logo-128.webp" width="58" height="58" alt="">
+  </a>
 </div>
-<script type="module" src="/genre.js"></script>
+
+<script type="module" src="/genre.js?v=2"></script>
 </body>
 </html>
