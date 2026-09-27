@@ -4,3 +4,4 @@ node_modules/
 .wrangler/
 # Exclude all local signing material
 signing/
+signing-invalid-backup-*/
