@@ -86,7 +86,7 @@ function purchaseMarkup(item) {
     </form>`;
   }
 
-  return `<button class="buy-button" type="button" data-buy="${item.id}">License artwork</button>`;
+  return `<button class="buy-button" type="button" data-buy="${item.id}">Buy artwork</button>`;
 }
 
 function cardMarkup(item) {
