@@ -114,7 +114,7 @@ select {
   background: transparent;
   cursor: pointer;
   white-space: nowrap;
-  color: var(--muted);
+  color: #207352;
 }
 .category-nav button.active,
 .category-nav a:hover,
