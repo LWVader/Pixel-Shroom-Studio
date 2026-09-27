@@ -252,18 +252,16 @@ function toBlob(canvas) {
 }
 
 function coverWithWatermark(context, width, height, serialNumber) {
-  // SECTION: Responsive watermark based on the approved 512px reference
-  // The attached Portrait reference uses a 160px tile, 14px type, 21px line
-  // spacing, and a 2px outline at 512px wide. Scaling every measurement from
-  // image width preserves that exact appearance at every aspect ratio.
-  const referenceScale = width / 512;
-  const tileSize = Math.max(80, Math.round(160 * referenceScale));
+  // SECTION: Uniform responsive coverage matching the approved preview
+  // Keep each watermark stamp at the clean reference size. Larger canvases
+  // receive more repeated stamps instead of larger lettering.
+  const tileSize = 160;
   const tile = document.createElement("canvas");
   tile.width = tileSize;
   tile.height = tileSize;
   const tileContext = tile.getContext("2d");
-  const fontSize = Math.max(7, Math.round(14 * referenceScale));
-  const lineSpacing = Math.max(11, Math.round(21 * referenceScale));
+  const fontSize = 14;
+  const lineSpacing = 21;
 
   tileContext.translate(tileSize / 2, tileSize / 2);
   tileContext.rotate(-Math.PI / 4);
@@ -271,7 +269,7 @@ function coverWithWatermark(context, width, height, serialNumber) {
   tileContext.textBaseline = "middle";
   tileContext.font = `700 ${fontSize}px Arial, sans-serif`;
   tileContext.lineJoin = "round";
-  tileContext.lineWidth = Math.max(1, 2 * referenceScale);
+  tileContext.lineWidth = 2;
   tileContext.strokeStyle = "rgba(0,0,0,.74)";
   tileContext.fillStyle = "rgba(255,255,255,.74)";
 
