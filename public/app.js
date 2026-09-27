@@ -74,7 +74,7 @@ function previewMarkup(item) {
 function cardMarkup(item) {
   const action = item.category === "NFT"
     ? `<a class="buy-button" href="${genreUrl("nft")}">Order NFT by email</a>`
-    : `<button class="buy-button" data-id="${item.id}">License artwork</button>`;
+    : `<button class="buy-button" data-id="${item.id}">Buy Artwork</button>`;
   return `<article class="art-card">${previewMarkup(item)}<div class="card-info"><div><p>${escapeHtml(item.category)} · ${escapeHtml(item.serialNumber)}</p><h3>${escapeHtml(item.title)}</h3><span>by ${escapeHtml(item.artist)}</span></div><strong>$${item.price.toFixed(2)}</strong></div>${action}</article>`;
 }
 
