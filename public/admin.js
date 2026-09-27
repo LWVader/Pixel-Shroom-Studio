@@ -347,7 +347,13 @@ async function uploadFiles(formData, current) {
 // SECTION: Catalog and dashboard data
 async function loadItems() {
   const [artworkRows, signatureRows] = await Promise.all([
-    rowsFrom(supabase.from("artworks").select("*").order("created_at", { ascending: false })),
+    rowsFrom(
+      supabase
+        .from("artworks")
+        .select("*")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+    ),
     rowsFrom(supabase.from("artwork_signatures").select("artwork_id,sha256,c2pa_embedded,signed_at"))
   ]);
   const signaturesByArtwork = new Map(signatureRows.map((entry) => [String(entry.artwork_id), entry]));
@@ -369,6 +375,7 @@ async function loadItems() {
       <div class="item-actions">
         <button data-edit="${item.id}">Edit</button>
         <button data-toggle="${item.id}">${item.status === "published" ? "Archive" : "Publish"}</button>
+        <button class="delete" data-delete="${item.id}" aria-label="Delete ${clean(item.title)} from the site">Delete</button>
       </div>
     </article>`).join("") : "<p>No listings yet.</p>";
 }
@@ -598,6 +605,7 @@ artForm.addEventListener("submit", async (event) => {
 adminCatalog.addEventListener("click", async (event) => {
   const edit = event.target.closest("[data-edit]");
   const toggle = event.target.closest("[data-toggle]");
+  const remove = event.target.closest("[data-delete]");
   if (edit) {
     const item = items.find((entry) => entry.id === Number(edit.dataset.edit));
     editingArtworkId = item.id;
@@ -612,6 +620,33 @@ adminCatalog.addEventListener("click", async (event) => {
     const item = items.find((entry) => entry.id === Number(toggle.dataset.toggle));
     await saveRow("artworks", { status: item.status === "published" ? "archived" : "published" }, item.id);
     await loadItems(); await loadDashboard();
+  }
+  if (remove) {
+    const item = items.find((entry) => entry.id === Number(remove.dataset.delete));
+    if (!item) return;
+    const confirmed = window.confirm(
+      `Delete "${item.title}" from the site?\n\n` +
+      "The listing will disappear from the storefront and Current images. " +
+      "Supabase history, orders, signatures, and stored files will be preserved."
+    );
+    if (!confirmed) return;
+    try {
+      await requireAdmin();
+      await saveRow(
+        "artworks",
+        {
+          status: "archived",
+          deleted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        },
+        item.id
+      );
+      if (editingArtworkId === item.id) resetArtworkForm();
+      await loadItems();
+      await loadDashboard();
+    } catch (error) {
+      alert(error.message || "The listing could not be deleted from the site.");
+    }
   }
 });
 

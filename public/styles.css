@@ -584,7 +584,7 @@ footer p {
 }
 .admin-item small {
   display: block;
-  color:#040907;
+  color: var(--muted);
 }
 .item-actions {
   display: flex;
@@ -605,6 +605,16 @@ footer p {
 }
 .item-actions .archive {
   color: var(--danger);
+}
+.item-actions .delete {
+  border-color: #8d3f35;
+  background: #3b1916;
+  color: #ffb6aa;
+}
+.item-actions .delete:hover,
+.item-actions .delete:focus-visible {
+  background: #5a211c;
+  color: #fff;
 }
 dialog {
   border: 0;
