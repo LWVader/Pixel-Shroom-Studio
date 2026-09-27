@@ -252,16 +252,18 @@ function toBlob(canvas) {
 }
 
 function coverWithWatermark(context, width, height, serialNumber) {
-  // SECTION: Clean, uniform full-image watermark pattern
-  // These proportions match the existing Portrait previews and remain
-  // consistent across portrait, square, and landscape source images.
-  const tileSize = Math.max(160, Math.round(Math.min(width, height) * 0.24));
+  // SECTION: Responsive watermark based on the approved 512px reference
+  // The attached Portrait reference uses a 160px tile, 14px type, 21px line
+  // spacing, and a 2px outline at 512px wide. Scaling every measurement from
+  // image width preserves that exact appearance at every aspect ratio.
+  const referenceScale = width / 512;
+  const tileSize = Math.max(80, Math.round(160 * referenceScale));
   const tile = document.createElement("canvas");
   tile.width = tileSize;
   tile.height = tileSize;
   const tileContext = tile.getContext("2d");
-  const fontSize = Math.max(14, Math.round(tileSize * 0.09));
-  const lineSpacing = Math.round(tileSize * 0.13);
+  const fontSize = Math.max(7, Math.round(14 * referenceScale));
+  const lineSpacing = Math.max(11, Math.round(21 * referenceScale));
 
   tileContext.translate(tileSize / 2, tileSize / 2);
   tileContext.rotate(-Math.PI / 4);
@@ -269,7 +271,7 @@ function coverWithWatermark(context, width, height, serialNumber) {
   tileContext.textBaseline = "middle";
   tileContext.font = `700 ${fontSize}px Arial, sans-serif`;
   tileContext.lineJoin = "round";
-  tileContext.lineWidth = Math.max(2, tileSize * 0.012);
+  tileContext.lineWidth = Math.max(1, 2 * referenceScale);
   tileContext.strokeStyle = "rgba(0,0,0,.74)";
   tileContext.fillStyle = "rgba(255,255,255,.74)";
 
