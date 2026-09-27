@@ -290,7 +290,16 @@ async function generatePreview(originalFile, serialNumber) {
     throw new Error("Select a PNG, JPEG, or WebP serialized original.");
   }
   const image = await readImage(originalFile);
-  const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+  // SECTION: Standardized public-preview canvas
+  // Keep every generated preview inside the desktop preview viewport so the
+  // fixed reference watermark is not shrunk after it is baked into the file.
+  const maximumPreviewWidth = 960;
+  const maximumPreviewHeight = 640;
+  const scale = Math.min(
+    1,
+    maximumPreviewWidth / image.width,
+    maximumPreviewHeight / image.height,
+  );
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));
   const canvas = document.createElement("canvas");
