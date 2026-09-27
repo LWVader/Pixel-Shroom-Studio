@@ -1,5 +1,5 @@
 // SECTION: Public customer messages
-import { supabase } from "./supabase-client.js";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./config.js";
 
 const form = document.querySelector("#contact-form");
 const status = document.querySelector("#contact-message");
@@ -12,9 +12,17 @@ form?.addEventListener("submit", async (event) => {
   status.classList.remove("success");
   status.textContent = "Sending…";
   try {
-    const { data, error } = await supabase.functions.invoke("submit-message", { body: values });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/submit-message`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(values),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Request failed (${response.status}).`);
     form.reset();
     status.classList.add("success");
     status.textContent = "Your message was sent. Pixel Shroom Studio will reply by email.";
