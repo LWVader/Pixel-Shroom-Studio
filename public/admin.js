@@ -252,23 +252,30 @@ function toBlob(canvas) {
 }
 
 function coverWithWatermark(context, width, height, serialNumber) {
-  const tileSize = Math.max(160, Math.round(Math.min(width, height) * 0.24));
+  // SECTION: Large, evenly spaced full-image watermark pattern
+  // Keep each watermark block proportional to the artwork so portrait,
+  // landscape, and square images receive the same visual coverage.
+  const shortestSide = Math.min(width, height);
+  const tileSize = Math.max(240, Math.round(shortestSide * 0.46));
   const tile = document.createElement("canvas");
   tile.width = tileSize;
   tile.height = tileSize;
   const tileContext = tile.getContext("2d");
+  const fontSize = Math.max(19, Math.round(tileSize * 0.09));
+  const lineSpacing = Math.round(fontSize * 1.18);
 
   tileContext.translate(tileSize / 2, tileSize / 2);
   tileContext.rotate(-Math.PI / 4);
   tileContext.textAlign = "center";
   tileContext.textBaseline = "middle";
-  tileContext.font = `700 ${Math.max(14, Math.round(tileSize * 0.09))}px Arial, sans-serif`;
-  tileContext.lineWidth = Math.max(2, tileSize * 0.012);
-  tileContext.strokeStyle = "rgba(0,0,0,.74)";
-  tileContext.fillStyle = "rgba(255,255,255,.74)";
+  tileContext.font = `800 ${fontSize}px Arial, sans-serif`;
+  tileContext.lineJoin = "round";
+  tileContext.lineWidth = Math.max(2, fontSize * 0.1);
+  tileContext.strokeStyle = "rgba(0,0,0,.76)";
+  tileContext.fillStyle = "rgba(255,255,255,.72)";
 
   ["PIXEL SHROOM STUDIO", "PROTECTED PREVIEW", serialNumber].forEach((line, index) => {
-    const y = (index - 1) * tileSize * 0.13;
+    const y = (index - 1) * lineSpacing;
     tileContext.strokeText(line, 0, y);
     tileContext.fillText(line, 0, y);
   });
