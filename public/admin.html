@@ -4,9 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://esm.sh; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://i.postimg.cc https://postimg.cc; connect-src 'self' https://*.supabase.co wss://*.supabase.co http://127.0.0.1:4179 http://localhost:4179; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Pixel Shroom Studio Admin</title>
-<link rel="stylesheet" href="/styles.css">
-<link rel="stylesheet" href="/admin-dashboard.css">
+<link rel="stylesheet" href="/styles.css?v=4">
+<link rel="stylesheet" href="/admin-dashboard.css?v=2">
 </head>
 <body class="admin-page">
 <!-- SECTION: Administrator sign-in gate -->
@@ -76,7 +77,7 @@
             <label>Genre<select name="category"><option>Portrait</option><option>Fantasy</option><option>Landscape</option><option>Sci-Fi</option><option>Abstract</option><option>Dreamscape</option><option>NFT</option></select></label>
             <label>Price ($)<input name="price" type="number" min="1" step="0.01" required></label><label>Display width (px)<input name="displayWidth" type="number" min="160" max="1600" value="600" required></label><label>Display height (px)<input name="displayHeight" type="number" min="120" max="1600" value="600" required></label>
             <label class="wide">Finished source artwork<input name="originalFile" type="file" accept="image/png,image/jpeg,image/webp"><small>The local helper adds C2PA automatically. The browser fingerprints and signs the resulting serialized original before private upload.</small><small id="original-status" class="field-status">No original selected.</small></label>
-            <fieldset class="wide signing-fields"><legend>Cryptographic identity</legend><label class="wide">Local signing-helper token<input name="signingHelperToken" type="password" autocomplete="off" placeholder="Paste the token printed by start-signing-helper.ps1"><small>Kept only for this browser tab.</small></label><label>Private signing key (PKCS#8 PEM)<input name="privateSigningKey" type="file" accept=".pem,.key,application/x-pem-file"><small>Used locally only; never uploaded.</small></label><label>Public signing key (SPKI PEM)<input name="publicSigningKey" type="file" accept=".pem,.pub,application/x-pem-file"><small>Stored with the public verification record.</small></label><small id="signature-status" class="field-status wide">Start the local signing helper before selecting an original.</small></fieldset>
+            <fieldset class="wide signing-fields"><legend>Cryptographic identity</legend><label class="wide">Local signing-helper token<input name="signingHelperToken" type="password" autocomplete="new-password" placeholder="Paste the token printed by start-signing-helper.ps1"><small>Kept only for this browser tab.</small></label><label>Private signing key (PKCS#8 PEM)<input name="privateSigningKey" type="file" accept=".pem,.key,application/x-pem-file"><small>Used locally only; never uploaded.</small></label><label>Public signing key (SPKI PEM)<input name="publicSigningKey" type="file" accept=".pem,.pub,application/x-pem-file"><small>Stored with the public verification record.</small></label><button id="check-signing-helper" type="button" class="secondary">Check signing helper</button><small id="signature-status" class="field-status wide">Start the local helper, then check it before publishing.</small></fieldset>
             <button id="save-button" type="submit">Publish image</button><button id="cancel-edit" type="button" class="secondary" hidden>Cancel edit</button><p class="message" id="form-message"></p>
           </form>
         </section>
@@ -102,7 +103,7 @@
 </div>
 
 <!-- SECTION: Administrator password change dialog -->
-<dialog id="password-dialog"><form id="password-form" class="form-grid single"><h2>Change password</h2><label>New password<input name="newPassword" type="password" minlength="12" required></label><button type="submit">Save new password</button><button type="button" id="close-password" class="secondary">Cancel</button><p class="message" id="password-message"></p></form></dialog>
-<script type="module" src="/admin.js"></script>
+<dialog id="password-dialog"><form id="password-form" class="form-grid single"><h2>Change password</h2><label>New password<input name="newPassword" type="password" autocomplete="new-password" minlength="12" required></label><button type="submit">Save new password</button><button type="button" id="close-password" class="secondary">Cancel</button><p class="message" id="password-message"></p></form></dialog>
+<script type="module" src="/admin.js?v=2"></script>
 </body>
 </html>

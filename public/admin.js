@@ -720,7 +720,7 @@ showDashboard().catch(async () => {
 });
 
 artForm.elements.signingHelperToken.value = sessionStorage.getItem("pixelShroomSigningToken") || "";
-checkLocalSigner();
+document.querySelector("#check-signing-helper").addEventListener("click", checkLocalSigner);
 document.querySelector("#dashboard-date").textContent = new Date().toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" });
 const requestedView = location.hash.slice(1);
 if (document.getElementById(requestedView)?.classList.contains("admin-view")) openAdminView(requestedView);
