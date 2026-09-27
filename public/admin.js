@@ -673,15 +673,59 @@ document.querySelector("#new-listing-button").addEventListener("click", () => { 
 // SECTION: Editorial controls
 document.querySelector("#article-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const values = Object.fromEntries(new FormData(event.currentTarget));
-  await saveRow("articles", { ...values, status: "published" });
-  event.currentTarget.reset(); await loadDashboard();
+  const form = event.currentTarget;
+  const submitButton = form.querySelector('button[type="submit"]');
+  const values = Object.fromEntries(new FormData(form));
+
+  submitButton.disabled = true;
+  showMessage("#article-message", "Publishing article…", true);
+
+  try {
+    await requireAdmin();
+    await saveRow("articles", {
+      title: values.title.trim(),
+      excerpt: values.excerpt.trim(),
+      body: values.body.trim(),
+      status: "published"
+    });
+    form.reset();
+    showMessage("#article-message", "Article published successfully.", true);
+    await loadDashboard();
+  } catch (error) {
+    console.error("Article publish failed:", error);
+    showMessage(
+      "#article-message",
+      error.message || "The article could not be published.",
+      false
+    );
+  } finally {
+    submitButton.disabled = false;
+  }
 });
 document.querySelector("#admin-articles").addEventListener("click", async (event) => {
   const button = event.target.closest("[data-article]");
   if (!button) return;
-  await saveRow("articles", { status: button.dataset.next }, button.dataset.article);
-  await loadDashboard();
+
+  button.disabled = true;
+
+  try {
+    await requireAdmin();
+    await saveRow("articles", { status: button.dataset.next }, button.dataset.article);
+    showMessage(
+      "#article-message",
+      button.dataset.next === "published" ? "Article published." : "Article unpublished.",
+      true
+    );
+    await loadDashboard();
+  } catch (error) {
+    console.error("Article status update failed:", error);
+    showMessage(
+      "#article-message",
+      error.message || "The article status could not be changed.",
+      false
+    );
+    button.disabled = false;
+  }
 });
 
 // SECTION: Five-view dashboard navigation
