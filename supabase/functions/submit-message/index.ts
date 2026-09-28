@@ -2,10 +2,16 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const siteUrl = (Deno.env.get("SITE_URL") || "").replace(/\/$/, "");
+
+// This is an intentionally public form endpoint. Authentication and database
+// authorization still happen server-side; CORS is not used as a security
+// boundary. Allowing every storefront origin also supports Cloudflare preview
+// deployments and custom-domain changes without breaking the form.
 const cors = {
-  "Access-Control-Allow-Origin": siteUrl,
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 function json(data: unknown, status = 200): Response {
@@ -59,7 +65,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const alertEmail = Deno.env.get("ADMIN_ALERT_EMAIL") || "phantasmocazdor@gmail.com";
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL");
     if (!resendKey || !fromEmail) {
-      await service.from("contact_messages").update({ alert_error: "Email-alert secrets are not configured." }).eq("id", saved.id);
+      const configurationError = [
+        !resendKey ? "RESEND_API_KEY is missing" : "",
+        !fromEmail ? "RESEND_FROM_EMAIL is missing" : "",
+      ].filter(Boolean).join("; ");
+      console.error("Message saved, but email alert is not configured:", configurationError);
+      await service.from("contact_messages").update({ alert_error: configurationError }).eq("id", saved.id);
       return json({ sent: true, alertSent: false });
     }
 
@@ -76,6 +87,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     });
     if (!emailResponse.ok) {
       const failure = (await emailResponse.text()).slice(0, 500);
+      console.error("Resend rejected the message alert:", emailResponse.status, failure);
       await service.from("contact_messages").update({ alert_error: failure }).eq("id", saved.id);
       return json({ sent: true, alertSent: false });
     }

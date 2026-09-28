@@ -1,6 +1,6 @@
 /* SECTION: Pixel Shroom Studio admin palette and application shell */
 .admin-page {
-  --admin-ink: #157356;
+  --admin-ink: #102d24;
   --admin-ink-soft: #214a3c;
   --admin-gold: #d6a94f;
   --admin-cyan: #d6a94f;
@@ -108,6 +108,11 @@
 .message-meta,.message-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .message-meta span,.message-meta time { color: var(--admin-muted); font-size: 12px; }
 .message-actions a,.message-actions button { font-size: 12px; }
+.alert-status { width: fit-content; margin: 0; border-radius: 999px; padding: 6px 10px; font-size: 11px; }
+.alert-status.sent { background: #dcf8ef; color: #147158; }
+.alert-status.failed { background: #fde3e7; color: #8e3444; }
+.admin-page button.danger { border-color: #9b3f4d; background: #9b3f4d; color: #fff; }
+.admin-page button.danger:hover { border-color: #742b37; background: #742b37; color: #fff; }
 .upload-card,.catalog-card,.editorial-manager { margin-bottom: 18px; }
 .editorial-manager summary { cursor: pointer; font-weight: 750; }
 .editorial-manager[open] summary { margin-bottom: 22px; }

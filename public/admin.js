@@ -502,7 +502,14 @@ function renderMessages() {
     <article class="message-item ${message.is_read ? "" : "unread"}">
       <div class="message-meta"><strong>${clean(message.name)}</strong><a href="mailto:${encodeURIComponent(message.email)}">${clean(message.email)}</a><time>${new Date(message.created_at).toLocaleString()}</time></div>
       <h3>${clean(message.subject || "Customer message")}</h3><p>${clean(message.message)}</p>
-      <div class="message-actions"><a class="button" href="mailto:${encodeURIComponent(message.email)}?subject=${encodeURIComponent(`Re: ${message.subject || "Your Pixel Shroom Studio message"}`)}">Reply by email</a>${message.is_read ? "" : `<button type="button" class="secondary" data-message-read="${message.id}">Mark read</button>`}</div>
+      <p class="alert-status ${message.alert_sent_at ? "sent" : "failed"}">${message.alert_sent_at
+        ? `Email alert sent ${clean(new Date(message.alert_sent_at).toLocaleString())}`
+        : `Email alert not sent${message.alert_error ? `: ${clean(message.alert_error)}` : "."}`}</p>
+      <div class="message-actions">
+        <a class="button" href="mailto:${encodeURIComponent(message.email)}?subject=${encodeURIComponent(`Re: ${message.subject || "Your Pixel Shroom Studio message"}`)}">Reply by email</a>
+        ${message.is_read ? "" : `<button type="button" class="secondary" data-message-read="${message.id}">Mark read</button>`}
+        <button type="button" class="danger" data-message-delete="${message.id}" data-message-subject="${clean(message.subject || "Customer message")}">Delete message</button>
+      </div>
     </article>`).join("") || "<p>No customer messages yet.</p>";
 }
 
@@ -782,11 +789,38 @@ document.querySelector("#add-admin-form").addEventListener("submit", async (even
 
 // SECTION: Customer message controls
 document.querySelector("#admin-messages").addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-message-read]");
-  if (!button) return;
-  const { error } = await supabase.from("contact_messages").update({ is_read: true }).eq("id", button.dataset.messageRead);
-  if (error) return alert(error.message);
-  await loadDashboard();
+  const readButton = event.target.closest("[data-message-read]");
+  const deleteButton = event.target.closest("[data-message-delete]");
+
+  if (readButton) {
+    readButton.disabled = true;
+    const { error } = await supabase
+      .from("contact_messages")
+      .update({ is_read: true })
+      .eq("id", readButton.dataset.messageRead);
+    if (error) {
+      readButton.disabled = false;
+      return alert(error.message);
+    }
+    await loadDashboard();
+    return;
+  }
+
+  if (deleteButton) {
+    const subject = deleteButton.dataset.messageSubject || "this message";
+    if (!confirm(`Permanently delete “${subject}”?`)) return;
+
+    deleteButton.disabled = true;
+    const { error } = await supabase
+      .from("contact_messages")
+      .delete()
+      .eq("id", deleteButton.dataset.messageDelete);
+    if (error) {
+      deleteButton.disabled = false;
+      return alert(error.message);
+    }
+    await loadDashboard();
+  }
 });
 
 // SECTION: Session and password controls
