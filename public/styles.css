@@ -377,6 +377,20 @@ button.art-preview {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
 }
+/* SECTION: Customer artwork-use and authenticity FAQ */
+.faq-section { padding: 8px 0 54px; scroll-margin-top: 24px; }
+.faq-heading { align-items: end; }
+.faq-heading > p { max-width: 430px; color: var(--muted); }
+.faq-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; align-items: start; }
+.faq-grid details { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.faq-grid summary { position: relative; padding: 17px 48px 17px 18px; color: var(--ink); font-weight: 800; cursor: pointer; list-style: none; }
+.faq-grid summary::-webkit-details-marker { display: none; }
+.faq-grid summary::after { content: "+"; position: absolute; right: 18px; top: 50%; translate: 0 -50%; color: var(--gold); font: 700 24px/1 Arial,sans-serif; }
+.faq-grid details[open] summary::after { content: "−"; }
+.faq-grid details[open] summary { border-bottom: 1px solid var(--line); background: var(--surface-strong); }
+.faq-grid details p { margin: 0; padding: 14px 18px 0; color: var(--muted); }
+.faq-grid details p:last-child { padding-bottom: 17px; }
+.faq-grid summary:focus-visible { outline: 3px solid var(--blue); outline-offset: -3px; }
 footer {
   background: var(--navy);
   color: var(--ink);
@@ -730,6 +744,7 @@ dialog::backdrop {
     height: min(440px,65vh);
     max-height: min(440px,65vh);
   }
+  .faq-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 1050px) and (min-width: 621px) {
   .footer-grid {
