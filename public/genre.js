@@ -38,6 +38,12 @@ if (!genre) {
 const [title, description] = genre;
 const catalog = document.querySelector("#genre-catalog");
 const previewDialog = document.querySelector("#image-preview-dialog");
+const nftComingSoon = document.querySelector("#nft-coming-soon");
+
+// SECTION: NFT page availability announcement
+if (slug === "nft") {
+  nftComingSoon.hidden = false;
+}
 
 document.title = `${title} Art — Pixel Shroom Studio`;
 document.querySelector("#genre-title").textContent = title;

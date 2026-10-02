@@ -8,6 +8,29 @@
 <link rel="preconnect" href="https://decizwtgsqhjdgjiqbui.supabase.co" crossorigin>
 <link rel="stylesheet" href="/parity.css?v=4">
 <link rel="stylesheet" href="/styles.css?v=5">
+<style>
+  /* SECTION: NFT page coming-soon announcement */
+  .nft-coming-soon {
+    position: fixed;
+    z-index: 30;
+    top: 50%;
+    left: 50%;
+    width: 145vw;
+    padding: clamp(18px, 3vw, 36px) 0;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    border-block: clamp(5px, .8vw, 12px) solid #f4c07b;
+    background: rgba(4, 9, 7, .9);
+    color: #f4c07b;
+    font: 900 clamp(4rem, 13vw, 12rem)/.9 Arial, sans-serif;
+    letter-spacing: .08em;
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 6px 24px #000;
+    box-shadow: 0 0 60px rgba(0, 0, 0, .72);
+    pointer-events: none;
+  }
+  .nft-coming-soon[hidden] { display: none; }
+</style>
 </head>
 <body>
 <!-- SECTION: Genre page header -->
@@ -19,6 +42,9 @@
     </a>
   </div>
 </header>
+
+<!-- SECTION: NFT availability announcement, enabled only for the NFT route -->
+<div class="nft-coming-soon" id="nft-coming-soon" role="status" aria-live="polite" hidden>Coming Soon</div>
 
 <main class="shell genre-page">
   <!-- SECTION: Genre breadcrumb and introduction -->
@@ -66,6 +92,6 @@
   </a>
 </div>
 
-<script type="module" src="/genre.js?v=2"></script>
+<script type="module" src="/genre.js?v=3"></script>
 </body>
 </html>
