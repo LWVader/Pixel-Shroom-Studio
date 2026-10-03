@@ -6,7 +6,7 @@ interface StatusRequest {
   accessToken?: string;
 }
 
-// SECTION: Authenticated buyer order-status endpoint
+// SECTION: Webhook-confirmed buyer order status
 Deno.serve(async (request: Request): Promise<Response> => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: cors });
@@ -47,14 +47,13 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const license = Array.isArray(order.licenses)
       ? order.licenses[0]
       : order.licenses;
-    const isNft = artwork?.category === "NFT";
     const expiresAt = license?.expires_at ?? null;
     const downloadsRemaining = license
       ? Math.max(0, license.download_limit - license.download_count)
       : 0;
     const downloadAvailable =
       order.status === "paid" &&
-      !isNft &&
+      artwork?.category !== "NFT" &&
       Boolean(expiresAt) &&
       new Date(expiresAt).getTime() > Date.now() &&
       downloadsRemaining > 0;
