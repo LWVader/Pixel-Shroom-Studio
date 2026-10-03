@@ -145,7 +145,7 @@ Chrome or Edge may ask whether the live site can access a device on the local ne
 If the live storefront domain changes, start the helper with the new allowed origin:
 
 ```powershell
-$env:PIXEL_SIGNING_ALLOWED_ORIGINS = "https://your-new-domain.example"
+$env:PIXEL_SIGNING_ALLOWED_ORIGINS = "https://www.pixelshroomstudio.com,https://pixelshroomstudio.com"
 powershell -ExecutionPolicy Bypass -File .\tools\start-signing-helper.ps1
 ```
 
@@ -183,8 +183,8 @@ Configure message-alert secrets. `RESEND_FROM_EMAIL` must use a sender/domain ve
 ```powershell
 npx.cmd supabase secrets set `
   RESEND_API_KEY="re_your_key" `
-  RESEND_FROM_EMAIL="Pixel Shroom Studio <messages@your-verified-domain.com>" `
-  ADMIN_ALERT_EMAIL="phantasmocazdor@gmail.com"
+  RESEND_FROM_EMAIL="LWVader <lwvader@pixelshroomstudio.com>" `
+  ADMIN_ALERT_EMAIL="lwvader@pixelshroomstudio.com"
 ```
 
 The redesigned administrator has exactly five sidebar sections: Dashboard, Customers, Images, Analytics, and Messages. Customer email/image history is calculated from webhook-verified paid orders. The only dashboard Quick Action is Add Admin User. The existing editorial manager remains available inside Images so its functionality is retained without creating a sixth section.

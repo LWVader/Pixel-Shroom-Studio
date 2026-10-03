@@ -14,5 +14,10 @@ if (-not (Get-Command c2patool -ErrorAction SilentlyContinue)) {
   throw "c2patool was not found on PATH."
 }
 
+# SECTION: Production administrator origins
+if ([string]::IsNullOrWhiteSpace($env:PIXEL_SIGNING_ALLOWED_ORIGINS)) {
+  $env:PIXEL_SIGNING_ALLOWED_ORIGINS = "https://www.pixelshroomstudio.com,https://pixelshroomstudio.com"
+}
+
 Set-Location (Resolve-Path (Join-Path $PSScriptRoot ".."))
 node $helper

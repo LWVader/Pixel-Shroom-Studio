@@ -41,7 +41,8 @@ const C2PA_TOOL = process.env.C2PA_TOOL || "c2patool";
 const MAX_FILE_BYTES = Number(process.env.PIXEL_SIGNING_MAX_BYTES || 250 * 1024 * 1024);
 const ALLOWED_ORIGINS = new Set(
   (process.env.PIXEL_SIGNING_ALLOWED_ORIGINS || [
-    "https://pixel-shroom-studio.phantasmocazdor.workers.dev",
+    "https://www.pixelshroomstudio.com",
+    "https://pixelshroomstudio.com",
     "http://localhost:3000",
     "http://localhost:4173",
     "http://localhost:8080",
