@@ -13,9 +13,18 @@ let messages = [];
 let articles = [];
 const LOCAL_SIGNER_URL = "http://127.0.0.1:4179";
 
-const clean = (value) => String(value ?? "").replace(/[&<>'"]/g, (character) => ({
-  "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
-})[character]);
+const clean = (value) =>
+  String(value ?? "").replace(
+    /[&<>'"]/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;",
+      })[character],
+  );
 
 function showMessage(selector, message, success = false) {
   const element = document.querySelector(selector);
@@ -52,24 +61,16 @@ function pemToBytes(pem) {
 
 async function importPrivateSigningKey(file) {
   const keyData = pemToBytes(await file.text());
-  return crypto.subtle.importKey(
-    "pkcs8",
-    keyData,
-    { name: "ECDSA", namedCurve: "P-256" },
-    false,
-    ["sign"]
-  );
+  return crypto.subtle.importKey("pkcs8", keyData, { name: "ECDSA", namedCurve: "P-256" }, false, [
+    "sign",
+  ]);
 }
 
 async function importPublicSigningKey(file) {
   const keyData = pemToBytes(await file.text());
-  return crypto.subtle.importKey(
-    "spki",
-    keyData,
-    { name: "ECDSA", namedCurve: "P-256" },
-    true,
-    ["verify"]
-  );
+  return crypto.subtle.importKey("spki", keyData, { name: "ECDSA", namedCurve: "P-256" }, true, [
+    "verify",
+  ]);
 }
 
 function identityPayload({ serialNumber, creator, sha256 }) {
@@ -77,7 +78,7 @@ function identityPayload({ serialNumber, creator, sha256 }) {
     version: 1,
     serialNumber,
     creator,
-    sha256
+    sha256,
   });
 }
 
@@ -94,23 +95,25 @@ async function createSignatureRecord(originalFile, formData) {
   const [privateKey, publicKey, fileBytes] = await Promise.all([
     importPrivateSigningKey(privateKeyFile),
     importPublicSigningKey(publicKeyFile),
-    originalFile.arrayBuffer()
+    originalFile.arrayBuffer(),
   ]);
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", fileBytes));
   const sha256 = bytesToHex(digest);
   const serialNumber = formData.get("serialNumber").trim().toUpperCase();
   const creator = formData.get("artist").trim();
   const payload = identityPayload({ serialNumber, creator, sha256 });
-  const signature = new Uint8Array(await crypto.subtle.sign(
-    { name: "ECDSA", hash: "SHA-256" },
-    privateKey,
-    new TextEncoder().encode(payload)
-  ));
+  const signature = new Uint8Array(
+    await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      privateKey,
+      new TextEncoder().encode(payload),
+    ),
+  );
   const verified = await crypto.subtle.verify(
     { name: "ECDSA", hash: "SHA-256" },
     publicKey,
     signature,
-    new TextEncoder().encode(payload)
+    new TextEncoder().encode(payload),
   );
   if (!verified) {
     throw new Error("The public key does not match the selected private key.");
@@ -126,7 +129,7 @@ async function createSignatureRecord(originalFile, formData) {
     mime_type: originalFile.type || "application/octet-stream",
     file_size: originalFile.size,
     c2pa_embedded: true,
-    signed_at: new Date().toISOString()
+    signed_at: new Date().toISOString(),
   };
 }
 
@@ -140,33 +143,37 @@ async function signOriginalLocally(originalFile, formData) {
     response = await fetch(`${LOCAL_SIGNER_URL}/sign`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": originalFile.type || "application/octet-stream",
         "X-Artwork-Title": encodeURIComponent(formData.get("title").trim()),
         "X-Artwork-Serial": encodeURIComponent(formData.get("serialNumber").trim().toUpperCase()),
         "X-Artwork-Creator": encodeURIComponent(formData.get("artist").trim()),
-        "X-Artwork-Filename": encodeURIComponent(originalFile.name)
+        "X-Artwork-Filename": encodeURIComponent(originalFile.name),
       },
-      body: originalFile
+      body: originalFile,
     });
   } catch {
-    throw new Error("Cannot connect to the local signing helper. Start tools\\start-signing-helper.ps1 and allow local-network access in the browser.");
+    throw new Error(
+      "Cannot connect to the local signing helper. Start tools\\start-signing-helper.ps1 and allow local-network access in the browser.",
+    );
   }
 
   if (!response.ok) {
-    const details = await response.json().catch(() => ({ error: "The local signing helper failed." }));
+    const details = await response
+      .json()
+      .catch(() => ({ error: "The local signing helper failed." }));
     throw new Error(details.error || "The local signing helper failed.");
   }
 
   const signedBlob = await response.blob();
   const signedName = decodeURIComponent(
     response.headers.get("X-Signed-Filename") ||
-    `${formData.get("serialNumber").trim().toUpperCase()}.${originalFile.name.split(".").pop()}`
+      `${formData.get("serialNumber").trim().toUpperCase()}.${originalFile.name.split(".").pop()}`,
   );
   sessionStorage.setItem("pixelShroomSigningToken", token);
   return new File([signedBlob], signedName, {
     type: signedBlob.type || originalFile.type,
-    lastModified: Date.now()
+    lastModified: Date.now(),
   });
 }
 
@@ -178,7 +185,8 @@ async function checkLocalSigner() {
     status.textContent = "Local C2PA signing helper is ready.";
     status.classList.add("success");
   } catch {
-    status.textContent = "Local signing helper is offline. Run tools\\start-signing-helper.ps1 before publishing.";
+    status.textContent =
+      "Local signing helper is offline. Run tools\\start-signing-helper.ps1 before publishing.";
     status.classList.remove("success");
   }
 }
@@ -190,17 +198,17 @@ async function rowsFrom(query) {
 }
 
 async function saveRow(table, row, id = null) {
-  const query = id === null
-    ? supabase.from(table).insert(row)
-    : supabase.from(table).update(row).eq("id", id);
+  const query =
+    id === null ? supabase.from(table).insert(row) : supabase.from(table).update(row).eq("id", id);
   const { error } = await query;
   if (error) throw error;
 }
 
 async function saveArtwork(row, id = null) {
-  const query = id === null
-    ? supabase.from("artworks").insert(row)
-    : supabase.from("artworks").update(row).eq("id", id);
+  const query =
+    id === null
+      ? supabase.from("artworks").insert(row)
+      : supabase.from("artworks").update(row).eq("id", id);
   const { data, error } = await query.select("id").single();
   if (error) throw error;
   return data.id;
@@ -209,16 +217,16 @@ async function saveArtwork(row, id = null) {
 async function saveSignature(artworkId, signatureRecord) {
   const { error } = await supabase
     .from("artwork_signatures")
-    .upsert(
-      { artwork_id: artworkId, ...signatureRecord },
-      { onConflict: "artwork_id" }
-    );
+    .upsert({ artwork_id: artworkId, ...signatureRecord }, { onConflict: "artwork_id" });
   if (error) throw error;
 }
 
 // SECTION: Sole-administrator authorization
 async function requireAdmin() {
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Sign in required.");
   const { data, error } = await supabase
     .from("admin_users")
@@ -239,16 +247,21 @@ async function readImage(file) {
     const bitmap = await createImageBitmap(file);
     return { source: bitmap, width: bitmap.width, height: bitmap.height };
   } catch {
-    throw new Error(`Could not decode ${file.name}. Confirm that it is a valid PNG, JPEG, or WebP image.`);
+    throw new Error(
+      `Could not decode ${file.name}. Confirm that it is a valid PNG, JPEG, or WebP image.`,
+    );
   }
 }
 
 function toBlob(canvas) {
-  return new Promise((resolve, reject) => canvas.toBlob(
-    (blob) => blob ? resolve(blob) : reject(new Error("Could not generate the protected preview.")),
-    "image/webp",
-    0.82
-  ));
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(
+      (blob) =>
+        blob ? resolve(blob) : reject(new Error("Could not generate the protected preview.")),
+      "image/webp",
+      0.82,
+    ),
+  );
 }
 
 function coverWithWatermark(context, width, height, serialNumber) {
@@ -297,11 +310,7 @@ async function generatePreview(originalFile, serialNumber) {
   // fixed reference watermark is not shrunk after it is baked into the file.
   const maximumPreviewWidth = 960;
   const maximumPreviewHeight = 640;
-  const scale = Math.min(
-    1,
-    maximumPreviewWidth / image.width,
-    maximumPreviewHeight / image.height,
-  );
+  const scale = Math.min(1, maximumPreviewWidth / image.width, maximumPreviewHeight / image.height);
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));
   const canvas = document.createElement("canvas");
@@ -319,13 +328,14 @@ async function generatePreview(originalFile, serialNumber) {
 async function uploadFiles(formData, current) {
   const originalFile = formData.get("originalFile");
   if (!(originalFile instanceof File) || !originalFile.size) {
-    if (!current?.preview_url || !current?.original_path) throw new Error("Select the serialized original image.");
+    if (!current?.preview_url || !current?.original_path)
+      throw new Error("Select the serialized original image.");
     return {
       previewUrl: current.preview_url,
       originalPath: current.original_path,
       width: current.display_width,
       height: current.display_height,
-      signatureRecord: null
+      signatureRecord: null,
     };
   }
 
@@ -333,7 +343,7 @@ async function uploadFiles(formData, current) {
   const signedOriginal = await signOriginalLocally(originalFile, formData);
   const [preview, signatureRecord] = await Promise.all([
     generatePreview(signedOriginal, serial),
-    createSignatureRecord(signedOriginal, formData)
+    createSignatureRecord(signedOriginal, formData),
   ]);
   const previewFile = new File([preview.blob], "protected-preview.webp", { type: "image/webp" });
   const previewPath = objectName("artworks", previewFile.name);
@@ -357,7 +367,7 @@ async function uploadFiles(formData, current) {
     originalPath,
     width: preview.width,
     height: preview.height,
-    signatureRecord
+    signatureRecord,
   };
 }
 
@@ -369,16 +379,23 @@ async function loadItems() {
         .from("artworks")
         .select("*")
         .is("deleted_at", null)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false }),
     ),
-    rowsFrom(supabase.from("artwork_signatures").select("artwork_id,sha256,c2pa_embedded,signed_at"))
+    rowsFrom(
+      supabase.from("artwork_signatures").select("artwork_id,sha256,c2pa_embedded,signed_at"),
+    ),
   ]);
-  const signaturesByArtwork = new Map(signatureRows.map((entry) => [String(entry.artwork_id), entry]));
+  const signaturesByArtwork = new Map(
+    signatureRows.map((entry) => [String(entry.artwork_id), entry]),
+  );
   items = artworkRows.map((item) => ({
     ...item,
-    signature_record: signaturesByArtwork.get(String(item.id)) || null
+    signature_record: signaturesByArtwork.get(String(item.id)) || null,
   }));
-  adminCatalog.innerHTML = items.length ? items.map((item) => `
+  adminCatalog.innerHTML = items.length
+    ? items
+        .map(
+          (item) => `
     <article class="admin-item">
       <img class="admin-thumb" src="${clean(item.preview_url)}" alt="${clean(item.title)} protected preview">
       <div>
@@ -394,11 +411,16 @@ async function loadItems() {
         <button data-toggle="${item.id}">${item.status === "published" ? "Archive" : "Publish"}</button>
         <button class="delete" data-delete="${item.id}" aria-label="Delete ${clean(item.title)} from the site">Delete</button>
       </div>
-    </article>`).join("") : "<p>No listings yet.</p>";
+    </article>`,
+        )
+        .join("")
+    : "<p>No listings yet.</p>";
 }
 
 function money(value) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value || 0));
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+    Number(value || 0),
+  );
 }
 
 function shortDate(value) {
@@ -407,15 +429,20 @@ function shortDate(value) {
 
 function customerRecords() {
   const customers = new Map();
-  orders.filter((order) => order.status === "paid" && order.buyer_email).forEach((order) => {
-    const email = order.buyer_email.trim().toLowerCase();
-    const record = customers.get(email) || { email, purchases: [], total: 0, lastPurchase: null };
-    record.purchases.push(order.artworks?.title || "Artwork");
-    record.total += Number(order.amount || 0);
-    if (!record.lastPurchase || new Date(order.created_at) > new Date(record.lastPurchase)) record.lastPurchase = order.created_at;
-    customers.set(email, record);
-  });
-  return [...customers.values()].sort((a, b) => new Date(b.lastPurchase) - new Date(a.lastPurchase));
+  orders
+    .filter((order) => order.status === "paid" && order.buyer_email)
+    .forEach((order) => {
+      const email = order.buyer_email.trim().toLowerCase();
+      const record = customers.get(email) || { email, purchases: [], total: 0, lastPurchase: null };
+      record.purchases.push(order.artworks?.title || "Artwork");
+      record.total += Number(order.amount || 0);
+      if (!record.lastPurchase || new Date(order.created_at) > new Date(record.lastPurchase))
+        record.lastPurchase = order.created_at;
+      customers.set(email, record);
+    });
+  return [...customers.values()].sort(
+    (a, b) => new Date(b.lastPurchase) - new Date(a.lastPurchase),
+  );
 }
 
 function renderStats(target, customers) {
@@ -433,13 +460,19 @@ function sevenDaySales() {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
     date.setDate(date.getDate() - (6 - offset));
-    return { key: date.toISOString().slice(0, 10), label: date.toLocaleDateString([], { weekday: "short" }), total: 0 };
+    return {
+      key: date.toISOString().slice(0, 10),
+      label: date.toLocaleDateString([], { weekday: "short" }),
+      total: 0,
+    };
   });
   const byDay = new Map(days.map((day) => [day.key, day]));
-  orders.filter((order) => order.status === "paid").forEach((order) => {
-    const key = new Date(order.paid_at || order.created_at).toISOString().slice(0, 10);
-    if (byDay.has(key)) byDay.get(key).total += Number(order.amount || 0);
-  });
+  orders
+    .filter((order) => order.status === "paid")
+    .forEach((order) => {
+      const key = new Date(order.paid_at || order.created_at).toISOString().slice(0, 10);
+      if (byDay.has(key)) byDay.get(key).total += Number(order.amount || 0);
+    });
   return days;
 }
 
@@ -447,8 +480,12 @@ function renderSalesChart(selector) {
   const chart = document.querySelector(selector);
   const days = sevenDaySales();
   const highest = Math.max(...days.map((day) => day.total), 1);
-  chart.innerHTML = days.map((day) => `
-    <div class="sales-bar"><em>${day.total ? money(day.total) : ""}</em><i style="height:${Math.max(4, (day.total / highest) * 82)}%"></i><b>${day.label}</b></div>`).join("");
+  chart.innerHTML = days
+    .map(
+      (day) => `
+    <div class="sales-bar"><em>${day.total ? money(day.total) : ""}</em><i style="height:${Math.max(4, (day.total / highest) * 82)}%"></i><b>${day.label}</b></div>`,
+    )
+    .join("");
 }
 
 function normalizedOrderState(order) {
@@ -460,78 +497,133 @@ function normalizedOrderState(order) {
 }
 
 function renderOrderStatus(donutSelector, legendSelector) {
-  const colors = { Delivered: "#4d806c", Ready: "#d6a94f", Paid: "#866b39", Pending: "#d88942", Failed: "#a75b46" };
+  const colors = {
+    Delivered: "#4d806c",
+    Ready: "#d6a94f",
+    Paid: "#866b39",
+    Pending: "#d88942",
+    Failed: "#a75b46",
+  };
   const counts = orders.reduce((result, order) => {
-    const state = normalizedOrderState(order); result[state] = (result[state] || 0) + 1; return result;
+    const state = normalizedOrderState(order);
+    result[state] = (result[state] || 0) + 1;
+    return result;
   }, {});
   const total = Math.max(orders.length, 1);
   let cursor = 0;
   const slices = Object.entries(colors).map(([state, color]) => {
-    const start = cursor; cursor += ((counts[state] || 0) / total) * 100; return `${color} ${start}% ${cursor}%`;
+    const start = cursor;
+    cursor += ((counts[state] || 0) / total) * 100;
+    return `${color} ${start}% ${cursor}%`;
   });
   const donut = document.querySelector(donutSelector);
   donut.style.background = orders.length ? `conic-gradient(${slices.join(",")})` : "#eee8f1";
   donut.innerHTML = `<span>${orders.length}<small>orders</small></span>`;
-  document.querySelector(legendSelector).innerHTML = Object.entries(colors).map(([state, color]) => `
-    <div><i style="background:${color}"></i><span>${state}</span><b>${counts[state] || 0}</b></div>`).join("");
+  document.querySelector(legendSelector).innerHTML = Object.entries(colors)
+    .map(
+      ([state, color]) => `
+    <div><i style="background:${color}"></i><span>${state}</span><b>${counts[state] || 0}</b></div>`,
+    )
+    .join("");
 }
 
 function orderRows(source) {
-  return source.map((order) => `
+  return source
+    .map(
+      (order) => `
     <div class="admin-data-row">
       <strong>${clean(order.artworks?.title || "Artwork")}</strong>
       <span>${clean(order.buyer_email || "Email not supplied")}</span>
       <span class="status-pill ${clean(normalizedOrderState(order).toLowerCase())}">${clean(normalizedOrderState(order))}</span>
       <span>${money(order.amount)}</span>
-    </div>`).join("");
+    </div>`,
+    )
+    .join("");
 }
 
 function renderCustomers(customers) {
-  document.querySelector("#admin-customers").innerHTML = customers.length ? `
+  document.querySelector("#admin-customers").innerHTML = customers.length
+    ? `
     <div class="admin-data-row customer-row header"><span>Email</span><span>Orders</span><span>Images purchased</span><span>Total</span></div>
-    ${customers.map((customer) => `<div class="admin-data-row customer-row"><strong>${clean(customer.email)}</strong><span>${customer.purchases.length}</span><span>${customer.purchases.map(clean).join(", ")}</span><span>${money(customer.total)}</span></div>`).join("")}` : "<p>No paid customer purchases yet.</p>";
+    ${customers.map((customer) => `<div class="admin-data-row customer-row"><strong>${clean(customer.email)}</strong><span>${customer.purchases.length}</span><span>${customer.purchases.map(clean).join(", ")}</span><span>${money(customer.total)}</span></div>`).join("")}`
+    : "<p>No paid customer purchases yet.</p>";
 }
 
 function renderMessages() {
   const unread = messages.filter((message) => !message.is_read).length;
   const badge = document.querySelector("#message-badge");
-  badge.hidden = unread === 0; badge.textContent = unread;
-  document.querySelector("#dashboard-message-preview").innerHTML = messages.slice(0, 4).map((message) => `
-    <div class="message-snippet"><div><strong>${clean(message.subject || "Customer message")}</strong><span>${clean(message.email)}</span></div><time>${shortDate(message.created_at)}</time></div>`).join("") || "<p>No customer messages yet.</p>";
-  document.querySelector("#admin-messages").innerHTML = messages.map((message) => `
+  badge.hidden = unread === 0;
+  badge.textContent = unread;
+  document.querySelector("#dashboard-message-preview").innerHTML =
+    messages
+      .slice(0, 4)
+      .map(
+        (message) => `
+    <div class="message-snippet"><div><strong>${clean(message.subject || "Customer message")}</strong><span>${clean(message.email)}</span></div><time>${shortDate(message.created_at)}</time></div>`,
+      )
+      .join("") || "<p>No customer messages yet.</p>";
+  document.querySelector("#admin-messages").innerHTML =
+    messages
+      .map(
+        (message) => `
     <article class="message-item ${message.is_read ? "" : "unread"}">
       <div class="message-meta"><strong>${clean(message.name)}</strong><a href="mailto:${encodeURIComponent(message.email)}">${clean(message.email)}</a><time>${new Date(message.created_at).toLocaleString()}</time></div>
       <h3>${clean(message.subject || "Customer message")}</h3><p>${clean(message.message)}</p>
-      <p class="alert-status ${message.alert_sent_at ? "sent" : "failed"}">${message.alert_sent_at
-        ? `Email alert sent ${clean(new Date(message.alert_sent_at).toLocaleString())}`
-        : `Email alert not sent${message.alert_error ? `: ${clean(message.alert_error)}` : "."}`}</p>
+      <p class="alert-status ${message.alert_sent_at ? "sent" : "failed"}">${
+        message.alert_sent_at
+          ? `Email alert sent ${clean(new Date(message.alert_sent_at).toLocaleString())}`
+          : `Email alert not sent${message.alert_error ? `: ${clean(message.alert_error)}` : "."}`
+      }</p>
       <div class="message-actions">
         <a class="button" href="mailto:${encodeURIComponent(message.email)}?subject=${encodeURIComponent(`Re: ${message.subject || "Your Pixel Shroom Studio message"}`)}">Reply by email</a>
         ${message.is_read ? "" : `<button type="button" class="secondary" data-message-read="${message.id}">Mark read</button>`}
         <button type="button" class="danger" data-message-delete="${message.id}" data-message-subject="${clean(message.subject || "Customer message")}">Delete message</button>
       </div>
-    </article>`).join("") || "<p>No customer messages yet.</p>";
+    </article>`,
+      )
+      .join("") || "<p>No customer messages yet.</p>";
 }
 
 async function loadDashboard() {
   [articles, orders, messages] = await Promise.all([
     rowsFrom(supabase.from("articles").select("*").order("created_at", { ascending: false })),
-    rowsFrom(supabase.from("orders").select("*,artworks(title,category,serial_number)").order("created_at", { ascending: false }).limit(250)),
-    rowsFrom(supabase.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(250))
+    rowsFrom(
+      supabase
+        .from("orders")
+        .select("*,artworks(title,category,serial_number)")
+        .order("created_at", { ascending: false })
+        .limit(250),
+    ),
+    rowsFrom(
+      supabase
+        .from("contact_messages")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(250),
+    ),
   ]);
   const customers = customerRecords();
-  renderStats("#stats", customers); renderStats("#analytics-stats", customers);
-  renderSalesChart("#dashboard-sales-chart"); renderSalesChart("#analytics-sales-chart");
+  renderStats("#stats", customers);
+  renderStats("#analytics-stats", customers);
+  renderSalesChart("#dashboard-sales-chart");
+  renderSalesChart("#analytics-sales-chart");
   renderOrderStatus("#dashboard-status-donut", "#dashboard-status-legend");
   renderOrderStatus("#analytics-status-donut", "#analytics-status-legend");
-  renderCustomers(customers); renderMessages();
+  renderCustomers(customers);
+  renderMessages();
   document.querySelector("#admin-recent-orders").innerHTML = orders.length
     ? `<div class="admin-data-row header"><span>Image</span><span>Customer</span><span>Status</span><span>Amount</span></div>${orderRows(orders.slice(0, 6))}`
     : "<p>No orders yet.</p>";
   document.querySelector("#admin-orders").innerHTML = orders.length
     ? `<div class="admin-data-row header"><span>Image</span><span>Customer</span><span>Status</span><span>Amount</span></div>${orderRows(orders)}`
     : "<p>No orders yet.</p>";
-  document.querySelector("#admin-articles").innerHTML = articles.map((article) => `<div class="article-admin-row"><strong>${clean(article.title)}</strong><button data-article="${article.id}" data-next="${article.status === "published" ? "draft" : "published"}">${article.status === "published" ? "Unpublish" : "Publish"}</button></div>`).join("") || "<p>No articles yet.</p>";
+  document.querySelector("#admin-articles").innerHTML =
+    articles
+      .map(
+        (article) =>
+          `<div class="article-admin-row"><strong>${clean(article.title)}</strong><button data-article="${article.id}" data-next="${article.status === "published" ? "draft" : "published"}">${article.status === "published" ? "Unpublish" : "Publish"}</button></div>`,
+      )
+      .join("") || "<p>No articles yet.</p>";
 }
 
 async function showDashboard() {
@@ -560,15 +652,21 @@ function resetArtworkForm() {
 artForm.elements.originalFile.addEventListener("change", async () => {
   const file = artForm.elements.originalFile.files[0];
   const status = document.querySelector("#original-status");
-  if (!file) { status.textContent = "No original selected."; return; }
+  if (!file) {
+    status.textContent = "No original selected.";
+    return;
+  }
   try {
     const image = await readImage(file);
     artForm.elements.displayWidth.value = image.width;
     artForm.elements.displayHeight.value = image.height;
     status.textContent = `Selected: ${file.name} · ${image.width} × ${image.height}px`;
-    document.querySelector("#signature-status").textContent = "Ready to create C2PA, SHA-256, and studio signatures when you publish.";
+    document.querySelector("#signature-status").textContent =
+      "Ready to create C2PA, SHA-256, and studio signatures when you publish.";
     image.source.close();
-  } catch (error) { status.textContent = error.message; }
+  } catch (error) {
+    status.textContent = error.message;
+  }
 });
 
 // SECTION: Authentication
@@ -579,7 +677,7 @@ loginForm.addEventListener("submit", async (event) => {
   try {
     const { error } = await supabase.auth.signInWithPassword({
       email: values.get("email"),
-      password: values.get("password")
+      password: values.get("password"),
     });
     if (error) throw error;
     await showDashboard();
@@ -601,11 +699,17 @@ artForm.addEventListener("submit", async (event) => {
     const current = items.find((item) => item.id === editingArtworkId);
     const files = await uploadFiles(values, current);
     const row = {
-      title: values.get("title").trim(), artist: values.get("artist").trim(),
-      serial_number: values.get("serialNumber").trim().toUpperCase(), category: values.get("category"),
-      price: Number(values.get("price")), display_width: files.width, display_height: files.height,
-      status: current?.status || "published", preview_url: files.previewUrl,
-      original_path: files.originalPath, updated_at: new Date().toISOString()
+      title: values.get("title").trim(),
+      artist: values.get("artist").trim(),
+      serial_number: values.get("serialNumber").trim().toUpperCase(),
+      category: values.get("category"),
+      price: Number(values.get("price")),
+      display_width: files.width,
+      display_height: files.height,
+      status: current?.status || "published",
+      preview_url: files.previewUrl,
+      original_path: files.originalPath,
+      updated_at: new Date().toISOString(),
     };
     const wasEditing = Boolean(editingArtworkId);
     const artworkId = await saveArtwork(row, wasEditing ? editingArtworkId : null);
@@ -618,12 +722,15 @@ artForm.addEventListener("submit", async (event) => {
       files.signatureRecord
         ? `${wasEditing ? "Listing updated" : "Listing created"} and cryptographic identity registered.`
         : `${wasEditing ? "Listing updated" : "Listing created"}.`,
-      true
+      true,
     );
     await loadItems();
     await loadDashboard();
-  } catch (error) { showMessage("#form-message", error.message); }
-  finally { button.disabled = false; }
+  } catch (error) {
+    showMessage("#form-message", error.message);
+  } finally {
+    button.disabled = false;
+  }
 });
 
 adminCatalog.addEventListener("click", async (event) => {
@@ -633,8 +740,18 @@ adminCatalog.addEventListener("click", async (event) => {
   if (edit) {
     const item = items.find((entry) => entry.id === Number(edit.dataset.edit));
     editingArtworkId = item.id;
-    const values = { title: item.title, artist: item.artist, category: item.category, serialNumber: item.serial_number, price: item.price, displayWidth: item.display_width, displayHeight: item.display_height };
-    Object.entries(values).forEach(([name, value]) => { artForm.elements.namedItem(name).value = value; });
+    const values = {
+      title: item.title,
+      artist: item.artist,
+      category: item.category,
+      serialNumber: item.serial_number,
+      price: item.price,
+      displayWidth: item.display_width,
+      displayHeight: item.display_height,
+    };
+    Object.entries(values).forEach(([name, value]) => {
+      artForm.elements.namedItem(name).value = value;
+    });
     document.querySelector("#art-form-title").textContent = `Editing: ${item.title}`;
     document.querySelector("#save-button").textContent = "Save listing changes";
     cancelEdit.hidden = false;
@@ -642,16 +759,21 @@ adminCatalog.addEventListener("click", async (event) => {
   }
   if (toggle) {
     const item = items.find((entry) => entry.id === Number(toggle.dataset.toggle));
-    await saveRow("artworks", { status: item.status === "published" ? "archived" : "published" }, item.id);
-    await loadItems(); await loadDashboard();
+    await saveRow(
+      "artworks",
+      { status: item.status === "published" ? "archived" : "published" },
+      item.id,
+    );
+    await loadItems();
+    await loadDashboard();
   }
   if (remove) {
     const item = items.find((entry) => entry.id === Number(remove.dataset.delete));
     if (!item) return;
     const confirmed = window.confirm(
       `Delete "${item.title}" from the site?\n\n` +
-      "The listing will disappear from the storefront and Current images. " +
-      "Supabase history, orders, signatures, and stored files will be preserved."
+        "The listing will disappear from the storefront and Current images. " +
+        "Supabase history, orders, signatures, and stored files will be preserved.",
     );
     if (!confirmed) return;
     try {
@@ -661,9 +783,9 @@ adminCatalog.addEventListener("click", async (event) => {
         {
           status: "archived",
           deleted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         },
-        item.id
+        item.id,
       );
       if (editingArtworkId === item.id) resetArtworkForm();
       await loadItems();
@@ -675,7 +797,10 @@ adminCatalog.addEventListener("click", async (event) => {
 });
 
 cancelEdit.addEventListener("click", resetArtworkForm);
-document.querySelector("#new-listing-button").addEventListener("click", () => { resetArtworkForm(); artForm.scrollIntoView({ behavior: "smooth" }); });
+document.querySelector("#new-listing-button").addEventListener("click", () => {
+  resetArtworkForm();
+  artForm.scrollIntoView({ behavior: "smooth" });
+});
 
 // SECTION: Editorial controls
 document.querySelector("#article-form").addEventListener("submit", async (event) => {
@@ -693,18 +818,14 @@ document.querySelector("#article-form").addEventListener("submit", async (event)
       title: values.title.trim(),
       excerpt: values.excerpt.trim(),
       body: values.body.trim(),
-      status: "published"
+      status: "published",
     });
     form.reset();
     showMessage("#article-message", "Article published successfully.", true);
     await loadDashboard();
   } catch (error) {
     console.error("Article publish failed:", error);
-    showMessage(
-      "#article-message",
-      error.message || "The article could not be published.",
-      false
-    );
+    showMessage("#article-message", error.message || "The article could not be published.", false);
   } finally {
     submitButton.disabled = false;
   }
@@ -721,7 +842,7 @@ document.querySelector("#admin-articles").addEventListener("click", async (event
     showMessage(
       "#article-message",
       button.dataset.next === "published" ? "Article published." : "Article unpublished.",
-      true
+      true,
     );
     await loadDashboard();
   } catch (error) {
@@ -729,7 +850,7 @@ document.querySelector("#admin-articles").addEventListener("click", async (event
     showMessage(
       "#article-message",
       error.message || "The article status could not be changed.",
-      false
+      false,
     );
     button.disabled = false;
   }
@@ -774,7 +895,7 @@ document.querySelector("#add-admin-form").addEventListener("submit", async (even
   try {
     await requireAdmin();
     const { data, error } = await supabase.functions.invoke("add-admin-user", {
-      body: { email: new FormData(form).get("email").trim().toLowerCase() }
+      body: { email: new FormData(form).get("email").trim().toLowerCase() },
     });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
@@ -829,17 +950,22 @@ document.querySelector("#logout-button").addEventListener("click", async () => {
   location.reload();
 });
 const dialog = document.querySelector("#password-dialog");
-document.querySelector("#change-password-button").addEventListener("click", () => dialog.showModal());
+document
+  .querySelector("#change-password-button")
+  .addEventListener("click", () => dialog.showModal());
 document.querySelector("#close-password").addEventListener("click", () => dialog.close());
 document.querySelector("#password-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
-    const { error } = await supabase.auth.updateUser({ password: new FormData(event.currentTarget).get("newPassword") });
+    const { error } = await supabase.auth.updateUser({
+      password: new FormData(event.currentTarget).get("newPassword"),
+    });
     if (error) throw error;
     await supabase.auth.signOut();
     location.reload();
+  } catch (error) {
+    showMessage("#password-message", error.message);
   }
-  catch (error) { showMessage("#password-message", error.message); }
 });
 
 // SECTION: Restore an existing authenticated session
@@ -851,6 +977,11 @@ showDashboard().catch(async () => {
 
 artForm.elements.signingHelperToken.value = sessionStorage.getItem("pixelShroomSigningToken") || "";
 document.querySelector("#check-signing-helper").addEventListener("click", checkLocalSigner);
-document.querySelector("#dashboard-date").textContent = new Date().toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" });
+document.querySelector("#dashboard-date").textContent = new Date().toLocaleDateString([], {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
 const requestedView = location.hash.slice(1);
-if (document.getElementById(requestedView)?.classList.contains("admin-view")) openAdminView(requestedView);
+if (document.getElementById(requestedView)?.classList.contains("admin-view"))
+  openAdminView(requestedView);

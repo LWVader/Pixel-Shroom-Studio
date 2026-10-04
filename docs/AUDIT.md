@@ -24,3 +24,7 @@ Checked against the two uploaded archives on October 4, 2026.
 These checks confirm reachability and source/fixture behavior. They do not confirm a paid transaction, a real webhook event, a production SQL migration, actual file delivery, issuer trust, or the validity of a particular signed artwork. Those require staging or post-deployment checks with your existing accounts and files.
 
 `design-preview.png` shows the retained hero and redesigned header from the local browser. Catalog tests used fixtures; the package itself contains no synthetic listings and reads the live published catalog.
+
+## Live homepage correction — October 4, 2026
+
+Live root returned404 while index.html redirected to that failing root. Worker now explicitly requests index.html from ASSETS under html_handling=none. The test binding no longer supplies an implicit index mapping. Validation:22Vitest tests and50desktop/mobile Playwright tests passed; Wrangler deploy dry run passed. Actual local runtime launch was blocked by this environment’s network-interface syscall restriction. See HOMEPAGE-HOTFIX.md for deployment and test:live verification. The fix is packaged, not deployed.

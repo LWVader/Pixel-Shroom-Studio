@@ -32,19 +32,19 @@ The admin-invitation function still verifies the caller's bearer token and admin
 
 ## Exactly the requested navigation
 
-| Label | Public destination |
-| --- | --- |
-| All artwork | `https://www.pixelshroomstudio.com/#gallery` |
-| Portrait | `/genre.html?genre=portrait` |
-| Fantasy | `/genre.html?genre=fantasy` |
-| Landscape | `/genre.html?genre=landscape` |
-| Sci-Fi | `/genre.html?genre=sci-fi` |
-| Abstract | `/genre.html?genre=abstract` |
-| Dreamscape | `/genre.html?genre=dreamscape` |
-| Dark Fantasy | `/genre.html?genre=dark-fantasy` |
-| Horror | `/genre.html?genre=horror` |
-| NFT | `/genre.html?genre=nft` |
-| FAQ | `/faq.html` |
+| Label        | Public destination                           |
+| ------------ | -------------------------------------------- |
+| All artwork  | `https://www.pixelshroomstudio.com/#gallery` |
+| Portrait     | `/genre.html?genre=portrait`                 |
+| Fantasy      | `/genre.html?genre=fantasy`                  |
+| Landscape    | `/genre.html?genre=landscape`                |
+| Sci-Fi       | `/genre.html?genre=sci-fi`                   |
+| Abstract     | `/genre.html?genre=abstract`                 |
+| Dreamscape   | `/genre.html?genre=dreamscape`               |
+| Dark Fantasy | `/genre.html?genre=dark-fantasy`             |
+| Horror       | `/genre.html?genre=horror`                   |
+| NFT          | `/genre.html?genre=nft`                      |
+| FAQ          | `/faq.html`                                  |
 
 These are the only genre categories. Utility pages such as contact, verification, admin, and payment confirmation remain available.
 
@@ -79,6 +79,7 @@ GEO and AEO: readable genre definitions, concise buyer answers derived from the 
 SXO: full collections beyond the four-work sampler, global and genre search, clear usage and payment guidance, accessible focus/skip links, keyboard-dismissable image previews, mobile navigation, reduced-motion support, and explicit unavailable/coming-soon states.
 
 Relevant primary guidance:
+
 - https://developers.google.com/search/docs/appearance/ai-features
 - https://developers.google.com/search/docs/fundamentals/ai-optimization-guide
 - https://developers.cloudflare.com/workers/static-assets/redirects/
@@ -92,3 +93,7 @@ See `docs/AUDIT.md` for results. Automated checks use synthetic fixtures and a l
 ## Automated testing
 
 Playwright and Vitest are installed with locked dependency versions. Run `npm ci`, `npm run test:install-browsers`, then `npm run test:all`. See [docs/TESTING.md](docs/TESTING.md) for scope, reports, Windows commands and remaining staging checks.
+
+## Readable source formatting
+
+HTML, CSS, JavaScript, TypeScript, test files and configuration use consistent two-space indentation. Run `npm.cmd run format` to format changes, or `npm.cmd run format:check` to check formatting. On other platforms use `npm` instead of `npm.cmd`. EditorConfig and Prettier settings keep source readable across editors. Public asset files and generated reports are excluded.

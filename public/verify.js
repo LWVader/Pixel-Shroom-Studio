@@ -30,7 +30,9 @@ async function sha256File(file) {
 async function loadSignatureRecord(serialNumber) {
   const { data, error } = await supabase
     .from("artwork_signatures")
-    .select("serial_number,creator,sha256,signature,public_key_jwk,payload_version,c2pa_embedded,signed_at")
+    .select(
+      "serial_number,creator,sha256,signature,public_key_jwk,payload_version,c2pa_embedded,signed_at",
+    )
     .eq("serial_number", serialNumber)
     .maybeSingle();
   if (error) throw error;
@@ -43,18 +45,18 @@ async function verifyStudioSignature(record) {
     record.public_key_jwk,
     { name: "ECDSA", namedCurve: "P-256" },
     false,
-    ["verify"]
+    ["verify"],
   );
   const payload = identityPayload({
     serialNumber: record.serial_number,
     creator: record.creator,
-    sha256: record.sha256
+    sha256: record.sha256,
   });
   return crypto.subtle.verify(
     { name: "ECDSA", hash: "SHA-256" },
     publicKey,
     base64ToBytes(record.signature),
-    new TextEncoder().encode(payload)
+    new TextEncoder().encode(payload),
   );
 }
 
@@ -73,13 +75,11 @@ async function inspectC2pa(file, serialNumber) {
     const manifestStore = await reader.manifestStore();
     const serialized = JSON.stringify(manifestStore);
     const validationStatus =
-      manifestStore?.validation_status ??
-      manifestStore?.validationStatus ??
-      [];
+      manifestStore?.validation_status ?? manifestStore?.validationStatus ?? [];
     const statusCodes = Array.isArray(validationStatus)
-      ? validationStatus.map((entry) => String(
-        entry?.code ?? entry?.status ?? entry?.validationStatus ?? entry ?? ""
-      ))
+      ? validationStatus.map((entry) =>
+          String(entry?.code ?? entry?.status ?? entry?.validationStatus ?? entry ?? ""),
+        )
       : [];
     const isSelfManagedTrustStatus = (code) =>
       code.toLowerCase().replace(/[^a-z]/g, "") === "signingcredentialuntrusted";
@@ -89,7 +89,7 @@ async function inspectC2pa(file, serialNumber) {
       serialFound: serialized.toUpperCase().includes(serialNumber.toUpperCase()),
       valid: blockingStatuses.length === 0,
       selfManagedIssuer: statusCodes.some(isSelfManagedTrustStatus),
-      statusCodes
+      statusCodes,
     };
   } catch (error) {
     console.warn("C2PA inspection was unavailable:", error);
@@ -131,7 +131,7 @@ form.addEventListener("submit", async (event) => {
     const [hash, record, c2pa] = await Promise.all([
       sha256File(file),
       loadSignatureRecord(serialNumber),
-      inspectC2pa(file, serialNumber)
+      inspectC2pa(file, serialNumber),
     ]);
     if (!record) {
       showResult({
@@ -140,14 +140,15 @@ form.addEventListener("submit", async (event) => {
         serial: serialNumber,
         hash,
         signature: "Not found",
-        c2pa: c2pa.present ? "Manifest found" : "Not found"
+        c2pa: c2pa.present ? "Manifest found" : "Not found",
       });
       return;
     }
 
     const hashMatches = hash === record.sha256;
     const signatureValid = await verifyStudioSignature(record);
-    const fullyValid = hashMatches && signatureValid && c2pa.present && c2pa.valid && c2pa.serialFound;
+    const fullyValid =
+      hashMatches && signatureValid && c2pa.present && c2pa.valid && c2pa.serialFound;
     const c2paText = c2pa.unavailable
       ? "C2PA check unavailable; retry with an internet connection"
       : c2pa.present
@@ -170,7 +171,7 @@ form.addEventListener("submit", async (event) => {
       hash: `${hash}${hashMatches ? " (match)" : " (does not match registered hash)"}`,
       signature: signatureValid ? "Valid P-256 studio signature" : "Invalid signature",
       c2pa: c2paText,
-      date: new Date(record.signed_at).toLocaleString()
+      date: new Date(record.signed_at).toLocaleString(),
     });
   } catch (error) {
     console.error("Artwork verification failed:", error);
@@ -178,7 +179,7 @@ form.addEventListener("submit", async (event) => {
       valid: false,
       message: error.message || "Artwork verification failed.",
       signature: "Not verified",
-      c2pa: "Not verified"
+      c2pa: "Not verified",
     });
   } finally {
     button.disabled = false;

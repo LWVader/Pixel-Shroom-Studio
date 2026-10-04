@@ -1,8 +1,49 @@
-import {it,expect} from 'vitest';
-import {execFileSync} from 'node:child_process';
-import fs from 'node:fs';
-import {load} from 'cheerio';
-it('enforces atomic fulfillment, replay protection and private download quota in PostgreSQL',()=>{expect(execFileSync(process.execPath,['tests/payment-database.mjs'],{encoding:'utf8'})).toContain('PASS');});
-it('validates edge handler CORS, methods and pending download protection',()=>{expect(execFileSync(process.execPath,['tests/edge-functions.cjs'],{encoding:'utf8'})).toContain('PASS');});
-it('parses every Edge Function and shared TypeScript module',async()=>{const ts=await import('typescript');for(const folder of fs.readdirSync('supabase/functions')){const dir='supabase/functions/'+folder;if(!fs.statSync(dir).isDirectory())continue;for(const filename of fs.readdirSync(dir).filter(x=>x.endsWith('.ts'))){const result=ts.transpileModule(fs.readFileSync(dir+'/'+filename,'utf8'),{reportDiagnostics:true,compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}});expect(result.diagnostics.filter(x=>x.category===ts.DiagnosticCategory.Error),dir+'/'+filename).toEqual([]);}}});
-it('keeps indexable pages canonical, described and structured',()=>{const files=['index.html','faq.html',...fs.readdirSync('public/genres').map(x=>'genres/'+x)];for(const file of files){const $=load(fs.readFileSync('public/'+file,'utf8'));expect($('h1').length,file).toBe(1);expect($('title').text().length,file).toBeGreaterThan(10);expect($('meta[name="description"]').attr('content'),file).toBeTruthy();expect($('link[rel="canonical"]').attr('href'),file).toMatch(/^https:\/\/www.pixelshroomstudio.com/);for(const script of $('script[type="application/ld+json"]').toArray())expect(()=>JSON.parse($(script).text())).not.toThrow();}});
+import { it, expect } from "vitest";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import { load } from "cheerio";
+it("enforces atomic fulfillment, replay protection and private download quota in PostgreSQL", () => {
+  expect(
+    execFileSync(process.execPath, ["tests/payment-database.mjs"], { encoding: "utf8" }),
+  ).toContain("PASS");
+});
+it("validates edge handler CORS, methods and pending download protection", () => {
+  expect(
+    execFileSync(process.execPath, ["tests/edge-functions.cjs"], { encoding: "utf8" }),
+  ).toContain("PASS");
+});
+it("parses every Edge Function and shared TypeScript module", async () => {
+  const ts = await import("typescript");
+  for (const folder of fs.readdirSync("supabase/functions")) {
+    const dir = "supabase/functions/" + folder;
+    if (!fs.statSync(dir).isDirectory()) continue;
+    for (const filename of fs.readdirSync(dir).filter((x) => x.endsWith(".ts"))) {
+      const result = ts.transpileModule(fs.readFileSync(dir + "/" + filename, "utf8"), {
+        reportDiagnostics: true,
+        compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+      });
+      expect(
+        result.diagnostics.filter((x) => x.category === ts.DiagnosticCategory.Error),
+        dir + "/" + filename,
+      ).toEqual([]);
+    }
+  }
+});
+it("keeps indexable pages canonical, described and structured", () => {
+  const files = [
+    "index.html",
+    "faq.html",
+    ...fs.readdirSync("public/genres").map((x) => "genres/" + x),
+  ];
+  for (const file of files) {
+    const $ = load(fs.readFileSync("public/" + file, "utf8"));
+    expect($("h1").length, file).toBe(1);
+    expect($("title").text().length, file).toBeGreaterThan(10);
+    expect($('meta[name="description"]').attr("content"), file).toBeTruthy();
+    expect($('link[rel="canonical"]').attr("href"), file).toMatch(
+      /^https:\/\/www.pixelshroomstudio.com/,
+    );
+    for (const script of $('script[type="application/ld+json"]').toArray())
+      expect(() => JSON.parse($(script).text())).not.toThrow();
+  }
+});

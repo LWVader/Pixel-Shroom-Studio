@@ -18,16 +18,16 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const database = service();
     const { data: order, error: orderError } = await database
       .from("orders")
-      .select(`
+      .select(
+        `
         status,
         access_token_hash,
         artworks(original_path, category)
-      `)
+      `,
+      )
       .eq("id", orderId)
       .single();
-    const artwork = Array.isArray(order?.artworks)
-      ? order.artworks[0]
-      : order?.artworks;
+    const artwork = Array.isArray(order?.artworks) ? order.artworks[0] : order?.artworks;
 
     if (
       orderError ||
@@ -35,16 +35,15 @@ Deno.serve(async (request: Request): Promise<Response> => {
       order.status !== "paid" ||
       artwork?.category === "NFT" ||
       !artwork?.original_path ||
-      await sha256(accessToken) !== order.access_token_hash
+      (await sha256(accessToken)) !== order.access_token_hash
     ) {
       return json({ error: "Invalid download." }, 403);
     }
 
     // Atomically enforce the license expiration and download limit.
-    const { data: allowed, error: consumeError } = await database.rpc(
-      "consume_verified_download",
-      { target_order: orderId },
-    );
+    const { data: allowed, error: consumeError } = await database.rpc("consume_verified_download", {
+      target_order: orderId,
+    });
     if (consumeError) throw consumeError;
     if (!allowed) {
       return json({ error: "Download expired or limit reached." }, 403);

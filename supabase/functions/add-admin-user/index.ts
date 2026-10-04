@@ -14,13 +14,17 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const authorization = request.headers.get("Authorization") || "";
-    if (!authorization.startsWith("Bearer ")) return respond({ error: "Authentication required." }, 401);
+    if (!authorization.startsWith("Bearer "))
+      return respond({ error: "Authentication required." }, 401);
 
     const caller = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authorization } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: { user }, error: userError } = await caller.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await caller.auth.getUser();
     if (userError || !user) return respond({ error: "Authentication required." }, 401);
 
     const service = createClient(supabaseUrl, serviceKey, {
@@ -34,7 +38,9 @@ Deno.serve(async (request: Request): Promise<Response> => {
     if (!administrator) return respond({ error: "Administrator access required." }, 403);
 
     const { email } = await request.json();
-    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return respond({ error: "Enter a valid administrator email." }, 400);
     }
@@ -54,7 +60,9 @@ Deno.serve(async (request: Request): Promise<Response> => {
     return respond({ invited: true });
   } catch (error) {
     console.error("Add administrator failed:", error);
-    return respond({ error: error instanceof Error ? error.message : "Administrator invitation failed." }, 500);
+    return respond(
+      { error: error instanceof Error ? error.message : "Administrator invitation failed." },
+      500,
+    );
   }
 });
-

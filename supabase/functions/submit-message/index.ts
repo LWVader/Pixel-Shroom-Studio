@@ -18,18 +18,32 @@ const cors = {
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...cors, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+    headers: {
+      ...cors,
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
   });
 }
 
 function text(value: unknown, maximum: number): string {
-  return String(value || "").trim().slice(0, maximum);
+  return String(value || "")
+    .trim()
+    .slice(0, maximum);
 }
 
 function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[character]!);
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character]!,
+  );
 }
 
 Deno.serve(async (request: Request): Promise<Response> => {
@@ -46,7 +60,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
       subject: text(body.subject, 160),
       message: text(body.message, 5000),
     };
-    if (!record.name || !record.subject || record.message.length < 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)) {
+    if (
+      !record.name ||
+      !record.subject ||
+      record.message.length < 10 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)
+    ) {
       return json({ error: "Complete every message field with a valid email address." }, 400);
     }
 
@@ -69,9 +88,14 @@ Deno.serve(async (request: Request): Promise<Response> => {
       const configurationError = [
         !resendKey ? "RESEND_API_KEY is missing" : "",
         !fromEmail ? "RESEND_FROM_EMAIL is missing" : "",
-      ].filter(Boolean).join("; ");
+      ]
+        .filter(Boolean)
+        .join("; ");
       console.error("Message saved, but email alert is not configured:", configurationError);
-      await service.from("contact_messages").update({ alert_error: configurationError }).eq("id", saved.id);
+      await service
+        .from("contact_messages")
+        .update({ alert_error: configurationError })
+        .eq("id", saved.id);
       return json({ sent: true, alertSent: false });
     }
 
@@ -93,7 +117,10 @@ Deno.serve(async (request: Request): Promise<Response> => {
       return json({ sent: true, alertSent: false });
     }
 
-    await service.from("contact_messages").update({ alert_sent_at: new Date().toISOString(), alert_error: null }).eq("id", saved.id);
+    await service
+      .from("contact_messages")
+      .update({ alert_sent_at: new Date().toISOString(), alert_error: null })
+      .eq("id", saved.id);
     return json({ sent: true, alertSent: true });
   } catch (error) {
     console.error("Message submission failed:", error);

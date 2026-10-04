@@ -52,12 +52,17 @@ function showPaidOrder(order) {
 
   const expiration = new Date(order.expiresAt).toLocaleString();
   const downloadLabel = order.downloadsRemaining === 1 ? "download" : "downloads";
-  message.textContent =
-    `Your original is ready. ${order.downloadsRemaining} ${downloadLabel} remaining before ${expiration}.`;
+  message.textContent = `Your original is ready. ${order.downloadsRemaining} ${downloadLabel} remaining before ${expiration}.`;
   const downloadUrl = new URL(order.downloadUrl);
   const expected = new URL(functionUrl("download-original"));
-  if (downloadUrl.protocol !== "https:" || downloadUrl.origin !== expected.origin || downloadUrl.pathname !== expected.pathname) {
-    throw new Error("The original delivery link is invalid. Contact the studio with your order number.");
+  if (
+    downloadUrl.protocol !== "https:" ||
+    downloadUrl.origin !== expected.origin ||
+    downloadUrl.pathname !== expected.pathname
+  ) {
+    throw new Error(
+      "The original delivery link is invalid. Contact the studio with your order number.",
+    );
   }
   downloadLink.href = downloadUrl.href;
   downloadLink.hidden = false;

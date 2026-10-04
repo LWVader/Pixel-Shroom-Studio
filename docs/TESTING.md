@@ -12,18 +12,18 @@ On Windows PowerShell use `npm.cmd` instead of `npm` if execution policy blocks 
 
 ## Commands
 
-| Command | Purpose |
-| --- | --- |
-| npm test | Vitest unit and integration checks |
-| npm run test:watch | Watch unit tests |
-| npm run test:coverage | HTML, LCOV and console coverage |
-| npm run test:e2e | Playwright desktop and mobile Chromium |
-| npm run test:e2e:ui | Interactive browser test runner |
-| npm run test:e2e:headed | Visible browser runner |
-| npm run test:report | Open last HTML report |
-| npm run test:all | Syntax, unit/database coverage and browser checks |
-| npx playwright install firefox webkit | Install optional browsers |
-| npm run test:cross-browser | Chromium, Firefox and WebKit |
+| Command                               | Purpose                                           |
+| ------------------------------------- | ------------------------------------------------- |
+| npm test                              | Vitest unit and integration checks                |
+| npm run test:watch                    | Watch unit tests                                  |
+| npm run test:coverage                 | HTML, LCOV and console coverage                   |
+| npm run test:e2e                      | Playwright desktop and mobile Chromium            |
+| npm run test:e2e:ui                   | Interactive browser test runner                   |
+| npm run test:e2e:headed               | Visible browser runner                            |
+| npm run test:report                   | Open last HTML report                             |
+| npm run test:all                      | Syntax, unit/database coverage and browser checks |
+| npx playwright install firefox webkit | Install optional browsers                         |
+| npm run test:cross-browser            | Chromium, Firefox and WebKit                      |
 
 `CHROMIUM_EXECUTABLE` optionally selects a preinstalled compatible Chromium binary. Default runs use Playwright's installed browser. Ports 8020 and 8021 must be free. CI installs Chromium and uploads reports even after failure. Cross-browser execution is optional and was not validated in this environment.
 
@@ -43,3 +43,9 @@ V8 coverage measures **catalog-core.js and worker.mjs only**. Subprocess databas
 Before production release use a dedicated staging Supabase project and provider sandbox credentials to test complete Stripe and PayPal webhook signatures, checkout capture/return, paid and expired Storage delivery, admin authentication/authorization/CRUD and uploads, invitations and notifications. Verify a genuine C2PA-signed original, a modified original and a wrong identity key. Run the PowerShell identity/signing/helper scripts on Windows with OpenSSL and c2patool installed. The default suite does not claim these live, platform-dependent flows were executed.
 
 Existing standalone diagnostic scripts remain available in tests/: edge-functions.cjs and payment-database.mjs are invoked by Vitest. browser.cjs/offline.cjs are legacy checks; use Playwright's runner for supported browser reports and CI.
+
+## Actual asset-binding regression checks
+
+`npm run test:runtime` launches the pinned Wrangler/workerd runtime and verifies homepage, nine genre pages, utility/assets, redirects,404,HEAD and unsupported methods against the actual Cloudflare asset binding. It is included in `test:all` and CI. `npm run test:portable` runs syntax, Vitest and Playwright without Wrangler for environments whose sandbox prevents workerd or network-interface inspection.
+
+`npm run test:live` performs read-only GET checks against the production domain after deployment. Override `SITE_TEST_URL` to target staging. It performs no purchases or form submissions. Network failures are failures, not skipped successes.

@@ -28,11 +28,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   try {
     const rawBody = await request.text();
 
-    event = await stripe.webhooks.constructEventAsync(
-      rawBody,
-      signature,
-      webhookSecret,
-    );
+    event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
   } catch (error) {
     console.error("Stripe signature verification failed:", error);
 
@@ -58,9 +54,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     }
 
     // Supports either metadata naming format.
-    const orderId =
-      session.metadata?.order_id ??
-      session.metadata?.orderId;
+    const orderId = session.metadata?.order_id ?? session.metadata?.orderId;
 
     if (!orderId) {
       throw new Error("Stripe Checkout Session has no order ID.");
@@ -73,17 +67,14 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const database = service();
 
     // SECTION: Atomically record the event and fulfill the order
-    const { data, error } = await database.rpc(
-      "fulfill_stripe_checkout_verified",
-      {
-        payment_event_id: event.id,
-        checkout_session_id: session.id,
-        local_order_id: orderId,
-        paid_amount_cents: session.amount_total,
-        paid_currency: session.currency.toLowerCase(),
-        customer_email: session.customer_details?.email ?? null,
-      },
-    );
+    const { data, error } = await database.rpc("fulfill_stripe_checkout_verified", {
+      payment_event_id: event.id,
+      checkout_session_id: session.id,
+      local_order_id: orderId,
+      paid_amount_cents: session.amount_total,
+      paid_currency: session.currency.toLowerCase(),
+      customer_email: session.customer_details?.email ?? null,
+    });
 
     if (error) {
       throw error;

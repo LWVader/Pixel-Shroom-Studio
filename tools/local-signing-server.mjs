@@ -4,18 +4,11 @@ import {
   createPrivateKey,
   randomBytes,
   timingSafeEqual,
-  X509Certificate
+  X509Certificate,
 } from "node:crypto";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
-import {
-  access,
-  mkdtemp,
-  mkdir,
-  readFile,
-  rm,
-  writeFile
-} from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
@@ -26,39 +19,42 @@ const PORT = Number(process.env.PIXEL_SIGNING_PORT || 4179);
 const SCRIPT_DIRECTORY = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const PROJECT_ROOT = resolve(SCRIPT_DIRECTORY, "..");
 const SIGNING_DIRECTORY = resolve(
-  process.env.PIXEL_SIGNING_DIRECTORY || join(PROJECT_ROOT, "signing")
+  process.env.PIXEL_SIGNING_DIRECTORY || join(PROJECT_ROOT, "signing"),
 );
 const PRIVATE_KEY = resolve(
-  process.env.PIXEL_SIGNING_PRIVATE_KEY || join(SIGNING_DIRECTORY, "signing-private.pem")
+  process.env.PIXEL_SIGNING_PRIVATE_KEY || join(SIGNING_DIRECTORY, "signing-private.pem"),
 );
 const SIGNING_CERTIFICATE = resolve(
-  process.env.PIXEL_SIGNING_CERTIFICATE || join(SIGNING_DIRECTORY, "signing-cert.pem")
+  process.env.PIXEL_SIGNING_CERTIFICATE || join(SIGNING_DIRECTORY, "signing-cert.pem"),
 );
 const TOKEN_FILE = resolve(
-  process.env.PIXEL_SIGNING_TOKEN_FILE || join(SIGNING_DIRECTORY, ".signing-helper-token")
+  process.env.PIXEL_SIGNING_TOKEN_FILE || join(SIGNING_DIRECTORY, ".signing-helper-token"),
 );
 const C2PA_TOOL = process.env.C2PA_TOOL || "c2patool";
 const MAX_FILE_BYTES = Number(process.env.PIXEL_SIGNING_MAX_BYTES || 250 * 1024 * 1024);
 const ALLOWED_ORIGINS = new Set(
-  (process.env.PIXEL_SIGNING_ALLOWED_ORIGINS || [
-    "https://www.pixelshroomstudio.com",
-    "https://pixelshroomstudio.com",
-    "http://localhost:3000",
-    "http://localhost:4173",
-    "http://localhost:8080",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:4173",
-    "http://127.0.0.1:8080"
-  ].join(","))
+  (
+    process.env.PIXEL_SIGNING_ALLOWED_ORIGINS ||
+    [
+      "https://www.pixelshroomstudio.com",
+      "https://pixelshroomstudio.com",
+      "http://localhost:3000",
+      "http://localhost:4173",
+      "http://localhost:8080",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:4173",
+      "http://127.0.0.1:8080",
+    ].join(",")
+  )
     .split(",")
     .map((origin) => origin.trim())
-    .filter(Boolean)
+    .filter(Boolean),
 );
 
 const SUPPORTED_TYPES = new Map([
   ["image/png", ".png"],
   ["image/jpeg", ".jpg"],
-  ["image/webp", ".webp"]
+  ["image/webp", ".webp"],
 ]);
 
 // SECTION: Security and response helpers
@@ -72,19 +68,19 @@ function corsHeaders(origin) {
       "x-artwork-title",
       "x-artwork-serial",
       "x-artwork-creator",
-      "x-artwork-filename"
+      "x-artwork-filename",
     ].join(", "),
     "Access-Control-Expose-Headers": "X-SHA256, X-Signed-Filename",
     "Access-Control-Allow-Private-Network": "true",
     "Cache-Control": "no-store",
-    "Vary": "Origin"
+    Vary: "Origin",
   };
 }
 
 function sendJson(response, origin, status, data) {
   response.writeHead(status, {
     ...corsHeaders(origin),
-    "Content-Type": "application/json; charset=utf-8"
+    "Content-Type": "application/json; charset=utf-8",
   });
   response.end(JSON.stringify(data));
 }
@@ -102,7 +98,9 @@ function decodeHeader(value, field) {
 }
 
 function safeName(value) {
-  return basename(value).replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 160);
+  return basename(value)
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .slice(0, 160);
 }
 
 function tokenMatches(received, expected) {
@@ -121,8 +119,8 @@ async function requireFile(path, label) {
 
 // SECTION: C2PA signing-identity preflight
 const C2PA_SIGNING_EKUS = new Set([
-  "1.3.6.1.5.5.7.3.4",  // id-kp-emailProtection
-  "1.3.6.1.5.5.7.3.36"  // id-kp-documentSigning
+  "1.3.6.1.5.5.7.3.4", // id-kp-emailProtection
+  "1.3.6.1.5.5.7.3.36", // id-kp-documentSigning
 ]);
 
 async function validateSigningIdentity() {
@@ -131,7 +129,7 @@ async function validateSigningIdentity() {
 
   const [privateKeyPem, certificatePem] = await Promise.all([
     readFile(PRIVATE_KEY, "utf8"),
-    readFile(SIGNING_CERTIFICATE, "utf8")
+    readFile(SIGNING_CERTIFICATE, "utf8"),
   ]);
   const certificate = new X509Certificate(certificatePem);
   const privateKey = createPrivateKey(privateKeyPem);
@@ -140,11 +138,13 @@ async function validateSigningIdentity() {
   if (certificate.issuer === certificate.subject) {
     throw new Error(
       "The signing certificate is self-signed and cannot be used by c2patool. " +
-      "Run tools\\create-signing-identity.ps1 -ReplaceInvalidIdentity."
+        "Run tools\\create-signing-identity.ps1 -ReplaceInvalidIdentity.",
     );
   }
   if (certificate.ca) {
-    throw new Error("The signing certificate is a CA certificate; a C2PA end-entity certificate is required.");
+    throw new Error(
+      "The signing certificate is a CA certificate; a C2PA end-entity certificate is required.",
+    );
   }
   if (Date.parse(certificate.validFrom) > now || Date.parse(certificate.validTo) < now) {
     throw new Error("The signing certificate is not currently valid.");
@@ -157,7 +157,7 @@ async function validateSigningIdentity() {
   if (!keyUsage.some((usage) => C2PA_SIGNING_EKUS.has(usage))) {
     throw new Error(
       "The signing certificate lacks the C2PA emailProtection or documentSigning EKU. " +
-      "Run tools\\create-signing-identity.ps1 -ReplaceInvalidIdentity."
+        "Run tools\\create-signing-identity.ps1 -ReplaceInvalidIdentity.",
     );
   }
   return certificate;
@@ -176,7 +176,8 @@ async function loadOrCreateToken() {
 
 async function readRequestBody(request) {
   const declaredLength = Number(request.headers["content-length"] || 0);
-  if (declaredLength > MAX_FILE_BYTES) throw new Error("The selected artwork exceeds the local signing size limit.");
+  if (declaredLength > MAX_FILE_BYTES)
+    throw new Error("The selected artwork exceeds the local signing size limit.");
 
   const chunks = [];
   let total = 0;
@@ -198,18 +199,25 @@ function runC2paTool(argumentsList) {
     const child = spawn(C2PA_TOOL, argumentsList, {
       shell: false,
       windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"],
     });
     let stdout = "";
     let stderr = "";
-    child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
-    child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
-    child.on("error", (error) => rejectPromise(
-      new Error(`Could not start c2patool: ${error.message}`)
-    ));
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (error) =>
+      rejectPromise(new Error(`Could not start c2patool: ${error.message}`)),
+    );
     child.on("close", (code) => {
       if (code === 0) resolvePromise(stdout);
-      else rejectPromise(new Error(stderr.trim() || stdout.trim() || `c2patool exited with code ${code}.`));
+      else
+        rejectPromise(
+          new Error(stderr.trim() || stdout.trim() || `c2patool exited with code ${code}.`),
+        );
     });
   });
 }
@@ -226,39 +234,44 @@ function buildManifest({ title, serial, creator, mimeType }) {
       {
         label: "c2pa.actions.v2",
         data: {
-          actions: [{
-            action: "c2pa.created",
-            softwareAgent: "Pixel Shroom Studio",
-            digitalSourceType: "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
-          }],
-          allActionsIncluded: true
-        }
+          actions: [
+            {
+              action: "c2pa.created",
+              softwareAgent: "Pixel Shroom Studio",
+              digitalSourceType:
+                "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia",
+            },
+          ],
+          allActionsIncluded: true,
+        },
       },
       {
         label: "com.pixelshroom.identity",
         data: {
           serial_number: serial,
           creator,
-          studio: "Pixel Shroom Studio"
-        }
-      }
-    ]
+          studio: "Pixel Shroom Studio",
+        },
+      },
+    ],
   };
 }
 
 async function signArtwork(request, response, origin, expectedToken) {
   const authorization = request.headers.authorization || "";
-  const suppliedToken = authorization.startsWith("Bearer ")
-    ? authorization.slice(7).trim()
-    : "";
+  const suppliedToken = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
   if (!tokenMatches(suppliedToken, expectedToken)) {
     return sendJson(response, origin, 401, { error: "The local signing-helper token is invalid." });
   }
 
-  const mimeType = String(request.headers["content-type"] || "").split(";")[0].toLowerCase();
+  const mimeType = String(request.headers["content-type"] || "")
+    .split(";")[0]
+    .toLowerCase();
   const expectedExtension = SUPPORTED_TYPES.get(mimeType);
   if (!expectedExtension) {
-    return sendJson(response, origin, 415, { error: "Only PNG, JPEG, and WebP originals are supported." });
+    return sendJson(response, origin, 415, {
+      error: "Only PNG, JPEG, and WebP originals are supported.",
+    });
   }
 
   const title = decodeHeader(request.headers["x-artwork-title"], "Artwork title");
@@ -282,7 +295,7 @@ async function signArtwork(request, response, origin, expectedToken) {
     await writeFile(
       manifestPath,
       JSON.stringify(buildManifest({ title, serial, creator, mimeType }), null, 2),
-      "utf8"
+      "utf8",
     );
     await runC2paTool([inputPath, "--manifest", manifestPath, "--output", outputPath]);
     await runC2paTool([outputPath]);
@@ -294,7 +307,7 @@ async function signArtwork(request, response, origin, expectedToken) {
       "Content-Type": mimeType,
       "Content-Length": String(signedBytes.length),
       "X-SHA256": sha256,
-      "X-Signed-Filename": encodeURIComponent(outputName)
+      "X-Signed-Filename": encodeURIComponent(outputName),
     });
     response.end(signedBytes);
   } finally {
@@ -310,7 +323,9 @@ const server = createServer(async (request, response) => {
   const origin = allowedOrigin(request);
   if (!origin) {
     response.writeHead(403, { "Content-Type": "application/json; charset=utf-8" });
-    response.end(JSON.stringify({ error: "This website origin is not allowed to use the signing helper." }));
+    response.end(
+      JSON.stringify({ error: "This website origin is not allowed to use the signing helper." }),
+    );
     return;
   }
 
@@ -334,7 +349,7 @@ const server = createServer(async (request, response) => {
     console.error(error);
     if (!response.headersSent) {
       sendJson(response, origin, 500, {
-        error: error instanceof Error ? error.message : "Local signing failed."
+        error: error instanceof Error ? error.message : "Local signing failed.",
       });
     } else {
       response.destroy();

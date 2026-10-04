@@ -18,7 +18,9 @@
     "test:cross-browser": "playwright test --config playwright.cross-browser.config.js",
     "test:runtime": "node tests/worker-runtime.mjs",
     "test:portable": "npm run check && npm run test:coverage && npm run test:e2e",
-    "test:live": "node tools/check-live-site.mjs"
+    "test:live": "node tools/check-live-site.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "stripe": "^22.6.2"
@@ -29,6 +31,7 @@
     "@playwright/test": "1.63.0",
     "@vitest/coverage-v8": "5.0.3",
     "cheerio": "1.2.0",
+    "prettier": "3.9.9",
     "supabase": "^2.117.0",
     "typescript": "5.8.3",
     "vitest": "5.0.3",

@@ -1,13 +1,6 @@
 // SECTION: Dependencies and shared server utilities
 import Stripe from "npm:stripe@18";
-import {
-  corsFor,
-  json,
-  randomToken,
-  service,
-  sha256,
-  studioSiteUrl,
-} from "../_shared/common.ts";
+import { corsFor, json, randomToken, service, sha256, studioSiteUrl } from "../_shared/common.ts";
 
 // SECTION: Checkout request and provider response types
 type PaymentProvider = "stripe" | "paypal";
@@ -120,8 +113,7 @@ async function createPendingOrder(
       buyer_email: buyerEmail || null,
       access_token_hash: await sha256(accessToken),
       status: "pending",
-      fulfillment_status:
-        artwork.category === "NFT" ? "email_pending" : "pending",
+      fulfillment_status: artwork.category === "NFT" ? "email_pending" : "pending",
     })
     .select("id")
     .single();
@@ -200,7 +192,7 @@ async function getPayPalAccessToken(baseUrl: string): Promise<string> {
     },
     body: "grant_type=client_credentials",
   });
-  const payload = await response.json() as PayPalAccessTokenResponse;
+  const payload = (await response.json()) as PayPalAccessTokenResponse;
 
   if (!response.ok || !payload.access_token) {
     throw new Error(payload.error_description || "PayPal authentication failed.");
@@ -248,14 +240,14 @@ async function createPayPalCheckout(
       },
     }),
   });
-  const payload = await response.json() as PayPalOrderResponse;
+  const payload = (await response.json()) as PayPalOrderResponse;
 
   if (!response.ok || !payload.id) {
     throw new Error(payload.message || "PayPal checkout failed.");
   }
 
-  const approvalUrl = payload.links?.find((link) =>
-    link.rel === "payer-action" || link.rel === "approve"
+  const approvalUrl = payload.links?.find(
+    (link) => link.rel === "payer-action" || link.rel === "approve",
   )?.href;
   if (!approvalUrl) throw new Error("PayPal did not return an approval URL.");
 
@@ -275,42 +267,25 @@ Deno.serve(async (request) => {
   }
 
   try {
-    const requestBody = await request.json() as CheckoutRequest;
+    const requestBody = (await request.json()) as CheckoutRequest;
     const { artworkId, provider, buyerEmail } = validateRequest(requestBody);
     const artwork = await findArtwork(artworkId);
 
     if (artwork.category === "NFT") return respond({ error: "NFT releases are coming soon." }, 409);
 
-
     const accessToken = randomToken();
-    const order = await createPendingOrder(
-      artwork,
-      provider,
-      buyerEmail,
-      accessToken,
-    );
+    const order = await createPendingOrder(artwork, provider, buyerEmail, accessToken);
     const siteUrl = normalizeSiteUrl();
     const successUrl =
       `${siteUrl}/checkout-success.html?order=${order.id}` +
       `&access=${encodeURIComponent(accessToken)}` +
       `&provider=${provider}`;
-    const cancelUrl =
-      `${siteUrl}/checkout-cancel.html?order=${encodeURIComponent(String(order.id))}`;
+    const cancelUrl = `${siteUrl}/checkout-cancel.html?order=${encodeURIComponent(String(order.id))}`;
 
-    const checkoutUrl = provider === "stripe"
-      ? await createStripeCheckout(
-        artwork,
-        order,
-        buyerEmail,
-        successUrl,
-        cancelUrl,
-      )
-      : await createPayPalCheckout(
-        artwork,
-        order,
-        successUrl,
-        cancelUrl,
-      );
+    const checkoutUrl =
+      provider === "stripe"
+        ? await createStripeCheckout(artwork, order, buyerEmail, successUrl, cancelUrl)
+        : await createPayPalCheckout(artwork, order, successUrl, cancelUrl);
 
     return respond({ orderId: order.id, checkoutUrl }, 201);
   } catch (error) {

@@ -1,12 +1,61 @@
 /* SECTION: Storefront customer contact form */
-.footer-message-panel { min-width: min(100%,320px); }
-.contact-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.contact-form label { display: grid; gap: 5px; font-size: 12px; font-style: normal; }
-.contact-form label:nth-of-type(3),.contact-form label:nth-of-type(4),.contact-form button,.contact-message { grid-column: 1 / -1; }
-.contact-form input,.contact-form textarea { width: 100%; box-sizing: border-box; padding: 10px 11px; border: 1px solid rgba(255,255,255,.24); border-radius: 7px; background: rgba(255,255,255,.08); color: inherit; font: inherit; }
-.contact-form textarea { resize: vertical; }
-.contact-form button { width: fit-content; }
-.contact-message { min-height: 1.2em; margin: 0; font-size: 12px; }
-.contact-message.success { color: #5ed6ae; }
-.contact-honeypot { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
-@media (max-width:650px) { .contact-form { grid-template-columns: 1fr; } .contact-form label { grid-column: 1 !important; } }
+.footer-message-panel {
+  min-width: min(100%, 320px);
+}
+.contact-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.contact-form label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-style: normal;
+}
+.contact-form label:nth-of-type(3),
+.contact-form label:nth-of-type(4),
+.contact-form button,
+.contact-message {
+  grid-column: 1 / -1;
+}
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+}
+.contact-form textarea {
+  resize: vertical;
+}
+.contact-form button {
+  width: fit-content;
+}
+.contact-message {
+  min-height: 1.2em;
+  margin: 0;
+  font-size: 12px;
+}
+.contact-message.success {
+  color: #5ed6ae;
+}
+.contact-honeypot {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+@media (max-width: 650px) {
+  .contact-form {
+    grid-template-columns: 1fr;
+  }
+  .contact-form label {
+    grid-column: 1 !important;
+  }
+}
