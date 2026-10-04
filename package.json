@@ -1,15 +1,17 @@
 {
   "name": "pixel-shroom-studio-static-supabase",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
     "dev": "npx serve public",
-    "check": "node --check public/app.js && node --check public/admin.js && node --check public/genre.js && node --check public/checkout-success.js"
+    "check": "node --check public/app.js && node --check public/admin.js && node --check public/genre.js && node --check public/catalog-core.js && node --check public/checkout-success.js && node --check worker.mjs",
+    "dev:worker": "npx wrangler dev"
   },
   "dependencies": {
     "stripe": "^22.6.2"
   },
   "devDependencies": {
     "supabase": "^2.117.0"
-  }
+  },
+  "type": "module"
 }

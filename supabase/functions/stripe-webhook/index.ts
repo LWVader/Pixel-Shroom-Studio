@@ -74,7 +74,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     // SECTION: Atomically record the event and fulfill the order
     const { data, error } = await database.rpc(
-      "fulfill_stripe_checkout",
+      "fulfill_stripe_checkout_verified",
       {
         payment_event_id: event.id,
         checkout_session_id: session.id,

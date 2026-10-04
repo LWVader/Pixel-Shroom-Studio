@@ -17,7 +17,7 @@ export async function invoke(name, body, accessToken = SUPABASE_ANON_KEY) {
   const response = await fetch(functionUrl(name), {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}`, apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body), signal: AbortSignal.timeout(20000)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `Request failed (${response.status}).`);

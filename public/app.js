@@ -1,165 +1,58 @@
-// SECTION: Public storefront configuration and state
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./config.js";
-
-const catalog = document.querySelector("#catalog");
-const count = document.querySelector("#catalog-count");
-const search = document.querySelector("#search");
-const articlesContainer = document.querySelector("#articles");
-let artworks = [];
-
-// SECTION: Lightweight public HTTP client
-// The storefront uses direct REST requests instead of loading the full
-// Supabase browser SDK and its dependency chain.
-const publicHeaders = {
-  apikey: SUPABASE_ANON_KEY,
-  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-};
-
-async function readTable(table, query) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
-    headers: publicHeaders,
-  });
-  if (!response.ok) throw new Error(`Unable to load ${table} (${response.status}).`);
-  return response.json();
+import {SUPABASE_URL,SUPABASE_ANON_KEY} from './config.js';
+import {GENRES,randomSample,readPublishedArtworks,renderCompiled,renderGenre,validRows,escapeHtml,checkoutUrl} from './catalog-core.js';
+const catalog=document.querySelector('#catalog'), search=document.querySelector('#search'),status=document.querySelector('#catalog-status');
+const mode=catalog?.dataset.mode,slug=catalog?.dataset.genre;let rows=[],sampleIds={};
+function chooseSamples(){sampleIds=Object.fromEntries(Object.entries(GENRES).map(([s,g])=>[s,randomSample(rows.filter(x=>x.category===g.name),4).map(x=>String(x.id))]));}
+function enableActions(){catalog?.querySelectorAll('.payment-actions').forEach(x=>{x.hidden=false;});}
+function render(){
+ if(!catalog)return;const term=search?.value||'';
+ catalog.innerHTML=mode==='compiled'?renderCompiled(rows,{term,sampleIds:term.trim()?undefined:sampleIds}):renderGenre(rows,slug,{term});
+ enableActions();catalog.setAttribute('aria-busy','false');
+ const relevant=mode==='genre'?rows.filter(x=>x.category===GENRES[slug]?.name):rows;
+ const q=term.trim().toLowerCase(),matches=relevant.filter(x=>`${x.title} ${x.artist} ${x.category} ${x.serial_number}`.toLowerCase().includes(q));
+ status.textContent=mode==='compiled'?`${matches.length} published listing${matches.length===1?'':'s'}${q?' match your search':''}. Showing up to four per genre.`:`${matches.length} ${GENRES[slug]?.name||''} listing${matches.length===1?'':'s'}${q?' match your search':''}.`;
 }
-
-async function invoke(functionName, body) {
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
-    method: "POST",
-    headers: { ...publicHeaders, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Request failed (${response.status}).`);
-  return data;
+async function loadCatalog(){
+ if(!catalog)return;
+ try{
+  const bootstrap=document.querySelector('#catalog-bootstrap');
+  if(bootstrap){const data=JSON.parse(bootstrap.textContent);rows=validRows(data.rows);sampleIds=Object.fromEntries([...catalog.querySelectorAll('[data-genre-section]')].map(section=>[section.dataset.genreSection,[...section.querySelectorAll('[data-artwork-id]')].map(c=>c.dataset.artworkId)]));if(!Object.keys(sampleIds).length)chooseSamples();}
+  else {rows=await readPublishedArtworks(SUPABASE_URL,SUPABASE_ANON_KEY,{signal:AbortSignal.timeout(15000)});chooseSamples();}
+  render();const shuffle=document.querySelector('#shuffle-samples');if(shuffle)shuffle.hidden=!rows.length;
+ }catch{
+  rows=[];catalog.setAttribute('aria-busy','false');catalog.innerHTML=mode==='compiled'?renderCompiled([]):'<div class="empty"><h2>Collection temporarily unavailable</h2><p>Please try again or contact the studio.</p><a class="text-link" href="/contact.html">Contact LWVader →</a></div>';
+  status.textContent='The live collection could not be loaded. Please try again shortly.';
+ }
 }
-
-// SECTION: Safe catalog markup and data mapping
-const escapeHtml = (value) => String(value ?? "").replace(
-  /[&<>'"]/g,
-  (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "'": "&#39;",
-    '"': "&quot;",
-  })[character],
-);
-
-const genreUrl = (slug) => `/genre.html?genre=${encodeURIComponent(slug)}`;
-
-function mapArtwork(row) {
-  return {
-    id: row.id,
-    title: row.title,
-    artist: row.artist,
-    category: row.category,
-    serialNumber: row.serial_number,
-    price: Number(row.price),
-    previewUrl: row.preview_url,
-    displayWidth: Number(row.display_width) || 600,
-    displayHeight: Number(row.display_height) || 250,
-  };
-}
-
-function previewMarkup(item) {
-  const width = Math.max(1, item.displayWidth);
-  const height = Math.max(1, item.displayHeight);
-  const image = item.previewUrl
-    ? `<img src="${escapeHtml(item.previewUrl)}" width="${width}" height="${height}" loading="lazy" decoding="async" alt="${escapeHtml(item.title)} watermarked preview">`
-    : "";
-  return `<div class="art-preview" style="--preview-ratio:${width}/${height}">${image}</div>`;
-}
-
-function cardMarkup(item) {
-  const action = item.category === "NFT"
-    ? `<a class="buy-button" href="${genreUrl("nft")}">Order NFT by email</a>`
-    : `<button class="buy-button" data-id="${item.id}">Buy Artwork</button>`;
-  return `<article class="art-card">${previewMarkup(item)}<div class="card-info"><div><p>${escapeHtml(item.category)} · ${escapeHtml(item.serialNumber)}</p><h3>${escapeHtml(item.title)}</h3><span>by ${escapeHtml(item.artist)}</span></div><strong>$${item.price.toFixed(2)}</strong></div>${action}</article>`;
-}
-
-// SECTION: Catalog and editorial rendering
-function renderCatalog() {
-  const term = search.value.trim().toLowerCase();
-  const visible = artworks.filter((item) => (
-    `${item.title} ${item.artist} ${item.category} ${item.serialNumber}`
-      .toLowerCase()
-      .includes(term)
-  ));
-
-  count.textContent = `${visible.length} available listing${visible.length === 1 ? "" : "s"}`;
-  catalog.classList.remove("catalog-loading");
-  catalog.setAttribute("aria-busy", "false");
-  catalog.innerHTML = visible.length
-    ? visible.map(cardMarkup).join("")
-    : '<div class="empty"><h2>No matching artwork</h2><p>Try another title, artist, or genre.</p></div>';
-}
-
-function renderArticles(articles) {
-  articlesContainer.setAttribute("aria-busy", "false");
-  articlesContainer.innerHTML = articles.length
-    ? articles.map((article) => `<article><span>ARTICLE</span><h3>${escapeHtml(article.title)}</h3><p>${escapeHtml(article.excerpt)}</p><details><summary>Read article</summary><div>${escapeHtml(article.body)}</div></details></article>`).join("")
-    : "<p>No articles yet.</p>";
-}
-
-// SECTION: Parallel storefront data loading
-async function loadStorefront() {
-  try {
-    const [artRows, articleRows] = await Promise.all([
-      readTable(
-        "artworks",
-        "?select=id,title,artist,category,serial_number,price,preview_url,display_width,display_height&status=eq.published&order=created_at.desc&limit=6",
-      ),
-      readTable(
-        "articles",
-        "?select=title,excerpt,body&status=eq.published&order=created_at.desc",
-      ),
-    ]);
-
-    artworks = artRows.map(mapArtwork);
-    renderArticles(articleRows);
-    renderCatalog();
-  } catch (error) {
-    console.error(error);
-    catalog.classList.remove("catalog-loading");
-    catalog.setAttribute("aria-busy", "false");
-    catalog.innerHTML = '<div class="empty"><h2>Catalog unavailable</h2><p>Please try again shortly.</p></div>';
-    count.textContent = "Unavailable";
-    renderArticles([]);
-  }
-}
-
-// SECTION: Search, checkout, and image deterrents
-search.addEventListener("input", renderCatalog);
-
-catalog.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-id]");
-  if (!button) return;
-
-  const originalLabel = button.textContent;
-  button.disabled = true;
-  button.textContent = "Starting secure checkout…";
-
-  try {
-    const result = await invoke("create-checkout", {
-      artworkId: Number(button.dataset.id),
-      provider: "stripe",
-    });
-    location.assign(result.checkoutUrl);
-  } catch (error) {
-    alert(error.message);
-  } finally {
-    button.disabled = false;
-    button.textContent = originalLabel;
-  }
+search?.addEventListener('input',render);
+document.querySelector('#shuffle-samples')?.addEventListener('click',()=>{chooseSamples();render();});
+for(const a of document.querySelectorAll('.category-nav a')){if(slug&&new URL(a.href).searchParams.get('genre')===slug)a.setAttribute('aria-current','page');else if(!slug&&location.pathname==='/faq.html'&&a.pathname==='/faq.html')a.setAttribute('aria-current','page');}
+catalog?.addEventListener('click',async event=>{
+ const preview=event.target.closest('.preview-trigger');if(preview){openPreview(preview);return;}
+ const button=event.target.closest('[data-buy]');if(!button)return;
+ const row=rows.find(x=>String(x.id)===button.dataset.buy),provider=button.dataset.provider,card=button.closest('.art-card'),message=card.querySelector('.card-status'),buttons=card.querySelectorAll('[data-buy]');
+ if(!row||row.category==='NFT'||!['stripe','paypal'].includes(provider)){message.textContent='This artwork is not available for purchase.';return;}
+ buttons.forEach(b=>b.disabled=true);message.textContent='Opening secure checkout…';
+ try{
+  const response=await fetch(`${SUPABASE_URL}/functions/v1/create-checkout`,{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({artworkId:row.id,provider}),signal:AbortSignal.timeout(20000)});
+  const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Checkout could not be opened. Please contact the studio.');
+  location.assign(checkoutUrl(result.checkoutUrl,provider));
+ }catch(error){message.textContent=error.message||'Checkout could not be opened.';buttons.forEach(b=>b.disabled=false);}
 });
-
-document.addEventListener("contextmenu", (event) => {
-  if (event.target.closest("img,.art-preview")) event.preventDefault();
-});
-
-document.addEventListener("dragstart", (event) => {
-  if (event.target.closest("img")) event.preventDefault();
-});
-
-loadStorefront();
+let dialog;
+function openPreview(trigger){
+ if(!dialog){dialog=document.createElement('dialog');dialog.className='preview-dialog';dialog.setAttribute('aria-labelledby','preview-title');dialog.innerHTML='<button type="button" aria-label="Close artwork preview">Close ×</button><h2 id="preview-title"></h2><img alt=""><p></p>';document.body.append(dialog);dialog.querySelector('button').onclick=()=>dialog.close();dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});}
+ dialog.querySelector('h2').textContent=trigger.dataset.title;dialog.querySelector('img').src=trigger.dataset.image;dialog.querySelector('img').alt=trigger.dataset.title+' enlarged protected preview';dialog.querySelector('p').textContent=trigger.dataset.serial+' · Protected public preview';dialog.showModal();
+}
+async function loadArticles(){
+ const articles=document.querySelector('#articles');if(!articles)return;
+ try{
+ const query=new URLSearchParams({select:'title,excerpt,body',status:'eq.published',order:'created_at.desc',limit:'6'});
+ const response=await fetch(`${SUPABASE_URL}/rest/v1/articles?${query}`,{headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`},signal:AbortSignal.timeout(12000)});if(!response.ok)throw new Error();
+ const list=await response.json();if(!Array.isArray(list))throw new Error();
+ articles.innerHTML=list.length?list.map(a=>`<article><p class="eyebrow">Studio journal</p><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.excerpt)}</p><details><summary>Read article</summary><div class="article-body">${escapeHtml(a.body)}</div></details></article>`).join(''):'<p class="muted">Studio articles are being prepared.</p>';
+ }catch{articles.innerHTML='<p class="muted">The journal is temporarily unavailable. You can still explore the artwork.</p>';}
+ finally{articles.setAttribute('aria-busy','false');}
+}
+// Independent failures: an unavailable journal must not disable the collection.
+await Promise.allSettled([loadCatalog(),loadArticles()]);

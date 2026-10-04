@@ -1,5 +1,5 @@
 // SECTION: Shared database, security, and response utilities
-import { cors, json, service, sha256 } from "../_shared/common.ts";
+import { corsFor, json, service, sha256 } from "../_shared/common.ts";
 
 interface StatusRequest {
   orderId?: string;
@@ -8,18 +8,19 @@ interface StatusRequest {
 
 // SECTION: Webhook-confirmed buyer order status
 Deno.serve(async (request: Request): Promise<Response> => {
+  const respond = (data: unknown, status = 200) => json(data, status, request);
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: cors });
+    return new Response("ok", { headers: corsFor(request) });
   }
 
   if (request.method !== "POST") {
-    return json({ error: "Method not allowed." }, 405);
+    return respond({ error: "Method not allowed." }, 405);
   }
 
   try {
     const { orderId, accessToken } = await request.json() as StatusRequest;
     if (!orderId || !accessToken) {
-      return json({ error: "Order credentials are required." }, 400);
+      return respond({ error: "Order credentials are required." }, 400);
     }
 
     const database = service();
@@ -38,7 +39,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     const suppliedHash = await sha256(accessToken);
     if (error || !order || suppliedHash !== order.access_token_hash) {
-      return json({ error: "Invalid order access token." }, 403);
+      return respond({ error: "Invalid order access token." }, 403);
     }
 
     const artwork = Array.isArray(order.artworks)
@@ -64,7 +65,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         `&access=${encodeURIComponent(accessToken)}`
       : null;
 
-    return json({
+    return respond({
       orderId: order.id,
       status: order.status,
       title: artwork?.title ?? "Artwork",
@@ -77,6 +78,6 @@ Deno.serve(async (request: Request): Promise<Response> => {
     });
   } catch (error) {
     console.error("Order-status lookup failed:", error);
-    return json({ error: "Order status is unavailable." }, 500);
+    return respond({ error: "Order status is unavailable." }, 500);
   }
 });

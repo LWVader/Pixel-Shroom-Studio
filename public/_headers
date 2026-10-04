@@ -1,12 +1,12 @@
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://esm.sh; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://i.postimg.cc https://postimg.cc; connect-src 'self' https://*.supabase.co wss://*.supabase.co http://127.0.0.1:4179 http://localhost:4179; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://esm.sh; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://esm.sh https://*.supabase.co wss://*.supabase.co http://127.0.0.1:4179 http://localhost:4179; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
 /assets/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=86400, must-revalidate
 
 /*.css
   Cache-Control: public, max-age=86400, must-revalidate
@@ -16,3 +16,16 @@
 
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
+
+/checkout-success.html
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow
+
+/checkout-cancel.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+/admin.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow

@@ -10,3 +10,8 @@ verify_jwt = false
 verify_jwt = false
 [functions.download-original]
 verify_jwt = false
+
+[functions.submit-message]
+verify_jwt = false
+[functions.add-admin-user]
+verify_jwt = false

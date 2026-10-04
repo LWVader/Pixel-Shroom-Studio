@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /checkout-success.html
+Disallow: /checkout-cancel.html
+Sitemap: https://www.pixelshroomstudio.com/sitemap.xml

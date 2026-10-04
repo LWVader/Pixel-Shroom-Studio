@@ -20,6 +20,7 @@ form?.addEventListener("submit", async (event) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(values),
+      signal: AbortSignal.timeout(20000),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || `Request failed (${response.status}).`);

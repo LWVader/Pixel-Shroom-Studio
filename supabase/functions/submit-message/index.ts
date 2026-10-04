@@ -1,7 +1,8 @@
 // SECTION: Public message intake and administrator email alert
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const siteUrl = (Deno.env.get("SITE_URL") || "").replace(/\/$/, "");
+import { studioSiteUrl } from "../_shared/common.ts";
+const siteUrl = studioSiteUrl();
 
 // This is an intentionally public form endpoint. Authentication and database
 // authorization still happen server-side; CORS is not used as a security

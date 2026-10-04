@@ -1,5 +1,5 @@
 // SECTION: Supabase function client and checkout-return parameters
-import { invoke } from "./supabase-client.js";
+import { invoke, functionUrl } from "./supabase-client.js";
 
 const parameters = new URLSearchParams(window.location.search);
 const orderId = parameters.get("order");
@@ -54,7 +54,12 @@ function showPaidOrder(order) {
   const downloadLabel = order.downloadsRemaining === 1 ? "download" : "downloads";
   message.textContent =
     `Your original is ready. ${order.downloadsRemaining} ${downloadLabel} remaining before ${expiration}.`;
-  downloadLink.href = order.downloadUrl;
+  const downloadUrl = new URL(order.downloadUrl);
+  const expected = new URL(functionUrl("download-original"));
+  if (downloadUrl.protocol !== "https:" || downloadUrl.origin !== expected.origin || downloadUrl.pathname !== expected.pathname) {
+    throw new Error("The original delivery link is invalid. Contact the studio with your order number.");
+  }
+  downloadLink.href = downloadUrl.href;
   downloadLink.hidden = false;
 }
 

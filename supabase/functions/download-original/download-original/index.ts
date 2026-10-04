@@ -1,5 +1,5 @@
 // SECTION: Shared database, hashing, and response utilities
-import { json, service, sha256 } from "../_shared/common.ts";
+import { json, service, sha256 } from "../../_shared/common.ts";
 
 // SECTION: Expiring, download-limited original delivery
 Deno.serve(async (request: Request): Promise<Response> => {
@@ -42,7 +42,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     // Atomically enforce the license expiration and download limit.
     const { data: allowed, error: consumeError } = await database.rpc(
-      "consume_download",
+      "consume_verified_download",
       { target_order: orderId },
     );
     if (consumeError) throw consumeError;

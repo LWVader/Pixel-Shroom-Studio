@@ -1,11 +1,12 @@
 // SECTION: Dependencies and shared server utilities
 import Stripe from "npm:stripe@18";
 import {
-  cors,
+  corsFor,
   json,
   randomToken,
   service,
   sha256,
+  studioSiteUrl,
 } from "../_shared/common.ts";
 
 // SECTION: Checkout request and provider response types
@@ -52,7 +53,7 @@ function requiredEnvironment(name: string): string {
 }
 
 function normalizeSiteUrl(): string {
-  return requiredEnvironment("SITE_URL").replace(/\/$/, "");
+  return studioSiteUrl();
 }
 
 function validEmail(value: string): boolean {
@@ -264,12 +265,13 @@ async function createPayPalCheckout(
 
 // SECTION: Edge Function request handler
 Deno.serve(async (request) => {
+  const respond = (data: unknown, status = 200) => json(data, status, request);
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: cors });
+    return new Response("ok", { headers: corsFor(request) });
   }
 
   if (request.method !== "POST") {
-    return json({ error: "Method not allowed." }, 405);
+    return respond({ error: "Method not allowed." }, 405);
   }
 
   try {
@@ -277,9 +279,8 @@ Deno.serve(async (request) => {
     const { artworkId, provider, buyerEmail } = validateRequest(requestBody);
     const artwork = await findArtwork(artworkId);
 
-    if (artwork.category === "NFT" && !validEmail(buyerEmail)) {
-      return json({ error: "A delivery email is required for NFT orders." }, 400);
-    }
+    if (artwork.category === "NFT") return respond({ error: "NFT releases are coming soon." }, 409);
+
 
     const accessToken = randomToken();
     const order = await createPendingOrder(
@@ -311,10 +312,10 @@ Deno.serve(async (request) => {
         cancelUrl,
       );
 
-    return json({ orderId: order.id, checkoutUrl }, 201);
+    return respond({ orderId: order.id, checkoutUrl }, 201);
   } catch (error) {
     console.error("Checkout creation failed:", error);
-    return json(
+    return respond(
       {
         error: error instanceof Error ? error.message : "Checkout failed.",
       },

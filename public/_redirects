@@ -1,2 +1,2 @@
-/genre/*  /genre.html?genre=:splat  302
-
+# Query-aware and legacy genre redirects are handled by the routing Worker.
+# Do not redirect /genres/* here: those assets are fetched internally by the Worker.

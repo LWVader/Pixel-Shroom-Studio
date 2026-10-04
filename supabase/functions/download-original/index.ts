@@ -42,7 +42,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     // Atomically enforce the license expiration and download limit.
     const { data: allowed, error: consumeError } = await database.rpc(
-      "consume_download",
+      "consume_verified_download",
       { target_order: orderId },
     );
     if (consumeError) throw consumeError;
