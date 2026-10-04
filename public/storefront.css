@@ -316,7 +316,7 @@ header {
 }
 .genre-nav a {
   font:
-    11px/1.5 Arial,
+    15px/1.5 Arial,
     sans-serif;
   letter-spacing: 0.04em;
   border: 1px solid var(--line);
