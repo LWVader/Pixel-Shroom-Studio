@@ -818,3 +818,6 @@ dialog::backdrop {
     display: block;
   }
 }
+
+/* Preserve semantic hidden state when component display styles apply. */
+[hidden]{display:none!important}

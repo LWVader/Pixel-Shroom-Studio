@@ -88,3 +88,7 @@ Relevant primary guidance:
 ## Validation and limits
 
 See `docs/AUDIT.md` for results. Automated checks use synthetic fixtures and a local PostgreSQL engine; no live purchase, invitation, message, or database modification was performed. Real billing, webhook delivery, private Storage delivery, and validation of a known signed original require the post-deployment test above. Applying the SQL and routing/backend updates is necessary; this is not a CSS-only patch.
+
+## Automated testing
+
+Playwright and Vitest are installed with locked dependency versions. Run `npm ci`, `npm run test:install-browsers`, then `npm run test:all`. See [docs/TESTING.md](docs/TESTING.md) for scope, reports, Windows commands and remaining staging checks.

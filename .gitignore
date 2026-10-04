@@ -1,7 +1,5 @@
 node_modules/
+coverage/
+playwright-report/
+test-results/
 .env
-.supabase/
-.wrangler/
-# Exclude all local signing material
-signing/
-signing-invalid-backup-*/

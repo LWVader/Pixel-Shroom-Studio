@@ -5,13 +5,30 @@
   "scripts": {
     "dev": "npx serve public",
     "check": "node --check public/app.js && node --check public/admin.js && node --check public/genre.js && node --check public/catalog-core.js && node --check public/checkout-success.js && node --check worker.mjs",
-    "dev:worker": "npx wrangler dev"
+    "dev:worker": "npx wrangler dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:all": "npm run check && npm run test:coverage && npm run test:e2e",
+    "test:report": "playwright show-report",
+    "test:install-browsers": "playwright install chromium",
+    "test:cross-browser": "playwright test --config playwright.cross-browser.config.js"
   },
   "dependencies": {
     "stripe": "^22.6.2"
   },
   "devDependencies": {
-    "supabase": "^2.117.0"
+    "@axe-core/playwright": "4.13.0",
+    "@electric-sql/pglite": "0.5.8",
+    "@playwright/test": "1.63.0",
+    "@vitest/coverage-v8": "5.0.3",
+    "cheerio": "1.2.0",
+    "supabase": "^2.117.0",
+    "typescript": "5.8.3",
+    "vitest": "5.0.3"
   },
   "type": "module"
 }
