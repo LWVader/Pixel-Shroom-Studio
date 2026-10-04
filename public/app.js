@@ -4,11 +4,13 @@ import {
   randomSample,
   readPublishedArtworks,
   renderCompiled,
+  renderLatest,
+  latestArtworks,
   renderGenre,
   validRows,
   escapeHtml,
   checkoutUrl,
-} from "./catalog-core.js";
+} from "./catalog-core.js?v=20261004-collections";
 const catalog = document.querySelector("#catalog"),
   search = document.querySelector("#search"),
   status = document.querySelector("#catalog-status");
@@ -38,10 +40,17 @@ function render() {
   catalog.innerHTML =
     mode === "compiled"
       ? renderCompiled(rows, { term, sampleIds: term.trim() ? undefined : sampleIds })
-      : renderGenre(rows, slug, { term });
+      : mode === "latest"
+        ? renderLatest(rows, { term })
+        : renderGenre(rows, slug, { term });
   enableActions();
   catalog.setAttribute("aria-busy", "false");
-  const relevant = mode === "genre" ? rows.filter((x) => x.category === GENRES[slug]?.name) : rows;
+  const relevant =
+    mode === "genre"
+      ? rows.filter((x) => x.category === GENRES[slug]?.name)
+      : mode === "latest"
+        ? latestArtworks(rows)
+        : rows;
   const q = term.trim().toLowerCase(),
     matches = relevant.filter((x) =>
       `${x.title} ${x.artist} ${x.category} ${x.serial_number}`.toLowerCase().includes(q),
@@ -49,7 +58,9 @@ function render() {
   status.textContent =
     mode === "compiled"
       ? `${matches.length} published listing${matches.length === 1 ? "" : "s"}${q ? " match your search" : ""}. Showing up to four per genre.`
-      : `${matches.length} ${GENRES[slug]?.name || ""} listing${matches.length === 1 ? "" : "s"}${q ? " match your search" : ""}.`;
+      : mode === "latest"
+        ? `${matches.length} recent artwork${matches.length === 1 ? "" : "s"}${q ? " match your search" : ""}. Newest first.`
+        : `${matches.length} ${GENRES[slug]?.name || ""} listing${matches.length === 1 ? "" : "s"}${q ? " match your search" : ""}.`;
 }
 async function loadCatalog() {
   if (!catalog) return;
@@ -91,6 +102,8 @@ document.querySelector("#shuffle-samples")?.addEventListener("click", () => {
 });
 for (const a of document.querySelectorAll(".category-nav a")) {
   if (slug && new URL(a.href).searchParams.get("genre") === slug)
+    a.setAttribute("aria-current", "page");
+  else if (a.pathname === "/all-artwork.html" && location.pathname === "/all-artwork.html")
     a.setAttribute("aria-current", "page");
   else if (!slug && location.pathname === "/faq.html" && a.pathname === "/faq.html")
     a.setAttribute("aria-current", "page");

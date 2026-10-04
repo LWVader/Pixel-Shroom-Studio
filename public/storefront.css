@@ -316,7 +316,7 @@ header {
 }
 .genre-nav a {
   font:
-    15px/1.5 Arial,
+    11px/1.5 Arial,
     sans-serif;
   letter-spacing: 0.04em;
   border: 1px solid var(--line);
@@ -952,7 +952,7 @@ button.art-image {
   padding-block: 17px;
   border-top: 1px solid var(--line);
   font:
-    15px/1.6 Arial,
+    11px/1.6 Arial,
     sans-serif;
   letter-spacing: 0.025em;
 }

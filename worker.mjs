@@ -3,6 +3,8 @@ import {
   genreUrl,
   readPublishedArtworks,
   renderCompiled,
+  renderLatest,
+  latestArtworks,
   renderGenre,
   escapeHtml,
 } from "./public/catalog-core.js";
@@ -14,6 +16,7 @@ const aliases = new Set([
 ]);
 const pages = new Set([
   "faq",
+  "all-artwork",
   "contact",
   "how-it-works",
   "usage-rights",
@@ -77,9 +80,9 @@ export default {
       url.pathname = "/";
       return redirect(url);
     }
-    if (["/artwork", "/artwork/", "/artwork.html", "/all-artwork.html"].includes(path)) {
-      url.pathname = "/";
-      url.hash = "gallery";
+    if (["/artwork", "/artwork/", "/artwork.html"].includes(path)) {
+      url.pathname = "/all-artwork.html";
+      url.hash = "";
       return redirect(url);
     }
     const old = path.match(/^\/(?:genre|genres)\/([a-z-]+)(?:\.html)?\/?$/);
@@ -109,8 +112,8 @@ export default {
         value = values[0] || "";
       slug = value.toLowerCase();
       if (values.length === 0) {
-        url.pathname = "/";
-        url.hash = "gallery";
+        url.pathname = "/all-artwork.html";
+        url.hash = "";
         return redirect(url);
       }
       if (values.length !== 1 || !Object.hasOwn(GENRES, slug)) return this.notFound(request, env);
@@ -122,7 +125,7 @@ export default {
       assetUrl.search = "";
     }
     const assetHeaders = new Headers(request.headers);
-    if (path === "/" || path === "/genre.html") {
+    if (path === "/" || path === "/all-artwork.html" || path === "/genre.html") {
       assetHeaders.delete("if-none-match");
       assetHeaders.delete("if-modified-since");
     }
@@ -130,7 +133,7 @@ export default {
       new Request(assetUrl, { method: request.method, headers: assetHeaders }),
     );
     if (response.status === 404) return this.notFound(request, env);
-    if ((path === "/" || path === "/genre.html") && response.ok) {
+    if ((path === "/" || path === "/all-artwork.html" || path === "/genre.html") && response.ok) {
       let content = await response.text();
       try {
         const fetcher = env.CATALOG_FETCH || fetch;
@@ -141,8 +144,16 @@ export default {
           });
           cachedAt = Date.now();
         }
-        const rows = slug ? cachedRows.filter((x) => x.category === GENRES[slug].name) : cachedRows;
-        const markup = slug ? renderGenre(rows, slug) : renderCompiled(rows);
+        const rows = slug
+          ? cachedRows.filter((x) => x.category === GENRES[slug].name)
+          : path === "/"
+            ? latestArtworks(cachedRows)
+            : cachedRows;
+        const markup = slug
+          ? renderGenre(rows, slug)
+          : path === "/"
+            ? renderLatest(rows)
+            : renderCompiled(rows);
         content = content.replace(
           /<!--CATALOG_START-->[\s\S]*?<!--CATALOG_END-->/,
           "<!--CATALOG_START-->" + markup + "<!--CATALOG_END-->",
@@ -158,7 +169,9 @@ export default {
         content = content
           .replace(
             "Checking current published listings…",
-            `${cachedRows.length} published listings. Showing up to four per genre.`,
+            path === "/"
+              ? `${rows.length} recent artworks. Newest first.`
+              : `${cachedRows.length} published listings. Showing up to four per genre.`,
           )
           .replace(
             "Checking current listings…",
@@ -199,7 +212,9 @@ export default {
       h.delete("etag");
       h.delete("last-modified");
       h.set("Content-Type", "text/html; charset=utf-8");
-      const canonical = CANONICAL + (slug ? genreUrl(slug) : "/");
+      const canonical =
+        CANONICAL +
+        (slug ? genreUrl(slug) : path === "/all-artwork.html" ? "/all-artwork.html" : "/");
       h.set("Link", `<${canonical}>; rel="canonical"`);
       return headersFor(
         new Response(request.method === "HEAD" ? null : content, { status: 200, headers: h }),

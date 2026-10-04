@@ -202,6 +202,25 @@ export function renderCompiled(rows, { term = "", sampleIds } = {}) {
     })
     .join("");
 }
+// Published REST results already use created_at DESC, id DESC. Preserve that
+// stable order for timestamp ties and legacy records without created_at.
+export function latestArtworks(rows, limit = 14) {
+  return rows
+    .map((row, index) => ({ row, index }))
+    .sort(
+      (a, b) =>
+        (Date.parse(b.row.created_at) || 0) - (Date.parse(a.row.created_at) || 0) ||
+        a.index - b.index,
+    )
+    .slice(0, limit)
+    .map(({ row }) => row);
+}
+export function renderLatest(rows, { term = "" } = {}) {
+  const list = matching(latestArtworks(rows), term);
+  if (!list.length)
+    return `<div class="empty"><h2>${term ? "No matching recent artwork" : "No published listings yet"}</h2><p>Browse all artwork to explore every collection.</p><a class="text-link" href="/all-artwork.html">Explore all artwork →</a></div>`;
+  return list.map((row) => cardMarkup(row)).join("");
+}
 export function renderGenre(rows, slug, { term = "" } = {}) {
   const name = GENRES[slug]?.name;
   const list = matching(rows, term).filter((x) => x.category === name);
@@ -209,7 +228,7 @@ export function renderGenre(rows, slug, { term = "" } = {}) {
     return `<div class="empty">
   <h2>${term ? "No matching artwork" : slug === "nft" ? "Coming soon" : "No published listings yet"}</h2>
   <p>${term ? "Try another title, artist, or serial." : slug === "nft" ? "Explore digital artwork while NFT releases are prepared." : "Check back for additions or ask about custom artwork."}</p>
-  <a class="text-link" href="/#gallery">Explore all artwork →</a>
+  <a class="text-link" href="/all-artwork.html">Explore all artwork →</a>
 </div>`;
   return list.map((x) => cardMarkup(x)).join("");
 }
@@ -221,7 +240,7 @@ export async function readPublishedArtworks(base, key, { fetcher = fetch, signal
   for (let offset = 0; offset < 100000; offset += size) {
     const query = new URLSearchParams({
       select:
-        "id,title,artist,category,serial_number,price,preview_url,display_width,display_height",
+        "id,title,artist,category,serial_number,price,preview_url,display_width,display_height,created_at",
       status: "eq.published",
       order: "created_at.desc,id.desc",
       limit: String(size),
