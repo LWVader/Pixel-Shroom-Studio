@@ -22,6 +22,8 @@ export default {
   if(old){if(Object.hasOwn(GENRES,old[1])){url.pathname='/genre.html';url.searchParams.set('genre',old[1]);return redirect(url);}return this.notFound(request,env);}
   const clean=path.match(/^\/([a-z-]+)\/?$/);if(clean&&pages.has(clean[1])){url.pathname='/'+clean[1]+'.html';return redirect(url);}
   let slug=null,assetUrl=new URL(url);
+  // html_handling=none requires the exact asset filename, including the homepage.
+  if(path==='/')assetUrl.pathname='/index.html';
   if(path==='/genre'||path==='/genre/'){url.pathname='/genre.html';return redirect(url);}
   if(path==='/genre.html'){
    const values=url.searchParams.getAll('genre'),value=values[0]||'';
