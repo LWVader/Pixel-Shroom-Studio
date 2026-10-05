@@ -138,9 +138,6 @@ export function cardMarkup(row, { interactive = true } = {}) {
   <button class="button" type="button" data-buy="${escapeHtml(row.id)}" data-provider="stripe">
     Buy with Stripe ↗
   </button>
-  <button class="button secondary" type="button" data-buy="${escapeHtml(row.id)}" data-provider="paypal">
-    Buy with PayPal ↗
-  </button>
 </div>`;
   return `<article class="art-card" data-artwork-id="${escapeHtml(row.id)}">
   <div>${preview}</div>
@@ -265,10 +262,7 @@ export async function readPublishedArtworks(base, key, { fetcher = fetch, signal
 }
 export function checkoutUrl(value, provider) {
   const url = new URL(value);
-  const hosts =
-    provider === "stripe"
-      ? ["checkout.stripe.com"]
-      : ["www.paypal.com", "www.sandbox.paypal.com", "paypal.com", "sandbox.paypal.com"];
+  const hosts = provider === "stripe" ? ["checkout.stripe.com"] : [];
   if (
     url.protocol !== "https:" ||
     url.username ||

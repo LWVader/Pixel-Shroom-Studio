@@ -13,15 +13,13 @@ Deploy only the `public/` directory as static assets, using the supplied routing
 3. Merge `worker.mjs` and the `assets` settings from `wrangler.jsonc` into your existing Cloudflare Worker configuration. Retain your actual existing Worker name, account settings, custom-domain routes, and other bindings. The sample name is `pixel-shroom-studio`; confirm it matches the Worker you already deploy.
 4. The routing settings must include `binding: "ASSETS"`, `run_worker_first: true`, and `html_handling: "none"`. The Worker is essential for server-readable query-string genre pages and stable `.html` URLs. Uploading static files alone gives a JavaScript fallback, but not the same server-rendered genre metadata or redirect handling.
 5. Deploy through your existing GitHub/Cloudflare workflow, or use your existing Wrangler deployment command. In PowerShell, use `npx.cmd` / `npm.cmd` if `.ps1` execution is blocked. For local routing checks, `npm.cmd run dev:worker` starts Wrangler through npx.
-6. After deployment, check one Stripe test payment, one PayPal sandbox/test payment, the payment return page, the private download, the contact form, admin access, and one known signed artwork. Submit `/sitemap.xml` to Google Search Console and Bing Webmaster Tools.
+6. After deployment, check one Stripe test payment, the payment return page, the private download, the contact form, admin access, and one known signed artwork. Submit `/sitemap.xml` to Google Search Console and Bing Webmaster Tools.
 
 Deploy these functions after applying the new SQL:
 
 ```powershell
 npx.cmd supabase functions deploy create-checkout --no-verify-jwt
 npx.cmd supabase functions deploy order-status --no-verify-jwt
-npx.cmd supabase functions deploy paypal-capture --no-verify-jwt
-npx.cmd supabase functions deploy paypal-webhook --no-verify-jwt
 npx.cmd supabase functions deploy stripe-webhook --no-verify-jwt
 npx.cmd supabase functions deploy download-original --no-verify-jwt
 npx.cmd supabase functions deploy submit-message --no-verify-jwt
@@ -32,23 +30,23 @@ The admin-invitation function still verifies the caller's bearer token and admin
 
 ## Exactly the requested navigation
 
-| Label        | Public destination                           |
-| ------------ | -------------------------------------------- |
-| All artwork  | `https://www.pixelshroomstudio.com/#gallery` |
-| Portrait     | `/genre.html?genre=portrait`                 |
-| Fantasy      | `/genre.html?genre=fantasy`                  |
-| Landscape    | `/genre.html?genre=landscape`                |
-| Sci-Fi       | `/genre.html?genre=sci-fi`                   |
-| Abstract     | `/genre.html?genre=abstract`                 |
-| Dreamscape   | `/genre.html?genre=dreamscape`               |
-| Dark Fantasy | `/genre.html?genre=dark-fantasy`             |
-| Horror       | `/genre.html?genre=horror`                   |
-| NFT          | `/genre.html?genre=nft`                      |
-| FAQ          | `/faq.html`                                  |
+| Label        | Public destination                                   |
+| ------------ | ---------------------------------------------------- |
+| All artwork  | `https://www.pixelshroomstudio.com/all-artwork.html` |
+| Portrait     | `/genre.html?genre=portrait`                         |
+| Fantasy      | `/genre.html?genre=fantasy`                          |
+| Landscape    | `/genre.html?genre=landscape`                        |
+| Sci-Fi       | `/genre.html?genre=sci-fi`                           |
+| Abstract     | `/genre.html?genre=abstract`                         |
+| Dreamscape   | `/genre.html?genre=dreamscape`                       |
+| Dark Fantasy | `/genre.html?genre=dark-fantasy`                     |
+| Horror       | `/genre.html?genre=horror`                           |
+| NFT          | `/genre.html?genre=nft`                              |
+| FAQ          | `/faq.html`                                          |
 
 These are the only genre categories. Utility pages such as contact, verification, admin, and payment confirmation remain available.
 
-All artwork is the compiled gallery on the homepage. Each genre gets up to four randomly sampled published previews, without duplicates within a group, and a “Take me to [genre]” link. A “Show another selection” button refreshes the sample. Search covers the entire loaded published catalog before selecting up to four matches per category. A full genre page shows every published listing in that genre, rather than stopping at four. If fewer than four works exist, only the available works are shown. Empty genres show their collection link and an honest empty state. NFT previews may be displayed, but NFT purchase actions are disabled and new NFT checkout requests are rejected until releases are enabled deliberately.
+The homepage displays the 14 newest published artworks across all genres, ordered by creation time. All artwork is the separate compiled gallery at `/all-artwork.html`. Each genre gets up to four randomly sampled published previews, without duplicates within a group, and a “Take me to [genre]” link. A “Show another selection” button refreshes the sample. Search covers the entire loaded published catalog before selecting up to four matches per category. A full genre page shows every published listing in that genre, rather than stopping at four. If fewer than four works exist, only the available works are shown. Empty genres show their collection link and an honest empty state. NFT previews may be displayed, but NFT purchase actions are disabled and new NFT checkout requests are rejected until releases are enabled deliberately.
 
 `public/genres/*.html` are internal HTML assets for the nine query-string pages. Direct visits to those paths redirect to the associated `/genre.html?genre=...` URL. They are not additional public genre categories.
 
@@ -56,15 +54,14 @@ All artwork is the compiled gallery on the homepage. Each genre gets up to four 
 
 - Canonical URLs and social/sitemap metadata use `https://www.pixelshroomstudio.com`, replacing the earlier redesign's workers.dev domain.
 - The master currently redirects `.html` requests to extensionless URLs. The update explicitly handles `/genre?genre=...` and `/genre.html?genre=...`, preserving the query and avoiding loops when deployed with the supplied HTML handling settings.
-- Legacy `/genre/fantasy` and the earlier redesign's `/genres/fantasy.html` redirect permanently to `/genre.html?genre=fantasy`. `/artwork`, `/artwork.html`, and `/all-artwork.html` redirect to `/#gallery`.
+- Legacy `/genre/fantasy` and the earlier redesign's `/genres/fantasy.html` redirect permanently to `/genre.html?genre=fantasy`. `/artwork` and `/artwork.html` redirect to `/all-artwork.html`; `/all-artwork.html` serves the collection page directly.
 - Apex and the known old workers.dev hostname redirect to www. Query parameters, including payment-return credentials, are preserved through these hostname redirects. Unknown or duplicate genre parameters return a genuine 404.
 - The original Supabase URL and anonymous key are retained. Public artwork requests explicitly select preview fields and never request `original_path`, orders, or private originals.
 - Catalog pagination no longer stops at the master homepage's six-record limit. Journal errors do not prevent catalog loading.
 - The Worker renders live public previews into HTML for search engines and JavaScript-disabled readers. The browser uses that same server sample, then enables checkout controls. Server-side catalog data is cached in memory for up to 60 seconds; checkout always re-reads the published artwork and price on the backend.
-- Both Stripe and PayPal checkout are connected to the existing `create-checkout` contract. IDs are passed without coercion. Provider URLs are checked against HTTPS Stripe/PayPal hostnames before navigation.
+- Stripe checkout are connected to the existing `create-checkout` contract. IDs are passed without coercion. Provider URLs are checked against HTTPS Stripe hostnames before navigation.
 - The master called fulfillment/download RPCs whose definitions were absent from the uploaded migrations. This update supplies `fulfill_stripe_checkout_verified`, `fulfill_verified_order`, and `consume_verified_download`, and updates the server callers.
 - Payment event recording, paid state, and license creation commit atomically. Duplicate webhooks do not reset license expiration. Amount, currency, provider, and provider reference must match the local order. These RPCs are executable only by `service_role`.
-- PayPal webhook processing now returns a retryable failure if database fulfillment fails. The earlier code recorded the event before its separate fulfillment operations, which could prevent a failed event from being fulfilled on retry.
 - Download authorization still checks the private buyer token, paid state, license expiry, and count before returning a 60-second private Storage redirect. The master license policy remains 24 hours and three authorized download-link requests. A signed Storage URL can be reused within its 60-second lifetime; the count limits link issuance, not each Storage GET.
 - The verifier's pinned C2PA SDK and DOM IDs are retained. The CSP permits the existing esm.sh SDK, WebAssembly, and public HTTPS preview images.
 - Admin HTML, admin JavaScript, admin CSS, legacy shared CSS, and public configuration were checked byte-for-byte against the master and preserved. New storefront styling lives in `storefront.css` so it does not restyle the admin, verifier, or payment screens.

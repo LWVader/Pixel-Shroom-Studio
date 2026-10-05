@@ -4,7 +4,6 @@ import { invoke, functionUrl } from "./supabase-client.js";
 const parameters = new URLSearchParams(window.location.search);
 const orderId = parameters.get("order");
 const accessToken = parameters.get("access");
-const provider = parameters.get("provider");
 
 const heading = document.querySelector("#checkout-heading");
 const message = document.querySelector("#checkout-message");
@@ -15,18 +14,6 @@ const STATUS_DELAY_MS = 2_000;
 
 function delay(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
-}
-
-// SECTION: PayPal capture after buyer approval
-async function capturePayPalOrder() {
-  const paypalOrderId = parameters.get("token");
-  if (provider !== "paypal" || !paypalOrderId) return;
-
-  await invoke("paypal-capture", {
-    orderId,
-    accessToken,
-    paypalOrderId,
-  });
 }
 
 // SECTION: Webhook-confirmed order polling
@@ -73,8 +60,6 @@ async function confirmOrder() {
   if (!orderId || !accessToken) {
     throw new Error("This confirmation link is incomplete.");
   }
-
-  await capturePayPalOrder();
 
   for (let attempt = 0; attempt < MAX_STATUS_ATTEMPTS; attempt += 1) {
     const order = await fetchOrderStatus();

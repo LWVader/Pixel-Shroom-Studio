@@ -24,7 +24,7 @@ const ids = [
   "33333333-3333-4333-8333-333333333333",
 ];
 await db.exec(
-  `insert into artworks values (1,'Fantasy');insert into orders(id,artwork_id,provider,provider_order_id,amount) values ('${ids[0]}',1,'stripe','cs_fixture',15),('${ids[1]}',1,'paypal','pp_fixture',15),('${ids[2]}',1,'stripe','cs_mismatch',15);`,
+  `insert into artworks values (1,'Fantasy');insert into orders(id,artwork_id,provider,provider_order_id,amount) values ('${ids[0]}',1,'stripe','cs_fixture',15),('${ids[1]}',1,'stripe','cs_expired',15),('${ids[2]}',1,'stripe','cs_mismatch',15);`,
 );
 let r = await db.query(
   `select fulfill_stripe_checkout_verified('evt_one','cs_fixture',$1,1500,'usd','buyer@example.com') as result`,
@@ -70,7 +70,7 @@ assert.equal(
   false,
 );
 r = await db.query(
-  `select fulfill_verified_order('paypal','pp_event','pp_fixture',$1,15,'USD',null) as result`,
+  `select fulfill_verified_order('stripe','evt_expired','cs_expired',$1,15,'USD',null) as result`,
   [ids[1]],
 );
 assert.equal(r.rows[0].result.fulfilled, true);
@@ -85,6 +85,6 @@ await db.exec("set role anon");
 await assert.rejects(() => db.query("select consume_verified_download($1)", [ids[0]]));
 await db.exec("reset role");
 console.log(
-  "PASS: Stripe/PayPal fulfillment, duplicate events, no expiration reset, mismatched amount rollback, download limit, expiration, anonymous RPC rejection.",
+  "PASS: Stripe fulfillment, duplicate events, no expiration reset, mismatched amount rollback, download limit, expiration, anonymous RPC rejection.",
 );
 await db.close();

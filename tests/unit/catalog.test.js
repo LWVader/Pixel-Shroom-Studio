@@ -52,11 +52,11 @@ describe("catalog and provider boundaries", () => {
   ])("rejects unsafe checkout %s", (url) =>
     expect(() => core.checkoutUrl(url, "stripe")).toThrow(),
   );
-  it("allows official Stripe and PayPal HTTPS destinations", () => {
+  it("allows official Stripe HTTPS destinations", () => {
     expect(core.checkoutUrl("https://checkout.stripe.com/c/pay", "stripe")).toContain("/c/pay");
-    expect(core.checkoutUrl("https://www.paypal.com/checkoutnow", "paypal")).toContain(
-      "paypal.com",
-    );
+    expect(() =>
+      core.checkoutUrl("https://example.test/checkout", "unconfigured-provider"),
+    ).toThrow();
   });
   it("paginates public fields and rejects repeat pages", async () => {
     const page = Array.from({ length: 1000 }, (_, id) => ({ ...row, id }));
@@ -85,4 +85,18 @@ describe("catalog and provider boundaries", () => {
       core.readPublishedArtworks("https://test", "key", { fetcher: async () => Response.json({}) }),
     ).rejects.toThrow();
   });
+});
+
+it("selects the newest 14 across categories and preserves input", () => {
+  const rows = Array.from({ length: 20 }, (_, i) => ({
+    ...row,
+    id: i + 1,
+    category: i % 2 ? "Portrait" : "Fantasy",
+    created_at: new Date(Date.UTC(2026, 0, i + 1)).toISOString(),
+  }));
+  expect(core.latestArtworks(rows).map((r) => r.id)).toEqual(
+    Array.from({ length: 14 }, (_, i) => 20 - i),
+  );
+  expect(rows[0].id).toBe(1);
+  expect(core.renderLatest(rows).match(/class="art-card"/g)).toHaveLength(14);
 });

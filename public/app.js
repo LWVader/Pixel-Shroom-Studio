@@ -10,7 +10,7 @@ import {
   validRows,
   escapeHtml,
   checkoutUrl,
-} from "./catalog-core.js?v=20261004-collections";
+} from "./catalog-core.js?v=20261005-stripe-only";
 const catalog = document.querySelector("#catalog"),
   search = document.querySelector("#search"),
   status = document.querySelector("#catalog-status");
@@ -121,7 +121,7 @@ catalog?.addEventListener("click", async (event) => {
     card = button.closest(".art-card"),
     message = card.querySelector(".card-status"),
     buttons = card.querySelectorAll("[data-buy]");
-  if (!row || row.category === "NFT" || !["stripe", "paypal"].includes(provider)) {
+  if (!row || row.category === "NFT" || provider !== "stripe") {
     message.textContent = "This artwork is not available for purchase.";
     return;
   }

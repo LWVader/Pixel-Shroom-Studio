@@ -3,7 +3,7 @@ import Stripe from "npm:stripe@18";
 import { corsFor, json, randomToken, service, sha256, studioSiteUrl } from "../_shared/common.ts";
 
 // SECTION: Checkout request and provider response types
-type PaymentProvider = "stripe" | "paypal";
+type PaymentProvider = "stripe";
 
 interface CheckoutRequest {
   artworkId?: number | string;
@@ -20,22 +20,6 @@ interface Artwork {
 
 interface LocalOrder {
   id: number | string;
-}
-
-interface PayPalAccessTokenResponse {
-  access_token?: string;
-  error_description?: string;
-}
-
-interface PayPalLink {
-  rel: string;
-  href: string;
-}
-
-interface PayPalOrderResponse {
-  id?: string;
-  message?: string;
-  links?: PayPalLink[];
 }
 
 // SECTION: Environment and input validation
@@ -66,7 +50,7 @@ function validateRequest(body: CheckoutRequest): {
     throw new Error("An artwork ID is required.");
   }
 
-  if (provider !== "stripe" && provider !== "paypal") {
+  if (provider !== "stripe") {
     throw new Error("Invalid payment provider.");
   }
 
@@ -174,87 +158,6 @@ async function createStripeCheckout(
   return session.url;
 }
 
-// SECTION: PayPal access token and order creation
-function paypalApiBase(): string {
-  return Deno.env.get("PAYPAL_ENV") === "live"
-    ? "https://api-m.paypal.com"
-    : "https://api-m.sandbox.paypal.com";
-}
-
-async function getPayPalAccessToken(baseUrl: string): Promise<string> {
-  const clientId = requiredEnvironment("PAYPAL_CLIENT_ID");
-  const clientSecret = requiredEnvironment("PAYPAL_CLIENT_SECRET");
-  const response = await fetch(`${baseUrl}/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-  const payload = (await response.json()) as PayPalAccessTokenResponse;
-
-  if (!response.ok || !payload.access_token) {
-    throw new Error(payload.error_description || "PayPal authentication failed.");
-  }
-
-  return payload.access_token;
-}
-
-async function createPayPalCheckout(
-  artwork: Artwork,
-  order: LocalOrder,
-  successUrl: string,
-  cancelUrl: string,
-): Promise<string> {
-  const baseUrl = paypalApiBase();
-  const accessToken = await getPayPalAccessToken(baseUrl);
-  const response = await fetch(`${baseUrl}/v2/checkout/orders`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      "PayPal-Request-Id": String(order.id),
-    },
-    body: JSON.stringify({
-      intent: "CAPTURE",
-      purchase_units: [
-        {
-          reference_id: String(order.id),
-          custom_id: String(order.id),
-          description: artwork.title,
-          amount: {
-            currency_code: "USD",
-            value: Number(artwork.price).toFixed(2),
-          },
-        },
-      ],
-      payment_source: {
-        paypal: {
-          experience_context: {
-            user_action: "PAY_NOW",
-            return_url: successUrl,
-            cancel_url: cancelUrl,
-          },
-        },
-      },
-    }),
-  });
-  const payload = (await response.json()) as PayPalOrderResponse;
-
-  if (!response.ok || !payload.id) {
-    throw new Error(payload.message || "PayPal checkout failed.");
-  }
-
-  const approvalUrl = payload.links?.find(
-    (link) => link.rel === "payer-action" || link.rel === "approve",
-  )?.href;
-  if (!approvalUrl) throw new Error("PayPal did not return an approval URL.");
-
-  await saveProviderOrderId(order.id, payload.id);
-  return approvalUrl;
-}
-
 // SECTION: Edge Function request handler
 Deno.serve(async (request) => {
   const respond = (data: unknown, status = 200) => json(data, status, request);
@@ -282,10 +185,13 @@ Deno.serve(async (request) => {
       `&provider=${provider}`;
     const cancelUrl = `${siteUrl}/checkout-cancel.html?order=${encodeURIComponent(String(order.id))}`;
 
-    const checkoutUrl =
-      provider === "stripe"
-        ? await createStripeCheckout(artwork, order, buyerEmail, successUrl, cancelUrl)
-        : await createPayPalCheckout(artwork, order, successUrl, cancelUrl);
+    const checkoutUrl = await createStripeCheckout(
+      artwork,
+      order,
+      buyerEmail,
+      successUrl,
+      cancelUrl,
+    );
 
     return respond({ orderId: order.id, checkoutUrl }, 201);
   } catch (error) {

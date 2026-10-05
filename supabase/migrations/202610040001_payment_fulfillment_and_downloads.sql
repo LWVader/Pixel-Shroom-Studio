@@ -18,7 +18,7 @@ declare
   artwork_category text;
   inserted_event integer;
 begin
-  if payment_provider not in ('stripe', 'paypal') or
+  if payment_provider not in ('stripe') or
      coalesce(payment_event_id, '') = '' or coalesce(provider_reference, '') = '' then
     raise exception 'Invalid payment event';
   end if;

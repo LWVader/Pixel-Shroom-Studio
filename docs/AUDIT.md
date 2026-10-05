@@ -11,7 +11,7 @@ Checked against the two uploaded archives on October 4, 2026.
 - Every genre, including Sci-Fi and Dark Fantasy, resolved to its own metadata and full collection. NFT had no checkout buttons.
 - Legacy genre/artwork paths and mixed-case query routes reached the expected destination without loops. Unknown paths, unknown genres, and duplicate genre parameters returned 404.
 - An unsupported checkout hostname was rejected by the client. Offline catalog tests retained the nine collection links and provided no purchase controls.
-- Local PostgreSQL tests executed the actual new migration: Stripe and PayPal fulfillment, duplicate-event handling, unchanged expiration on repeats, mismatch rollback, three-request quota, expiry, and anonymous RPC rejection.
+- Local PostgreSQL tests executed the actual new migration: Stripe fulfillment, duplicate-event handling, unchanged expiration on repeats, mismatch rollback, three-request quota, expiry, and anonymous RPC rejection.
 - Mocked Edge Function tests covered canonical return domain, www/apex CORS, unsupported-origin CORS behavior, pending orders without downloads, missing credentials, and invalid methods.
 
 ## Read-only live observations

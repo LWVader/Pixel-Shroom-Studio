@@ -26,7 +26,7 @@ create table if not exists public.articles (
 );
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(), artwork_id bigint not null references public.artworks(id),
-  provider text not null check (provider in ('stripe','paypal')), provider_order_id text unique,
+  provider text not null check (provider in ('stripe')), provider_order_id text unique,
   status text not null default 'pending' check (status in ('pending','paid','failed','refunded')),
   amount numeric(10,2) not null, currency text not null default 'usd', buyer_email text,
   access_token_hash text not null, fulfillment_status text not null default 'pending',

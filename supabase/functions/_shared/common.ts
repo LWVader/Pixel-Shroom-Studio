@@ -46,7 +46,7 @@ export function corsFor(request?: Request): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": allowed.has(origin) ? origin : studioSiteUrl(),
     "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type, stripe-signature, paypal-auth-algo, paypal-cert-url, paypal-transmission-id, paypal-transmission-sig, paypal-transmission-time",
+      "authorization, x-client-info, apikey, content-type, stripe-signature",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
