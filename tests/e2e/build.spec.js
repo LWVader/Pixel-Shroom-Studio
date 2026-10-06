@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+
 const genres = [
   "portrait",
   "fantasy",
@@ -11,50 +12,77 @@ const genres = [
   "horror",
   "nft",
 ];
+
 test.beforeEach(async ({ page }) => {
   await page.route("**/*.supabase.co/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith("/articles")) return route.fulfill({ json: [] });
-    if (path.endsWith("/create-checkout"))
-      return route.fulfill({ json: { checkoutUrl: "https://evil.example/payment" } });
+
+    if (path.endsWith("/articles")) {
+      return route.fulfill({ json: [] });
+    }
+
+    if (path.endsWith("/create-checkout")) {
+      return route.fulfill({
+        json: { checkoutUrl: "https://evil.example/payment" },
+      });
+    }
+
     return route.abort();
   });
 });
+
 test("compiled collections, full-catalog search, keyboard preview and unsafe checkout", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/all-artwork.html");
+
   await expect(page.locator(".genre-sample")).toHaveCount(9);
   await expect(page.locator(".art-card")).toHaveCount(36);
-  for (const section of await page.locator(".genre-sample").all())
+
+  for (const section of await page.locator(".genre-sample").all()) {
     await expect(section.locator(".art-card")).toHaveCount(4);
+  }
+
   await page.locator("#shuffle-samples").click();
   await expect(page.locator(".art-card")).toHaveCount(36);
+
   await page.locator("#search").fill("Fantasy artwork 5");
   await expect(page.locator(".art-card")).toHaveCount(2);
   await page.locator("#search").fill("");
+
   await page.locator(".preview-trigger").first().click();
   await expect(page.locator("dialog")).toBeVisible();
+
   await page.keyboard.press("Escape");
   await expect(page.locator("dialog")).not.toBeVisible();
+
   await page.locator("[data-provider=stripe]").first().click();
   await expect(page.locator(".card-status").first()).toContainText("unsupported");
+
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
-for (const genre of genres)
+
+for (const genre of genres) {
   test(`${genre} canonical and complete collection`, async ({ page }) => {
     await page.goto("/genre.html?genre=" + genre);
+
     await expect(page.locator(".art-card")).toHaveCount(6);
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator("link[rel=canonical]")).toHaveAttribute(
       "href",
       "https://www.pixelshroomstudio.com/genre.html?genre=" + genre,
     );
+
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
-    if (genre === "nft") await expect(page.locator("[data-buy]")).toHaveCount(0);
+
+    if (genre === "nft") {
+      await expect(page.locator("[data-buy]")).toHaveCount(0);
+    }
   });
+}
+
 test("redirect destinations and invalid routes", async ({ request }) => {
   for (const route of [
     "/genres/fantasy.html",
@@ -65,22 +93,28 @@ test("redirect destinations and invalid routes", async ({ request }) => {
     "/genre?genre=fantasy",
   ]) {
     const response = await request.get(route, { maxRedirects: 0 });
+
     expect(response.status()).toBe(301);
     expect((await request.get(response.headers().location)).status()).toBe(200);
   }
+
   for (const route of [
     "/genre.html?genre=bad",
     "/genre.html?genre=fantasy&genre=horror",
     "/unknown-page",
-  ])
+  ]) {
     expect((await request.get(route)).status()).toBe(404);
+  }
 });
+
 test("offline catalog keeps navigation and blocks purchases", async ({ page }) => {
-  await page.goto("http://127.0.0.1:8021/");
+  await page.goto("http://127.0.0.1:8021/all-artwork.html");
+
   await expect(page.locator(".genre-sample")).toHaveCount(9);
   await expect(page.locator("[data-buy]")).toHaveCount(0);
   await expect(page.locator("#catalog-status")).toContainText("could not be loaded");
 });
+
 for (const name of [
   "faq",
   "contact",
@@ -92,21 +126,27 @@ for (const name of [
   "verify",
   "admin",
   "checkout-success",
-])
+]) {
   test(`${name} utility page loads without runtime errors`, async ({ page }) => {
     const errors = [];
-    page.on("pageerror", (e) => errors.push(e.message));
+    page.on("pageerror", (error) => errors.push(error.message));
+
     await page.goto("/" + name + ".html");
     await expect(page.locator("h1:visible")).toHaveCount(1);
+
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
     expect(errors).toEqual([]);
   });
+}
+
 test("homepage accessibility", async ({ page }) => {
   await page.goto("/");
+
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
+
   expect(result.violations).toEqual([]);
 });
