@@ -43,7 +43,10 @@ it("canonicalizes host, aliases, cases and query genre routes", async () => {
       "https://www.pixelshroomstudio.com/genre.html?genre=Fantasy",
       "https://www.pixelshroomstudio.com/genre.html?genre=fantasy",
     ],
-    ["https://www.pixelshroomstudio.com/artwork", "https://www.pixelshroomstudio.com/#gallery"],
+    [
+      "https://www.pixelshroomstudio.com/artwork",
+      "https://www.pixelshroomstudio.com/all-artwork.html",
+    ],
   ]) {
     const r = await fetch(from);
     expect(r.status).toBe(301);
