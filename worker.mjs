@@ -1,3 +1,4 @@
+import { readEbayListings, renderEbayPage } from "./ebay-feed.mjs";
 import {
   GENRES,
   genreUrl,
@@ -81,6 +82,21 @@ export default {
         new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } }),
         path,
       );
+    if (path === "/api/ebay-listings") {
+      let payload,
+        status = 200;
+      try {
+        payload = await readEbayListings(env);
+      } catch {
+        status = 503;
+        payload = { error: "Live eBay listings are unavailable. Please visit our eBay store." };
+      }
+      const result = Response.json(payload, {
+        status,
+        headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" },
+      });
+      return headersFor(new Response(request.method === "HEAD" ? null : result.body, result), path);
+    }
     if (path === "/index.html" || path === "/index") {
       url.pathname = "/";
       return redirect(url);
@@ -130,7 +146,9 @@ export default {
       assetUrl.search = "";
     }
     const assetHeaders = new Headers(request.headers);
-    if (path === "/" || path === "/all-artwork.html" || path === "/genre.html") {
+    if (
+      ["/", "/all-artwork.html", "/genre.html", "/canvases.html", "/apparel.html"].includes(path)
+    ) {
       assetHeaders.delete("if-none-match");
       assetHeaders.delete("if-modified-since");
     }
@@ -138,6 +156,24 @@ export default {
       new Request(assetUrl, { method: request.method, headers: assetHeaders }),
     );
     if (response.status === 404) return this.notFound(request, env);
+    if (["/canvases.html", "/apparel.html"].includes(path) && response.ok) {
+      const category = path === "/canvases.html" ? "canvas" : "apparel";
+      let catalog = null;
+      try {
+        catalog = await readEbayListings(env);
+      } catch {
+        /* Store link remains available. */
+      }
+      const html = renderEbayPage(await response.text(), category, catalog);
+      const headers = new Headers(response.headers);
+      for (const name of ["content-length", "etag", "last-modified"]) headers.delete(name);
+      headers.set("Content-Type", "text/html; charset=utf-8");
+      return headersFor(
+        new Response(request.method === "HEAD" ? null : html, { status: 200, headers }),
+        path,
+      );
+    }
+
     if ((path === "/" || path === "/all-artwork.html" || path === "/genre.html") && response.ok) {
       let content = await response.text();
       try {

@@ -25,7 +25,7 @@
     <link rel="icon" href="/assets/pixel-shroom-logo-128.webp" />
     <link rel="stylesheet" href="/storefront.css?v=20261004" />
     <link rel="stylesheet" href="/ebay-store.css?v=20261010" />
-    <script type="application/ld+json">
+    <script id="ebay-schema" type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "CollectionPage",
@@ -110,17 +110,15 @@
           All items below are listed by <strong>lwvader</strong>. Check eBay for current price,
           availability, sizes, delivery and return details.
         </p>
-        <!-- EBAY-LISTINGS-START -->
-        <div class="ebay-empty">
-          <p>No apparel or gift listings are featured here yet.</p>
-          <a
-            class="button"
-            href="https://www.ebay.com/sch/i.html?_ssn=lwvader"
-            rel="noopener noreferrer"
-            >Browse lwvader’s current eBay listings ↗</a
-          >
+        <p id="ebay-status" role="status">Checking current eBay listings…</p>
+        <div id="ebay-listings">
+          <!-- EBAY-LISTINGS-START -->
+          <p>
+            Browse our
+            <a href="https://www.ebay.com/sch/i.html?_ssn=lwvader">current eBay listings</a>.
+          </p>
+          <!-- EBAY-LISTINGS-END -->
         </div>
-        <!-- EBAY-LISTINGS-END -->
       </section>
       <section class="print-faq" aria-labelledby="print-faq-heading">
         <h2 id="print-faq-heading">Shopping with Pixel Shroom Studio</h2>
@@ -150,5 +148,6 @@
         <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
       </p>
     </footer>
+    <script type="module" src="/ebay-store.js"></script>
   </body>
 </html>

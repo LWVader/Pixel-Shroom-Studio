@@ -74,3 +74,44 @@ test("retired physical-order routes redirect and ordering API paths are unavaila
   ])
     expect((await request.get(path)).status()).toBe(404);
 });
+test("live feed replaces ended listings, discovers new items and handles failure", async ({
+  page,
+}) => {
+  let items = [
+    {
+      itemId: "198704183258",
+      seller: "lwvader",
+      category: "canvas",
+      title: "First canvas",
+      imageUrl: "https://i.ebayimg.com/images/test.jpg",
+      active: true,
+    },
+  ];
+  let failed = false;
+  await page.route("**/api/ebay-listings", (route) =>
+    failed
+      ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
+      : route.fulfill({
+          json: {
+            seller: "lwvader",
+            storeUrl: "https://www.ebay.com/sch/i.html?_ssn=lwvader",
+            items,
+          },
+        }),
+  );
+  await page.clock.install();
+  await page.goto("/canvases.html");
+  await expect(page.locator(".ebay-product h3")).toHaveText("First canvas");
+  items = [{ ...items[0], itemId: "198704183259", title: "New canvas" }];
+  await page.clock.fastForward(300000);
+  await expect(page.locator(".ebay-product h3")).toHaveText("New canvas");
+  await expect.poll(() => page.locator("#ebay-schema").textContent()).toContain("New canvas");
+  failed = true;
+  await page.clock.fastForward(300000);
+  await expect(page.locator(".ebay-product")).toHaveCount(0);
+  await expect(page.locator("#ebay-status")).toContainText("Could not refresh");
+  failed = false;
+  items = [];
+  await page.clock.fastForward(300000);
+  await expect(page.locator("#ebay-listings")).toContainText("No current canvas listings");
+});

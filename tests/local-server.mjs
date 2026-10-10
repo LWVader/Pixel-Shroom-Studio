@@ -41,7 +41,24 @@ const mime = {
   ".xml": "application/xml",
   ".txt": "text/plain",
 };
+const ebayFixture = JSON.parse(await fs.readFile(path.join(root, "ebay-listings.json"), "utf8"));
 const env = {
+  EBAY_CLIENT_ID: "local-fixture",
+  EBAY_CLIENT_SECRET: "local-fixture",
+  EBAY_FETCH: async (url) => {
+    if (process.env.OFFLINE === "1") throw new Error("Fixture offline");
+    if (url.includes("/oauth2/token"))
+      return Response.json({ access_token: "fixture", expires_in: 7200 });
+    return Response.json({
+      total: ebayFixture.items.length,
+      itemSummaries: ebayFixture.items.map((item) => ({
+        legacyItemId: item.itemId,
+        title: item.title,
+        seller: { username: item.seller },
+        image: { imageUrl: item.imageUrl },
+      })),
+    });
+  },
   ASSETS: {
     fetch: async (request) => {
       try {

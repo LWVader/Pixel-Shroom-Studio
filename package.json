@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "npx serve public",
-    "check": "node --check public/app.js && node --check public/admin.js && node --check public/genre.js && node --check public/catalog-core.js && node --check public/checkout-success.js && node --check worker.mjs && node --check tools/ebay-catalog.mjs && node --check tools/build-ebay-pages.mjs",
+    "check": "node --check public/app.js && node --check public/admin.js && node --check public/genre.js && node --check public/catalog-core.js && node --check public/checkout-success.js && node --check worker.mjs && node --check tools/ebay-catalog.mjs && node --check tools/build-ebay-pages.mjs && node --check ebay-feed.mjs && node --check public/ebay-core.js && node --check public/ebay-store.js",
     "dev:worker": "wrangler dev",
     "test": "vitest run",
     "test:watch": "vitest",

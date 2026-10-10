@@ -25,25 +25,14 @@
     <link rel="icon" href="/assets/pixel-shroom-logo-128.webp" />
     <link rel="stylesheet" href="/storefront.css?v=20261004" />
     <link rel="stylesheet" href="/ebay-store.css?v=20261010" />
-    <script type="application/ld+json">
+    <script id="ebay-schema" type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "CollectionPage",
         "name": "Art on Canvas",
         "description": "Browse Pixel Shroom Studio canvas listings from eBay seller lwvader. Click a product to view current pricing, sizes and purchase directly on eBay.",
         "url": "https://www.pixelshroomstudio.com/canvases.html",
-        "mainEntity": {
-          "@type": "ItemList",
-          "numberOfItems": 1,
-          "itemListElement": [
-            {
-              "@type": "ListItem",
-              "position": 1,
-              "url": "https://www.ebay.com/itm/198704183258",
-              "name": "Cute Dancing Banana Canvas | Matte Stretched Wall Art"
-            }
-          ]
-        }
+        "mainEntity": { "@type": "ItemList", "numberOfItems": 0, "itemListElement": [] }
       }
     </script>
     <link rel="stylesheet" href="/print-nav.css?v=20261009" />
@@ -121,32 +110,15 @@
           All items below are listed by <strong>lwvader</strong>. Check eBay for current price,
           availability, sizes, delivery and return details.
         </p>
-        <!-- EBAY-LISTINGS-START -->
-        <div class="print-grid">
-          <article class="ebay-product">
-            <a
-              href="https://www.ebay.com/itm/198704183258"
-              rel="noopener noreferrer"
-              aria-label="Cute Dancing Banana Canvas | Matte Stretched Wall Art on eBay"
-              ><img
-                src="https://i.ebayimg.com/images/g/-FYAAeSwUKVqyk1a/s-l500.jpg"
-                width="500"
-                height="500"
-                loading="lazy"
-                alt="Cute Dancing Banana Canvas | Matte Stretched Wall Art"
-            /></a>
-            <h3>
-              <a href="https://www.ebay.com/itm/198704183258" rel="noopener noreferrer"
-                >Cute Dancing Banana Canvas | Matte Stretched Wall Art</a
-              >
-            </h3>
-            <p>Sold by lwvader on eBay. See the listing for current price and product options.</p>
-            <a class="button" href="https://www.ebay.com/itm/198704183258" rel="noopener noreferrer"
-              >View and buy on eBay ↗</a
-            >
-          </article>
+        <p id="ebay-status" role="status">Checking current eBay listings…</p>
+        <div id="ebay-listings">
+          <!-- EBAY-LISTINGS-START -->
+          <p>
+            Browse our
+            <a href="https://www.ebay.com/sch/i.html?_ssn=lwvader">current eBay listings</a>.
+          </p>
+          <!-- EBAY-LISTINGS-END -->
         </div>
-        <!-- EBAY-LISTINGS-END -->
       </section>
       <section class="print-faq" aria-labelledby="print-faq-heading">
         <h2 id="print-faq-heading">Shopping with Pixel Shroom Studio</h2>
@@ -176,5 +148,6 @@
         <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
       </p>
     </footer>
+    <script type="module" src="/ebay-store.js"></script>
   </body>
 </html>
