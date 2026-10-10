@@ -96,3 +96,14 @@ it("serves the homepage from the explicit index asset with html_handling none", 
   expect(html).not.toContain("A world not found.");
   expect(r.headers.get("link")).toBe('<https://www.pixelshroomstudio.com/>; rel="canonical"');
 });
+
+it("serves a distinct canonical All artwork collection page", async () => {
+  const fetch = await setup();
+  const r = await fetch("https://www.pixelshroomstudio.com/all-artwork.html");
+  expect(r.status).toBe(200);
+  expect(r.headers.get("link")).toContain("/all-artwork.html");
+  const html = await r.text();
+  expect(html).toContain('data-mode="compiled"');
+  expect(html).toContain("catalog-bootstrap");
+  expect(html).not.toContain("All artwork · genre sampler");
+});

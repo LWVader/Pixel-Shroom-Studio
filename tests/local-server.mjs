@@ -24,6 +24,7 @@ export const fixtures = genreNames.flatMap((category, g) =>
     category,
     serial_number: `LWV-${String(g * 6 + i + 1).padStart(10, "0")}`,
     price: 15 + i,
+    created_at: new Date(Date.UTC(2026, 0, 1, 0, g * 6 + i)).toISOString(),
     preview_url: `${origin}/assets/art-${["portrait", "fantasy", "landscape", "sci-fi", "abstract", "dreamscape"][g % 6]}.png`,
     display_width: 512,
     display_height: 512,

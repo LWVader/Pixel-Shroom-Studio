@@ -1,0 +1,9 @@
+Pixel Shroom Studio — eBay replacement build
+
+Includes the customized homepage, All Artwork and all nine genre pages.
+Shop purchases link directly to lwvader listings on eBay. No physical order API or image uploads.
+
+Because the earlier physical-order update was never installed, no Supabase changes, SQL migrations or deletions are needed. Keep your existing public/config.js and digital Stripe webhook when updating your deployed project.
+Read docs/EBAY-LISTINGS.md for listing maintenance and installation details.
+
+Validated working build: 30 unit/integration tests and 64 browser tests.

@@ -30,7 +30,7 @@ const fs = require("node:fs");
     }
     return r.abort();
   });
-  await page.goto("http://127.0.0.1:8020/", { waitUntil: "networkidle" });
+  await page.goto("http://127.0.0.1:8020/all-artwork.html", { waitUntil: "networkidle" });
   assert.equal(await page.locator(".genre-sample").count(), 9);
   for (const s of await page.locator(".genre-sample").all())
     assert((await s.locator(".art-card").count()) <= 4);
@@ -116,7 +116,9 @@ const fs = require("node:fs");
     "terms",
     "cookies",
   ]) {
-    await page.goto("http://127.0.0.1:8020/" + name + ".html", { waitUntil: "networkidle" });
+    await page.goto("http://127.0.0.1:8020/all-artwork.html" + name + ".html", {
+      waitUntil: "networkidle",
+    });
     assert.equal(await page.locator("h1").count(), 1, name);
     assert(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)), name);
   }

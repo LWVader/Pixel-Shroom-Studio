@@ -2,6 +2,7 @@
 const base = new URL(process.env.SITE_TEST_URL || "https://www.pixelshroomstudio.com");
 const paths = [
   "/",
+  "/all-artwork.html",
   ...[
     "portrait",
     "fantasy",

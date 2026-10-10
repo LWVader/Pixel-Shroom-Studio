@@ -1,0 +1,10 @@
+.primary {
+  flex-wrap: wrap;
+  column-gap: 18px;
+  row-gap: 6px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.primary a {
+  white-space: nowrap;
+}

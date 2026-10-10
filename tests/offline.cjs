@@ -15,7 +15,7 @@ const { spawn } = require("node:child_process");
   });
   const page = await browser.newPage();
   await page.route("**/*.supabase.co/**", (r) => r.abort());
-  await page.goto("http://127.0.0.1:8021/", { waitUntil: "networkidle" });
+  await page.goto("http://127.0.0.1:8021/all-artwork.html", { waitUntil: "networkidle" });
   assert.equal(await page.locator(".genre-sample").count(), 9);
   assert.equal(await page.locator("[data-buy]").count(), 0);
   assert((await page.locator("#catalog-status").innerText()).includes("could not be loaded"));

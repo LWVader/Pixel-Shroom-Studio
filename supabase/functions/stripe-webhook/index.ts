@@ -64,6 +64,10 @@ Deno.serve(async (request: Request): Promise<Response> => {
       throw new Error("Stripe Checkout Session has no payment amount.");
     }
 
+    if (session.metadata?.kind === "physical") {
+      return json({ received: true, ignored: true });
+    }
+
     const database = service();
 
     // SECTION: Atomically record the event and fulfill the order

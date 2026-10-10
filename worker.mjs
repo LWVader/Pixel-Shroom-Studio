@@ -17,6 +17,8 @@ const aliases = new Set([
 const pages = new Set([
   "faq",
   "all-artwork",
+  "canvases",
+  "apparel",
   "contact",
   "how-it-works",
   "usage-rights",
@@ -63,6 +65,9 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url),
       path = url.pathname;
+    if (path === "/physical-order.html" || path === "/physical-order") {
+      return redirect(new URL("/canvases.html", url.origin));
+    }
     if (
       aliases.has(url.hostname) ||
       (url.hostname === "www.pixelshroomstudio.com" && url.protocol !== "https:")

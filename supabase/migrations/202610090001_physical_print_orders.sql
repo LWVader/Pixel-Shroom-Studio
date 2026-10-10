@@ -1,0 +1,3 @@
+-- Retired migration: retained as a no-op to preserve deployed migration history.
+-- New installations use eBay listing links and create no local physical-order tables.
+-- Existing installations retain historical records; the retirement migration locks access.

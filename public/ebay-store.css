@@ -1,0 +1,55 @@
+.print-main {
+  padding-block: 2rem 4rem;
+}
+.print-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+.print-hero img {
+  width: 100%;
+  height: auto;
+  border-radius: 1rem;
+  border: 1px solid var(--line);
+}
+.print-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 360px));
+  gap: 1.5rem;
+}
+.ebay-product {
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+.ebay-product img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: 0.5rem;
+}
+.ebay-product h3 {
+  font-size: 1.4rem;
+}
+.print-faq {
+  margin-top: 3rem;
+}
+.print-faq details {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.ebay-empty {
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+}
+@media (max-width: 700px) {
+  .print-hero {
+    grid-template-columns: 1fr;
+  }
+}

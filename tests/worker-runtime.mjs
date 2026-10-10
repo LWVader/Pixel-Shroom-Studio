@@ -46,6 +46,7 @@ try {
     assert(r.headers.get("link").includes("genre=" + genre));
   }
   for (const path of [
+    "/all-artwork.html",
     "/faq.html",
     "/contact.html",
     "/verify.html",
