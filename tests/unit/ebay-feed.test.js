@@ -1,121 +1,203 @@
 import { it, expect, vi, afterEach } from "vitest";
-import { readEbayListings, projectItems, renderEbayPage } from "../../ebay-feed.mjs";
+import {
+  readEbayListings,
+  projectItems,
+  renderEbayPage,
+  parseTradingResponse,
+} from "../../ebay-feed.mjs";
+import { xmlResponse, sellerPage, sellerItem } from "../ebay-fixture.mjs";
 import worker from "../../worker.mjs";
 import fs from "node:fs";
-const row = (id, title = "Art canvas") => ({
-  legacyItemId: String(id),
-  title,
-  seller: { username: "lwvader" },
-  image: { imageUrl: "https://i.ebayimg.com/images/test.jpg" },
-});
 afterEach(() => vi.useRealTimers());
-it("projects only this seller, eligible categories, active dates and safe eBay previews", () => {
+function environment(fetcher, id = "fixture") {
+  return {
+    EBAY_CLIENT_ID: id,
+    EBAY_CLIENT_SECRET: "secret",
+    EBAY_REFRESH_TOKEN: "private-refresh-token",
+    EBAY_FETCH: fetcher,
+  };
+}
+function publicFixture(url, options, items = []) {
+  if (url.includes("oauth2"))
+    return Response.json({ access_token: "private-access-token", expires_in: 7200 });
+  if (options.headers["X-EBAY-API-CALL-NAME"] === "GetUser")
+    return xmlResponse("GetUser", { User: { UserID: "lwvader" } });
+  return sellerPage(items);
+}
+it("projects active previews, includes apparel without title keywords and blocks unsafe images", () => {
   const rows = [
-    row(198704183258),
-    row(198704183259, "Art T-shirt"),
-    row(198704183260, "unrelated book"),
-    { ...row(198704183261), seller: { username: "other" } },
-    { ...row(198704183262), itemEndDate: "2020-01-01" },
-    { ...row(198704183263), image: { imageUrl: "https://evil.example/a" } },
-    row(198704183258),
+    sellerItem(198704183258),
+    sellerItem(198704183259, "MAKE IT IDIOT-PROOF"),
+    sellerItem(198704183260, "Ended canvas", { ListingDetails: { EndTime: "2020-01-01" } }),
+    sellerItem(198704183261, "Sold shirt", { QuantityAvailable: "0" }),
+    sellerItem(198704183262, "Unsafe tee", {
+      PictureDetails: { GalleryURL: "https://evil.example/a" },
+    }),
+    sellerItem(198704183258),
   ];
   expect(projectItems(rows).map((x) => x.category)).toEqual(["canvas", "apparel"]);
+  expect(
+    projectItems([
+      sellerItem(198704183263, "Legacy tee", {
+        PictureDetails: { GalleryURL: "http://i.ebayimg.com/test.jpg" },
+      }),
+    ])[0].imageUrl,
+  ).toBe("https://i.ebayimg.com/test.jpg");
 });
-it("paginates, coalesces concurrent requests and refreshes additions/removals after five minutes", async () => {
+it("paginates complete seller inventory, coalesces requests and refreshes additions/removals", async () => {
   vi.useFakeTimers();
   let generation = 0;
   const calls = [];
-  const env = {
-    EBAY_CLIENT_ID: "pagination",
-    EBAY_CLIENT_SECRET: "test",
-    EBAY_FETCH: async (url, options) => {
-      calls.push({ url, options });
-      if (url.includes("oauth2"))
-        return Response.json({ access_token: "private-token", expires_in: 7200 });
-      const offset = Number(new URL(url).searchParams.get("offset"));
-      return Response.json(
-        generation
-          ? { total: 1, itemSummaries: [row(198704183299, "New tee")] }
-          : {
-              total: 201,
-              itemSummaries:
-                offset === 0
-                  ? Array.from({ length: 200 }, (_, i) => row(198704180000 + i))
-                  : [row(198704183258)],
-            },
-      );
-    },
-  };
+  const env = environment(async (url, options) => {
+    calls.push({ url, options });
+    if (url.includes("oauth2") || options.headers["X-EBAY-API-CALL-NAME"] === "GetUser")
+      return publicFixture(url, options);
+    const page = Number(options.body.match(/<PageNumber>(\d+)<\/PageNumber>/)[1]);
+    return generation
+      ? sellerPage([sellerItem(198704183299, "New design")])
+      : sellerPage(
+          page === 1
+            ? Array.from({ length: 200 }, (_, i) => sellerItem(198704180000 + i))
+            : [sellerItem(198704183258)],
+          page,
+          201,
+        );
+  });
   const [a, b] = await Promise.all([readEbayListings(env), readEbayListings(env)]);
   expect(a).toBe(b);
   expect(a.items).toHaveLength(201);
-  expect(calls).toHaveLength(3);
-  expect(new URL(calls[1].url).searchParams.get("filter")).toBe("sellers:{lwvader}");
-  expect(calls[1].options.method).toBeUndefined();
-  expect(JSON.stringify(a)).not.toContain("private-token");
+  expect(calls).toHaveLength(4);
+  const auth = new URLSearchParams(calls[0].options.body);
+  expect(auth.get("grant_type")).toBe("refresh_token");
+  expect(auth.get("refresh_token")).toBe("private-refresh-token");
+  expect(auth.get("scope")).toBe("https://api.ebay.com/oauth/api_scope");
+  expect(
+    calls.every((x) => x.url.includes("oauth2") || x.url === "https://api.ebay.com/ws/api.dll"),
+  ).toBe(true);
+  for (const call of calls.filter(
+    (x) => x.options.headers["X-EBAY-API-CALL-NAME"] === "GetMyeBaySelling",
+  )) {
+    expect(call.options.body).toContain("<SoldList><Include>false</Include></SoldList>");
+    expect(call.options.body).not.toContain("<ItemID>");
+  }
+  expect(JSON.stringify(a)).not.toContain("private-");
+  expect(a.source).toBe("seller-active-listings");
   generation = 1;
   vi.advanceTimersByTime(300001);
   const changed = await readEbayListings(env);
   expect(changed.items.map((x) => x.itemId)).toEqual(["198704183299"]);
   expect(calls.filter((x) => x.url.includes("oauth2"))).toHaveLength(1);
 });
-it("does not publish partial pages, provider errors or stale cache on refresh failures", async () => {
+it("rejects a refresh token belonging to another seller", async () => {
+  let inventoryCalls = 0;
+  const env = environment(async (url, options) => {
+    if (url.includes("oauth2")) return publicFixture(url, options);
+    if (options.headers["X-EBAY-API-CALL-NAME"] === "GetUser")
+      return xmlResponse("GetUser", { User: { UserID: "other" } });
+    inventoryCalls++;
+    return sellerPage([]);
+  });
+  await expect(readEbayListings(env)).rejects.toThrow("lwvader");
+  expect(inventoryCalls).toBe(0);
+});
+it("never publishes partial, truncated or inconsistent inventory", async () => {
+  for (const mode of ["failure", "changed", "duplicate", "limit"]) {
+    const env = environment(async (url, options) => {
+      if (url.includes("oauth2") || options.headers["X-EBAY-API-CALL-NAME"] === "GetUser")
+        return publicFixture(url, options);
+      if (mode === "limit") return sellerPage([], 1, 25000);
+      const page = Number(options.body.match(/<PageNumber>(\d+)<\/PageNumber>/)[1]);
+      if (page === 1)
+        return sellerPage(
+          Array.from({ length: 200 }, (_, i) => sellerItem(198704180000 + i)),
+          1,
+          201,
+        );
+      if (mode === "failure") return new Response(null, { status: 500 });
+      return sellerPage(
+        [sellerItem(mode === "duplicate" ? 198704180000 : 198704183299)],
+        2,
+        mode === "changed" ? 202 : 201,
+      );
+    }, mode);
+    await expect(readEbayListings(env)).rejects.toThrow();
+  }
+});
+it("does not reuse expired catalog after failure and retries authorization once", async () => {
   vi.useFakeTimers();
-  let failing = false;
-  const env = {
-    EBAY_CLIENT_ID: "failure",
-    EBAY_CLIENT_SECRET: "test",
-    EBAY_FETCH: async (url) =>
-      url.includes("oauth2")
-        ? Response.json({ access_token: "token", expires_in: 7200 })
-        : failing
-          ? new Response("no", { status: 500 })
-          : Response.json({ total: 1, itemSummaries: [row(198704183258)] }),
-  };
+  let fail = false;
+  const env = environment(
+    (url, options) =>
+      fail
+        ? new Response(null, { status: 500 })
+        : publicFixture(url, options, [sellerItem(198704183258)]),
+    "failure-after-refresh",
+  );
   await readEbayListings(env);
-  failing = true;
+  fail = true;
   vi.advanceTimersByTime(300001);
   await expect(readEbayListings(env)).rejects.toThrow();
-  await expect(readEbayListings({})).rejects.toThrow("not configured");
-});
-it("refreshes expired authorization once and keeps secrets out of the public endpoint", async () => {
   let tokens = 0,
-    searches = 0;
-  const env = {
-    EBAY_CLIENT_ID: "auth",
-    EBAY_CLIENT_SECRET: "secret",
-    EBAY_FETCH: async (url) =>
-      url.includes("oauth2")
-        ? Response.json({ access_token: `token${++tokens}`, expires_in: 7200 })
-        : ++searches === 1
-          ? new Response(null, { status: 401 })
-          : Response.json({ total: 0 }),
-  };
+    identities = 0;
+  const retry = environment(async (url, options) => {
+    if (url.includes("oauth2")) {
+      tokens++;
+      return Response.json({ access_token: `token${tokens}`, expires_in: 7200 });
+    }
+    if (options.headers["X-EBAY-API-CALL-NAME"] === "GetUser") {
+      identities++;
+      if (identities === 1) return new Response(null, { status: 401 });
+      return xmlResponse("GetUser", { User: { UserID: "lwvader" } });
+    }
+    return sellerPage([]);
+  }, "retry");
+  expect((await readEbayListings(retry)).items).toEqual([]);
+  expect(tokens).toBe(2);
+});
+it("rejects invalid XML, API errors and entity declarations", () => {
+  for (const xml of [
+    "<GetMyeBaySellingResponse>",
+    "<!DOCTYPE x><GetMyeBaySellingResponse><Ack>Success</Ack></GetMyeBaySellingResponse>",
+    "<GetMyeBaySellingResponse><Ack>Failure</Ack><Errors><ErrorCode>219</ErrorCode></Errors></GetMyeBaySellingResponse>",
+  ])
+    expect(() => parseTradingResponse(xml, "GetMyeBaySelling")).toThrow();
+});
+it("keeps credentials and account details out of the public endpoint", async () => {
+  const env = environment(
+    (url, options) => publicFixture(url, options, [sellerItem(198704183258)]),
+    "endpoint",
+  );
   const response = await worker.fetch(
     new Request("https://www.pixelshroomstudio.com/api/ebay-listings"),
     env,
   );
   expect(response.status).toBe(200);
-  expect(tokens).toBe(2);
-  expect(await response.text()).not.toContain("secret");
+  const data = await response.json();
+  expect(data.items).toHaveLength(1);
+  expect(JSON.stringify(data)).not.toMatch(/secret|private-|Buyer|UserID/);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  const unavailable = await worker.fetch(
-    new Request("https://www.pixelshroomstudio.com/api/ebay-listings"),
-    {},
-  );
-  expect(unavailable.status).toBe(503);
-  const denied = await worker.fetch(
-    new Request("https://www.pixelshroomstudio.com/api/ebay-listings", { method: "POST" }),
-    env,
-  );
-  expect(denied.status).toBe(405);
+  expect(
+    (await worker.fetch(new Request("https://www.pixelshroomstudio.com/api/ebay-listings"), {}))
+      .status,
+  ).toBe(503);
+  expect(
+    (
+      await worker.fetch(
+        new Request("https://www.pixelshroomstudio.com/api/ebay-listings", { method: "POST" }),
+        env,
+      )
+    ).status,
+  ).toBe(405);
+  await expect(
+    readEbayListings({ EBAY_CLIENT_ID: "id", EBAY_CLIENT_SECRET: "secret" }),
+  ).rejects.toThrow("not configured");
 });
-it("renders current listings and matching crawlable schema; fallback removes expired metadata", async () => {
+it("renders current cards and matching schema, removes stale metadata on fallback", async () => {
   const html = fs.readFileSync("public/canvases.html", "utf8");
   const catalog = {
     seller: "lwvader",
     storeUrl: "https://www.ebay.com/sch/i.html?_ssn=lwvader",
-    items: projectItems([row(198704183258, "Canvas <script>bad</script>")]),
+    items: projectItems([sellerItem(198704183258, "Canvas <script>bad</script>")]),
   };
   const rendered = renderEbayPage(html, "canvas", catalog);
   expect(rendered).toContain('class="ebay-product"');
@@ -124,16 +206,51 @@ it("renders current listings and matching crawlable schema; fallback removes exp
   const fallback = renderEbayPage(html, "canvas", null);
   expect(fallback).not.toContain('class="ebay-product"');
   expect(fallback).toContain('"numberOfItems":0');
-  const env = {
-    ASSETS: {
-      fetch: async () =>
-        new Response(html, { headers: { "content-type": "text/html", etag: '"stale"' } }),
-    },
-  };
   const response = await worker.fetch(
     new Request("https://www.pixelshroomstudio.com/canvases.html"),
-    env,
+    {
+      ASSETS: {
+        fetch: async () =>
+          new Response(html, { headers: { "content-type": "text/html", etag: '"stale"' } }),
+      },
+    },
   );
   expect(response.headers.get("etag")).toBeNull();
   expect(await response.text()).toContain("temporarily unavailable");
+});
+
+it("renews HTTP-200 expired-token responses and rechecks the seller before publishing", async () => {
+  for (const changedSeller of [false, true]) {
+    let tokens = 0,
+      inventory = 0;
+    const env = environment(async (url, options) => {
+      if (url.includes("oauth2")) {
+        tokens++;
+        return Response.json({ access_token: `access${tokens}`, expires_in: 7200 });
+      }
+      if (options.headers["X-EBAY-API-CALL-NAME"] === "GetUser")
+        return xmlResponse("GetUser", {
+          User: { UserID: changedSeller && tokens > 1 ? "other" : "lwvader" },
+        });
+      if (++inventory === 1)
+        return xmlResponse("GetMyeBaySelling", {
+          Ack: "Failure",
+          Errors: { ErrorCode: "932", SeverityCode: "Error" },
+        });
+      return sellerPage([sellerItem(198704183299, "New apparel")]);
+    }, `xml-expiry-${changedSeller}`);
+    if (changedSeller) await expect(readEbayListings(env)).rejects.toThrow("lwvader");
+    else expect((await readEbayListings(env)).items).toHaveLength(1);
+    expect(tokens).toBe(2);
+  }
+});
+it("accepts a successful empty active collection without retaining previous listings", async () => {
+  const env = environment(
+    (url, options) =>
+      url.includes("oauth2") || options.headers["X-EBAY-API-CALL-NAME"] === "GetUser"
+        ? publicFixture(url, options)
+        : xmlResponse("GetMyeBaySelling"),
+    "empty",
+  );
+  expect((await readEbayListings(env)).items).toEqual([]);
 });

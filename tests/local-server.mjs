@@ -1,3 +1,4 @@
+import { xmlResponse, sellerPage } from "./ebay-fixture.mjs";
 import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -45,19 +46,23 @@ const ebayFixture = JSON.parse(await fs.readFile(path.join(root, "ebay-listings.
 const env = {
   EBAY_CLIENT_ID: "local-fixture",
   EBAY_CLIENT_SECRET: "local-fixture",
-  EBAY_FETCH: async (url) => {
+  EBAY_REFRESH_TOKEN: "local-fixture",
+  EBAY_FETCH: async (url, options) => {
     if (process.env.OFFLINE === "1") throw new Error("Fixture offline");
     if (url.includes("/oauth2/token"))
       return Response.json({ access_token: "fixture", expires_in: 7200 });
-    return Response.json({
-      total: ebayFixture.items.length,
-      itemSummaries: ebayFixture.items.map((item) => ({
-        legacyItemId: item.itemId,
-        title: item.title,
-        seller: { username: item.seller },
-        image: { imageUrl: item.imageUrl },
-      })),
-    });
+    if (options.headers["X-EBAY-API-CALL-NAME"] === "GetUser")
+      return xmlResponse("GetUser", { User: { UserID: "lwvader" } });
+    return sellerPage(
+      ebayFixture.items
+        .filter((item) => item.active)
+        .map((item) => ({
+          ItemID: item.itemId,
+          Title: item.title,
+          PictureDetails: { GalleryURL: item.imageUrl },
+          QuantityAvailable: "1",
+        })),
+    );
   },
   ASSETS: {
     fetch: async (request) => {

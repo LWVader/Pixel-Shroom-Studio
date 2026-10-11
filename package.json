@@ -24,6 +24,7 @@
     "ebay:build": "node tools/build-ebay-pages.mjs"
   },
   "dependencies": {
+    "fast-xml-parser": "5.11.2",
     "stripe": "^22.6.2"
   },
   "devDependencies": {
