@@ -2,11 +2,19 @@ import { SELLER, STORE_URL, validateCatalog } from "./public/ebay-core.js";
 export const REFRESH_SECONDS = 300;
 // One state per credential/fetcher combination; credentials never reach public responses.
 let state;
-function categoryFor(title) {
+function categoryFor(row) {
+  const title = row.title || "";
   if (/\bcanvas(?:es)?\b/i.test(title)) return "canvas";
   if (
     /\b(t[ -]?shirts?|shirts?|tees?|hoodies?|sweatshirts?|mugs?|totes?|bags?|hats?|caps?|gifts?|apparel)\b/i.test(
       title,
+    )
+  )
+    return "apparel";
+  if (
+    row._collection === "apparel" ||
+    /\b(t[ -]?shirts?|shirts?|tees?|hoodies?|sweatshirts?|tops?|clothing|apparel)\b/i.test(
+      (row.categories || []).map((category) => category.categoryName || "").join(" "),
     )
   )
     return "apparel";
@@ -17,7 +25,7 @@ export function projectItems(rows, now = Date.now()) {
     ids = new Set();
   for (const row of rows) {
     const id = String(row.legacyItemId || row.itemId?.split("|")[1] || "");
-    const category = categoryFor(row.title || "");
+    const category = categoryFor(row);
     if (
       row.seller?.username?.toLowerCase() !== SELLER ||
       !category ||
@@ -84,41 +92,50 @@ export async function readEbayListings(env) {
       return current.token;
     }
     const rows = [];
-    for (let offset = 0; offset < 10000; offset += 200) {
-      const url = new URL("https://api.ebay.com/buy/browse/v1/item_summary/search");
-      url.searchParams.set(
-        "q",
-        "(canvas,shirt,tee,hoodie,sweatshirt,mug,tote,bag,hat,cap,gift,apparel)",
-      );
-      url.searchParams.set("filter", `sellers:{${SELLER}}`);
-      url.searchParams.set("limit", "200");
-      url.searchParams.set("offset", String(offset));
-      async function search() {
-        return fetcher(url.href, {
-          signal,
-          headers: {
-            Authorization: `Bearer ${await token()}`,
-            "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
-          },
-        });
+    const searches = [
+      { q: "(canvas,shirt,tee,hoodie,sweatshirt,mug,tote,bag,hat,cap,gift,apparel)" },
+      { category_ids: "11450" }, // US Clothing, Shoes & Accessories; no title keywords required.
+    ];
+    for (const searchParameters of searches) {
+      for (let offset = 0; offset < 10000; offset += 200) {
+        const url = new URL("https://api.ebay.com/buy/browse/v1/item_summary/search");
+        for (const [name, value] of Object.entries(searchParameters))
+          url.searchParams.set(name, value);
+        url.searchParams.set("filter", `sellers:{${SELLER}}`);
+        url.searchParams.set("limit", "200");
+        url.searchParams.set("offset", String(offset));
+        async function search() {
+          return fetcher(url.href, {
+            signal,
+            headers: {
+              Authorization: `Bearer ${await token()}`,
+              "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+            },
+          });
+        }
+        let response = await search();
+        if (response.status === 401) {
+          current.token = null;
+          response = await search();
+        }
+        if (!response.ok) throw new Error("eBay listings unavailable");
+        const data = await response.json();
+        if (
+          data.errors?.length ||
+          !Number.isFinite(data.total) ||
+          (data.total > 0 && !Array.isArray(data.itemSummaries))
+        )
+          throw new Error("Invalid eBay search response");
+        if (data.total > 10000) throw new Error("Catalog exceeds supported search window");
+        rows.push(
+          ...(data.itemSummaries || []).map((row) => ({
+            ...row,
+            _collection: searchParameters.category_ids === "11450" ? "apparel" : null,
+          })),
+        );
+        if (offset + 200 >= data.total) break;
+        if (!data.itemSummaries?.length) throw new Error("Incomplete eBay search response");
       }
-      let response = await search();
-      if (response.status === 401) {
-        current.token = null;
-        response = await search();
-      }
-      if (!response.ok) throw new Error("eBay listings unavailable");
-      const data = await response.json();
-      if (
-        data.errors?.length ||
-        !Number.isFinite(data.total) ||
-        (data.total > 0 && !Array.isArray(data.itemSummaries))
-      )
-        throw new Error("Invalid eBay search response");
-      if (data.total > 10000) throw new Error("Catalog exceeds supported search window");
-      rows.push(...(data.itemSummaries || []));
-      if (offset + 200 >= data.total) break;
-      if (!data.itemSummaries?.length) throw new Error("Incomplete eBay search response");
     }
     const catalog = {
       seller: SELLER,
