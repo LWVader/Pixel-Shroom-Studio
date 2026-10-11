@@ -252,17 +252,7 @@ export async function readEbayListings(env) {
     let expectedTotal;
     for (let page = 1; page <= 125; page++) {
       await verifySeller();
-      const selectors = [
-        "Ack",
-        "Errors",
-        "ActiveList.ItemArray.Item.ItemID",
-        "ActiveList.ItemArray.Item.Title",
-        "ActiveList.ItemArray.Item.PictureDetails.GalleryURL",
-        "ActiveList.ItemArray.Item.QuantityAvailable",
-        "ActiveList.ItemArray.Item.ListingDetails.EndTime",
-        "ActiveList.PaginationResult",
-      ];
-      const fields = `<DetailLevel>ReturnAll</DetailLevel><ActiveList><Include>true</Include><IncludeNotes>false</IncludeNotes><Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination><Sort>StartTime</Sort></ActiveList><HideVariations>true</HideVariations><SoldList><Include>false</Include></SoldList><UnsoldList><Include>false</Include></UnsoldList><ScheduledList><Include>false</Include></ScheduledList><SellingSummary><Include>false</Include></SellingSummary>${selectors.map((name) => `<OutputSelector>${name}</OutputSelector>`).join("")}`;
+      const fields = `<DetailLevel>ReturnAll</DetailLevel><ActiveList><Include>true</Include><IncludeNotes>false</IncludeNotes><Pagination><EntriesPerPage>200</EntriesPerPage><PageNumber>${page}</PageNumber></Pagination><Sort>StartTime</Sort></ActiveList><HideVariations>true</HideVariations><SoldList><Include>false</Include></SoldList><UnsoldList><Include>false</Include></UnsoldList><ScheduledList><Include>false</Include></ScheduledList><SellingSummary><Include>false</Include></SellingSummary>`;
       const data = await trading("GetMyeBaySelling", fields);
       // A renewed token must be verified before any seller inventory is released.
       await verifySeller();
