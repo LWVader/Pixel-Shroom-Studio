@@ -254,3 +254,24 @@ it("accepts a successful empty active collection without retaining previous list
   );
   expect((await readEbayListings(env)).items).toEqual([]);
 });
+
+it("uses Auth'n'Auth without OAuth requests and escapes the private token", async () => {
+  const calls = [];
+  const env = {
+    EBAY_AUTH_TOKEN: "legacy<&private",
+    EBAY_FETCH: async (url, options) => {
+      calls.push({ url, options });
+      expect(url).toBe("https://api.ebay.com/ws/api.dll");
+      expect(options.headers).not.toHaveProperty("X-EBAY-API-IAF-TOKEN");
+      expect(options.body).toContain("<eBayAuthToken>legacy&lt;&amp;private</eBayAuthToken>");
+      return options.headers["X-EBAY-API-CALL-NAME"] === "GetUser"
+        ? xmlResponse("GetUser", { User: { UserID: "lwvader" } })
+        : sellerPage([sellerItem(198704183258)]);
+    },
+  };
+  const data = await readEbayListings(env);
+  expect(data.items).toHaveLength(1);
+  expect(data.authentication).toBe("auth-n-auth");
+  expect(JSON.stringify(data)).not.toContain("legacy");
+  expect(calls).toHaveLength(2);
+});

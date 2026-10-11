@@ -1,4 +1,5 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
+import { escapeHtml } from "./public/catalog-core.js";
 import { SELLER, STORE_URL, validateCatalog } from "./public/ebay-core.js";
 import { collectionMarkup, unavailableMarkup, itemList } from "./public/ebay-core.js";
 export const REFRESH_SECONDS = 300;
@@ -66,7 +67,10 @@ export function projectItems(rows, now = Date.now()) {
   return items;
 }
 export async function readEbayListings(env) {
-  if (!env.EBAY_CLIENT_ID || !env.EBAY_CLIENT_SECRET || !env.EBAY_REFRESH_TOKEN)
+  if (
+    !env.EBAY_AUTH_TOKEN &&
+    (!env.EBAY_CLIENT_ID || !env.EBAY_CLIENT_SECRET || !env.EBAY_REFRESH_TOKEN)
+  )
     throw new Error("eBay seller feed is not configured");
   const fetcher = env.EBAY_FETCH || fetch;
   if (
@@ -74,12 +78,14 @@ export async function readEbayListings(env) {
     state.id !== env.EBAY_CLIENT_ID ||
     state.secret !== env.EBAY_CLIENT_SECRET ||
     state.refresh !== env.EBAY_REFRESH_TOKEN ||
+    state.auth !== env.EBAY_AUTH_TOKEN ||
     state.fetcher !== fetcher
   )
     state = {
       id: env.EBAY_CLIENT_ID,
       secret: env.EBAY_CLIENT_SECRET,
       refresh: env.EBAY_REFRESH_TOKEN,
+      auth: env.EBAY_AUTH_TOKEN,
       fetcher,
     };
   const current = state;
@@ -89,6 +95,10 @@ export async function readEbayListings(env) {
   current.pending = (async () => {
     const signal = AbortSignal.timeout(18000);
     async function token() {
+      if (env.EBAY_AUTH_TOKEN) {
+        current.token = env.EBAY_AUTH_TOKEN;
+        return current.token;
+      }
       if (current.token && Date.now() < current.tokenUntil) return current.token;
       const response = await fetcher("https://api.ebay.com/identity/v1/oauth2/token", {
         method: "POST",
@@ -118,7 +128,10 @@ export async function readEbayListings(env) {
       return current.token;
     }
     async function trading(call, fields) {
-      const body = `<?xml version="1.0" encoding="utf-8"?><${call}Request xmlns="urn:ebay:apis:eBLBaseComponents"><Version>${VERSION}</Version>${fields}</${call}Request>`;
+      const credentials = env.EBAY_AUTH_TOKEN
+        ? `<RequesterCredentials><eBayAuthToken>${escapeHtml(env.EBAY_AUTH_TOKEN)}</eBayAuthToken></RequesterCredentials>`
+        : "";
+      const body = `<?xml version="1.0" encoding="utf-8"?><${call}Request xmlns="urn:ebay:apis:eBLBaseComponents"><Version>${VERSION}</Version>${credentials}${fields}</${call}Request>`;
       async function request() {
         return fetcher("https://api.ebay.com/ws/api.dll", {
           method: "POST",
@@ -128,13 +141,13 @@ export async function readEbayListings(env) {
             "X-EBAY-API-CALL-NAME": call,
             "X-EBAY-API-SITEID": "0",
             "X-EBAY-API-COMPATIBILITY-LEVEL": VERSION,
-            "X-EBAY-API-IAF-TOKEN": await token(),
+            ...(env.EBAY_AUTH_TOKEN ? {} : { "X-EBAY-API-IAF-TOKEN": await token() }),
           },
           body,
         });
       }
       let response = await request();
-      if (response.status === 401) {
+      if (!env.EBAY_AUTH_TOKEN && response.status === 401) {
         current.token = null;
         response = await request();
       }
@@ -145,7 +158,7 @@ export async function readEbayListings(env) {
       try {
         result = parseTradingResponse(xml, call);
       } catch (error) {
-        if (/<ErrorCode>\s*(931|932|16110)\s*<\/ErrorCode>/.test(xml)) {
+        if (!env.EBAY_AUTH_TOKEN && /<ErrorCode>\s*(931|932|16110)\s*<\/ErrorCode>/.test(xml)) {
           current.token = null;
           response = await request();
           if (!response.ok) throw new Error("eBay seller API unavailable");
@@ -159,7 +172,7 @@ export async function readEbayListings(env) {
       if (current.verifiedToken === access) return;
       const identity = await trading("GetUser", "<OutputSelector>User.UserID</OutputSelector>");
       if (identity.User?.UserID?.toLowerCase() !== SELLER)
-        throw new Error("The refresh token must belong to lwvader");
+        throw new Error("The seller token must belong to lwvader");
       current.verifiedToken = current.token;
     }
     const rows = [];
@@ -217,6 +230,7 @@ export async function readEbayListings(env) {
       updatedAt: new Date().toISOString(),
       refreshAfterSeconds: REFRESH_SECONDS,
       source: "seller-active-listings",
+      authentication: env.EBAY_AUTH_TOKEN ? "auth-n-auth" : "oauth",
       activeListingCount: rows.length,
     };
     current.catalog = catalog;

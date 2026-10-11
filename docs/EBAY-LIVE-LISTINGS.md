@@ -1,3 +1,13 @@
+# Auth’n’Auth setup (no OAuth refresh token)
+
+In Cloudflare Workers & Pages → your Worker → Settings → Variables and Secrets, add **EBAY_AUTH_TOKEN** as type **Secret**. Use the production Auth’n’Auth token for lwvader, not an OAuth access token. Deploy the updated ebay-feed.mjs. This token takes precedence if OAuth secrets are also configured; no refresh token or Dev ID is required for these read calls. Existing app secrets may remain.
+
+The endpoint should return authentication: "auth-n-auth" and source: "seller-active-listings". The account token is sent only to eBay in XML RequesterCredentials, escaped correctly, and never returned to browsers. GetUser verifies the account; GetMyeBaySelling retrieves every active-listing page. New listings and ended listings update every five minutes. No fixed item IDs, public search, orders or artwork uploads are used. You must replace the legacy token if it expires or is revoked; it is not renewed through OAuth. This change does not guarantee success until tested with your production token.
+
+Replace ebay-feed.mjs for production. The ZIP also contains updated tests and this guide. The fast-xml-parser dependency from the seller-sync update is still required; run npm.cmd ci if it has not been installed. Existing HTML, images and keys need no changes.
+
+## Optional OAuth configuration
+
 # Automatic seller listing feed
 
 The shop now reads the authenticated **lwvader** account's active listings using eBay Trading API GetMyeBaySelling. It does not use Browse search, title-based discovery, scraped eBay pages or a list of hard-coded item IDs. Every refresh fetches all pages of the active collection and replaces the previous catalog. The Worker verifies the authorized seller with GetUser before exposing any listings.
