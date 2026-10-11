@@ -1,4 +1,4 @@
-import { readEbayListings, renderEbayPage } from "./ebay-feed.mjs";
+import { readEbayListings, renderEbayPage, feedDiagnostic } from "./ebay-feed.mjs";
 import {
   GENRES,
   genreUrl,
@@ -87,9 +87,14 @@ export default {
         status = 200;
       try {
         payload = await readEbayListings(env);
-      } catch {
+      } catch (error) {
         status = 503;
-        payload = { error: "Live eBay listings are unavailable. Please visit our eBay store." };
+        const diagnostic = feedDiagnostic(error, env);
+        console.warn("eBay feed failure", diagnostic);
+        payload = {
+          error: "Live eBay listings are unavailable. Please visit our eBay store.",
+          diagnostic,
+        };
       }
       const result = Response.json(payload, {
         status,

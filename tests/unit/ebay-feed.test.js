@@ -275,3 +275,27 @@ it("uses Auth'n'Auth without OAuth requests and escapes the private token", asyn
   expect(JSON.stringify(data)).not.toContain("legacy");
   expect(calls).toHaveLength(2);
 });
+
+it("returns safe upstream diagnostics without tokens or raw account data", async () => {
+  const env = {
+    EBAY_AUTH_TOKEN: "private-do-not-expose",
+    EBAY_FETCH: async () =>
+      xmlResponse("GetUser", {
+        Ack: "Failure",
+        Errors: {
+          ErrorCode: "931",
+          SeverityCode: "Error",
+          LongMessage: "private-do-not-expose account@example.com",
+        },
+      }),
+  };
+  const response = await worker.fetch(
+    new Request("https://www.pixelshroomstudio.com/api/ebay-listings"),
+    env,
+  );
+  const data = await response.json();
+  expect(data.diagnostic.stage).toBe("GetUser");
+  expect(data.diagnostic.ebayCodes).toEqual(["931"]);
+  expect(data.diagnostic.authentication).toBe("auth-n-auth");
+  expect(JSON.stringify(data)).not.toMatch(/private-do-not-expose|account@example/);
+});

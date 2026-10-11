@@ -63,3 +63,7 @@ Official documentation:
 - https://developer.ebay.com/devzone/xml/docs/reference/ebay/GetUser.html
 - https://developer.ebay.com/develop/guides/sell/authorization
 - https://developer.ebay.com/api-docs/user-guides/static/make-a-call/using-xml.html
+
+## Safe failure diagnostics
+
+A failed /api/ebay-listings request now includes diagnostic: version, stage, fixed error code, numeric eBay error codes or HTTP status, authentication mode and booleans indicating which secrets exist. These details are also logged to Worker logs. It never returns token values, raw XML, provider error descriptions, account details or client secrets. Send the diagnostic object when reporting a failure. This update identifies failures; it does not assume token renewal was the cause.

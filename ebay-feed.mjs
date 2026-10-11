@@ -12,6 +12,66 @@ const parser = new XMLParser({
 let state;
 const array = (value) =>
   value == null || value === "" ? [] : Array.isArray(value) ? value : [value];
+function failure(message, stage, details = {}) {
+  const error = new Error(message);
+  error.feedDetails = { stage, ...details };
+  return error;
+}
+export function feedDiagnostic(error, env) {
+  const messages = {
+    "Invalid eBay XML response": "invalid_xml",
+    "eBay seller request failed": "trading_error",
+    "eBay seller feed is not configured": "missing_credentials",
+    "eBay seller authorization unavailable": "oauth_failed",
+    "Invalid eBay token response": "invalid_token_response",
+    "eBay seller API unavailable": "trading_http_error",
+    "The seller token must belong to lwvader": "wrong_seller",
+    "Invalid or truncated seller inventory": "invalid_pagination",
+    "Seller inventory changed during pagination; retry next refresh": "inventory_changed",
+    "Incomplete seller inventory": "incomplete_inventory",
+  };
+  const details = error?.feedDetails || {};
+  const result = {
+    version: "seller-feed-diagnostics-v1",
+    code:
+      messages[error?.message] ||
+      (error?.name === "TimeoutError" || error?.name === "AbortError"
+        ? "upstream_timeout"
+        : "upstream_failure"),
+    authentication: env.EBAY_AUTH_TOKEN ? "auth-n-auth" : "oauth",
+    configured: {
+      authToken: !!env.EBAY_AUTH_TOKEN,
+      clientId: !!env.EBAY_CLIENT_ID,
+      clientSecret: !!env.EBAY_CLIENT_SECRET,
+      refreshToken: !!env.EBAY_REFRESH_TOKEN,
+    },
+  };
+  if (["GetUser", "GetMyeBaySelling", "oauth"].includes(details.stage))
+    result.stage = details.stage;
+  if (
+    Number.isInteger(details.httpStatus) &&
+    details.httpStatus >= 100 &&
+    details.httpStatus <= 599
+  )
+    result.httpStatus = details.httpStatus;
+  if (Array.isArray(details.ebayCodes))
+    result.ebayCodes = details.ebayCodes
+      .filter((code) => /^\d{1,10}$/.test(String(code)))
+      .map(String)
+      .slice(0, 5);
+  if (
+    [
+      "invalid_client",
+      "invalid_grant",
+      "invalid_scope",
+      "invalid_request",
+      "unauthorized_client",
+      "unsupported_grant_type",
+    ].includes(details.oauthCode)
+  )
+    result.oauthCode = details.oauthCode;
+  return result;
+}
 export function parseTradingResponse(xml, call) {
   if (
     typeof xml !== "string" ||
@@ -19,14 +79,16 @@ export function parseTradingResponse(xml, call) {
     /<!DOCTYPE|<!ENTITY/i.test(xml) ||
     XMLValidator.validate(xml) !== true
   )
-    throw new Error("Invalid eBay XML response");
+    throw failure("Invalid eBay XML response", call);
   const result = parser.parse(xml)[`${call}Response`];
   if (
     !result ||
     !["Success", "Warning"].includes(result.Ack) ||
     array(result.Errors).some((error) => error.SeverityCode === "Error")
   )
-    throw new Error("eBay seller request failed");
+    throw failure("eBay seller request failed", call, {
+      ebayCodes: array(result?.Errors).map((error) => error.ErrorCode),
+    });
   return result;
 }
 export function projectItems(rows, now = Date.now()) {
@@ -113,7 +175,16 @@ export async function readEbayListings(env) {
           scope: "https://api.ebay.com/oauth/api_scope",
         }),
       });
-      if (!response.ok) throw new Error("eBay seller authorization unavailable");
+      if (!response.ok) {
+        let details = {};
+        try {
+          details = await response.json();
+        } catch {}
+        throw failure("eBay seller authorization unavailable", "oauth", {
+          httpStatus: response.status,
+          oauthCode: details.error,
+        });
+      }
       const data = await response.json();
       if (
         typeof data.access_token !== "string" ||
@@ -151,7 +222,8 @@ export async function readEbayListings(env) {
         current.token = null;
         response = await request();
       }
-      if (!response.ok) throw new Error("eBay seller API unavailable");
+      if (!response.ok)
+        throw failure("eBay seller API unavailable", call, { httpStatus: response.status });
       const xml = await response.text();
       // Trading often returns expired-auth errors inside HTTP 200 XML.
       let result;
@@ -161,7 +233,8 @@ export async function readEbayListings(env) {
         if (!env.EBAY_AUTH_TOKEN && /<ErrorCode>\s*(931|932|16110)\s*<\/ErrorCode>/.test(xml)) {
           current.token = null;
           response = await request();
-          if (!response.ok) throw new Error("eBay seller API unavailable");
+          if (!response.ok)
+            throw failure("eBay seller API unavailable", call, { httpStatus: response.status });
           result = parseTradingResponse(await response.text(), call);
         } else throw error;
       }
