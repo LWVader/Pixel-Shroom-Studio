@@ -26,3 +26,5 @@ main{align-items:start}.properties{max-height:calc(100vh - 86px);overflow-y:auto
 .emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;max-height:260px;overflow:auto}.emoji-grid button{font-family:"Apple Color Emoji","Segoe UI Emoji",sans-serif;font-size:23px;padding:6px;min-height:40px}.post-details-preview{padding:18px;background:#17231d;border:1px solid #3c4b40;border-radius:9px;overflow-wrap:anywhere}#postCaptionPreview{white-space:pre-wrap;line-height:1.65;max-height:480px;overflow:auto}.post-details-preview h3{margin-top:0}.properties .section .section{padding-top:12px}
 
 .properties #publishCaption{background:#1b1f1d;color:#f1f4ef;border:1px solid #475044;border-radius:7px}.properties .compose-row{display:block}
+
+.post-error{color:#ffb4b4;background:#411b21;border:1px solid #f16c79;border-radius:8px;padding:12px;font-weight:700}.post-error[hidden]{display:none}.submission-row{flex-wrap:wrap}.delete-submission{color:#ffb4b4;border-color:#a94a57}
