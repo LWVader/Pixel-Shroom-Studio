@@ -31,7 +31,7 @@ export const fixtures = genreNames.flatMap((category, g) =>
     display_height: 512,
   })),
 );
-const root = path.resolve(fileURLToPath(new URL("../public", import.meta.url)));
+const root = path.resolve(fileURLToPath(new URL("../dist/public", import.meta.url)));
 const mime = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css",

@@ -1,19 +1,14 @@
 {
-	"name": "pixel-shroom-studio",
-	"main": "worker-ad-studio.mjs",
-	"compatibility_date": "2026-10-04",
-	"assets": {
-		"directory": "./public",
-		"binding": "ASSETS",
-		"run_worker_first": true,
-		"html_handling": "none",
-		"not_found_handling": "404-page",
-	},
-	"d1_databases": [
-		{
-			"binding": "AD_STUDIO_DB",
-			"database_name": "pixel-shroom-ad-studio",
-			"database_id": "4b83516c-d402-4185-bc06-59d0544abb03"
-		}
-	],
+  "name": "pixel-shroom-studio",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-04",
+  "minify": true,
+  "build": { "command": "npm run build", "watch_dir": ["public", "tools"] },
+  "assets": {
+    "directory": "./dist/public",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none",
+    "not_found_handling": "404-page",
+  },
 }

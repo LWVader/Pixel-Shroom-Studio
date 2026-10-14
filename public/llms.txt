@@ -1,0 +1,43 @@
+# Pixel Shroom Studio
+
+> Pixel Shroom Studio is the online art studio and gallery of LWVader (LWVADER), featuring serialized AI-generated digital artwork and selected designs on canvas, apparel and gifts.
+
+The canonical website is https://www.pixelshroomstudio.com/. Digital artwork and physical products are separate offerings. Physical-product links lead to eBay seller lwvader, where purchases, product options, shipping and order support are handled. Visitors can request any artwork listed on the studio website for apparel or canvas prints through the contact form; available options and pricing are discussed individually.
+
+Use the linked pages for current listings, purchase details and usage rights. Availability can change. Public gallery images are previews, not unrestricted original downloads. A serial or verification result does not by itself establish copyright ownership, NFT ownership or eligibility for commercial use. Consult the published usage rights and listing details.
+
+## Studio and artwork
+
+- [Home](https://www.pixelshroomstudio.com/): Studio introduction and recent artwork.
+- [All artwork](https://www.pixelshroomstudio.com/all-artwork.html): Overview of the genre collections.
+- [Portrait](https://www.pixelshroomstudio.com/genre.html?genre=portrait): Portrait artwork.
+- [Fantasy](https://www.pixelshroomstudio.com/genre.html?genre=fantasy): Fantasy artwork.
+- [Landscape](https://www.pixelshroomstudio.com/genre.html?genre=landscape): Landscape artwork.
+- [Sci-Fi](https://www.pixelshroomstudio.com/genre.html?genre=sci-fi): Science-fiction artwork.
+- [Abstract](https://www.pixelshroomstudio.com/genre.html?genre=abstract): Abstract artwork.
+- [Dreamscape](https://www.pixelshroomstudio.com/genre.html?genre=dreamscape): Dreamscape artwork.
+- [Dark Fantasy](https://www.pixelshroomstudio.com/genre.html?genre=dark-fantasy): Dark-fantasy artwork.
+- [Horror](https://www.pixelshroomstudio.com/genre.html?genre=horror): Horror artwork.
+- [NFT](https://www.pixelshroomstudio.com/genre.html?genre=nft): The studio's NFT category; consult individual listings for current offerings.
+
+## Physical products and custom requests
+
+- [Canvases](https://www.pixelshroomstudio.com/canvases.html): Current canvas previews linking to eBay listings.
+- [Apparel and gifts](https://www.pixelshroomstudio.com/apparel.html): Current apparel and gift previews linking to eBay listings.
+- [Contact form](https://www.pixelshroomstudio.com/contact.html#contact-form): Artwork, apparel and canvas-print requests and studio inquiries.
+- [eBay seller listings](https://www.ebay.com/sch/i.html?_ssn=lwvader): Current products sold by lwvader; check each listing for price, options and availability.
+
+## Help and verification
+
+- [FAQ](https://www.pixelshroomstudio.com/faq.html): Questions about artwork, purchases, downloads, editing and serials.
+- [How it works](https://www.pixelshroomstudio.com/how-it-works.html): Digital-art purchase and delivery process.
+- [Usage rights](https://www.pixelshroomstudio.com/usage-rights.html): Published artwork licensing and use information.
+- [Verify](https://www.pixelshroomstudio.com/verify.html): Artwork verification tools and instructions.
+
+## Optional
+
+- [Terms](https://www.pixelshroomstudio.com/terms.html): Terms of use.
+- [Privacy](https://www.pixelshroomstudio.com/privacy.html): Privacy policy.
+- [Cookies](https://www.pixelshroomstudio.com/cookies.html): Cookie information.
+- [Sitemap](https://www.pixelshroomstudio.com/sitemap.xml): Public URL index.
+- [Robots](https://www.pixelshroomstudio.com/robots.txt): Crawler access directives.

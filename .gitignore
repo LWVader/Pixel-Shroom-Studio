@@ -4,3 +4,5 @@ playwright-report/
 test-results/
 .env
 .wrangler/
+
+dist/
