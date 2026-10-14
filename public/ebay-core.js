@@ -25,6 +25,11 @@ export function validateCatalog(catalog) {
         image.port
       )
         throw new Error("Invalid listing");
+      // Ask eBay for its larger public preview instead of stretching a gallery thumbnail.
+      image.pathname = image.pathname.replace(
+        /\/s-l(\d+)\.(jpg|jpeg|png|webp)$/i,
+        (path, size, extension) => (Number(size) < 1200 ? `/s-l1200.${extension}` : path),
+      );
       ids.add(String(item.itemId));
       return {
         itemId: String(item.itemId),
@@ -40,7 +45,7 @@ export function collectionMarkup(items, category) {
   const selected = items.filter((item) => item.category === category);
   if (!selected.length)
     return `<div class="ebay-empty"><p>No current ${category === "canvas" ? "canvas" : "apparel or gift"} listings were found.</p><a class="button" href="${STORE_URL}" rel="noopener noreferrer">Browse lwvader’s current eBay listings ↗</a></div>`;
-  return `<div class="print-grid">${selected.map((item) => `<article class="ebay-product"><a href="${item.url}" rel="noopener noreferrer" aria-label="${escapeHtml(item.title)} on eBay"><img src="${escapeHtml(item.imageUrl)}" width="500" height="500" loading="lazy" alt="${escapeHtml(item.title)}"></a><h3><a href="${item.url}" rel="noopener noreferrer">${escapeHtml(item.title)}</a></h3><p>Sold by lwvader on eBay. See the listing for current price and product options.</p><a class="button" href="${item.url}" rel="noopener noreferrer">View and buy on eBay ↗</a></article>`).join("\n")}</div>`;
+  return `<div class="print-grid">${selected.map((item) => `<article class="ebay-product"><a href="${item.url}" rel="noopener noreferrer" aria-label="${escapeHtml(item.title)} on eBay"><img src="${escapeHtml(item.imageUrl)}" width="500" height="500" loading="lazy" decoding="async" alt="${escapeHtml(item.title)}"></a><h3><a href="${item.url}" rel="noopener noreferrer">${escapeHtml(item.title)}</a></h3><p>Sold by lwvader on eBay. See the listing for current price and product options.</p><a class="button" href="${item.url}" rel="noopener noreferrer">View and buy on eBay ↗</a></article>`).join("\n")}</div>`;
 }
 export function itemList(items, category) {
   const selected = items.filter((item) => item.category === category);

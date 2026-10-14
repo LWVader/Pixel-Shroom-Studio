@@ -20,10 +20,27 @@
   gap: 1.5rem;
 }
 .ebay-product {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
   padding: 1rem;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 1rem;
+}
+.ebay-product > *,
+.ebay-product h3 a {
+  min-width: 0;
+  max-width: 100%;
+}
+.ebay-product .button {
+  align-self: flex-start;
+  margin-top: auto;
+  white-space: normal;
+  box-sizing: border-box;
 }
 .ebay-product img {
   width: 100%;
@@ -37,11 +54,6 @@
 }
 .print-faq {
   margin-top: 3rem;
-}
-.print-request-copy {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: clamp(1.15rem, 2vw, 1.35rem);
-  line-height: 1.7;
 }
 .print-faq details {
   padding: 1rem 0;
