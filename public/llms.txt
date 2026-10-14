@@ -1,6 +1,8 @@
 # Pixel Shroom Studio
 
-> Pixel Shroom Studio is the online art studio and gallery of LWVader (LWVADER), featuring serialized AI-generated digital artwork and selected designs on canvas, apparel and gifts.
+> Pixel Shroom Studio is the online art studio and gallery of LWVader (LWVADER), featuring watermark-free digital artwork for personal and commercial projects, with verifiable studio-issued master files, and selected designs on canvas, apparel and gifts.
+
+Purchases are nonexclusive unless a listing explicitly states otherwise. Signing verifies source and file integrity, not exclusive ownership.
 
 The canonical website is https://www.pixelshroomstudio.com/. Digital artwork and physical products are separate offerings. Physical-product links lead to eBay seller lwvader, where purchases, product options, shipping and order support are handled. Visitors can request any artwork listed on the studio website for apparel or canvas prints through the contact form; available options and pricing are discussed individually.
 
@@ -24,6 +26,7 @@ Use the linked pages for current listings, purchase details and usage rights. Av
 
 - [Canvases](https://www.pixelshroomstudio.com/canvases.html): Current canvas previews linking to eBay listings.
 - [Apparel and gifts](https://www.pixelshroomstudio.com/apparel.html): Current apparel and gift previews linking to eBay listings.
+- [Studio updates](https://www.pixelshroomstudio.com/#studio-updates): Personally managed requests for studio news and NFT release notifications.
 - [Contact form](https://www.pixelshroomstudio.com/contact.html#contact-form): Artwork, apparel and canvas-print requests and studio inquiries.
 - [eBay seller listings](https://www.ebay.com/sch/i.html?_ssn=lwvader): Current products sold by lwvader; check each listing for price, options and availability.
 

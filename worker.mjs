@@ -1,3 +1,8 @@
+import {
+  renderFeatured,
+  renderProductExamples,
+  renderProjectExample,
+} from "./public/studio-home-core.js";
 import { readEbayListings, renderEbayPage, feedDiagnostic } from "./ebay-feed.mjs";
 import {
   GENRES,
@@ -204,10 +209,22 @@ export default {
           /<!--CATALOG_START-->[\s\S]*?<!--CATALOG_END-->/,
           "<!--CATALOG_START-->" + markup + "<!--CATALOG_END-->",
         );
-        const payload = JSON.stringify({ rows, genre: slug, loadedAt: cachedAt }).replace(
-          /</g,
-          "\\u003c",
-        );
+        if (path === "/") {
+          content = content.replace(
+            /<!--FEATURED_START-->[\s\S]*?<!--FEATURED_END-->/,
+            () => `<!--FEATURED_START-->${renderFeatured(cachedRows)}<!--FEATURED_END-->`,
+          );
+          content = content.replace(
+            /<!--PROJECT_EXAMPLE_START-->[\s\S]*?<!--PROJECT_EXAMPLE_END-->/,
+            () =>
+              `<!--PROJECT_EXAMPLE_START-->${renderProjectExample(cachedRows)}<!--PROJECT_EXAMPLE_END-->`,
+          );
+        }
+        const payload = JSON.stringify({
+          rows: path === "/" ? cachedRows : rows,
+          genre: slug,
+          loadedAt: cachedAt,
+        }).replace(/</g, "\\u003c");
         content = content.replace(
           "<!--BOOTSTRAP-->",
           `<script id="catalog-bootstrap" type="application/json">${payload}</script>`,
@@ -252,6 +269,26 @@ export default {
             "Checking current listings…",
             "The live collection is temporarily unavailable. Please try again shortly.",
           );
+      }
+      if (path === "/") {
+        let products = null,
+          timer;
+        try {
+          products = await Promise.race([
+            readEbayListings(env),
+            new Promise((resolve) => {
+              timer = setTimeout(() => resolve(null), 1500);
+            }),
+          ]);
+        } catch {
+        } finally {
+          clearTimeout(timer);
+        }
+        content = content.replace(
+          /<!--PRODUCT_EXAMPLES_START-->[\s\S]*?<!--PRODUCT_EXAMPLES_END-->/,
+          () =>
+            `<!--PRODUCT_EXAMPLES_START-->${renderProductExamples(products)}<!--PRODUCT_EXAMPLES_END-->`,
+        );
       }
       const h = new Headers(response.headers);
       h.delete("content-length");

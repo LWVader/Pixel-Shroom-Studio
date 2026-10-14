@@ -952,7 +952,7 @@ button.art-image {
   padding-block: 17px;
   border-top: 1px solid var(--line);
   font:
-    16px/1.6 Arial,
+    11px/1.6 Arial,
     sans-serif;
   letter-spacing: 0.025em;
 }
@@ -1132,4 +1132,58 @@ button.art-image {
 /* Preserve semantic hidden state when component display styles apply. */
 [hidden] {
   display: none !important;
+}
+
+/* Buyer information sits before the existing payment action. */
+.artwork-information {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 13px;
+  overflow-wrap: anywhere;
+}
+.artwork-information summary {
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--gold);
+}
+.artwork-information dl {
+  display: grid;
+  gap: 6px;
+  margin: 15px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.artwork-information dt {
+  color: var(--gold);
+}
+.artwork-information dd {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+.art-info .artwork-information p {
+  font:
+    14px/1.5 Georgia,
+    serif;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.artwork-information a {
+  display: inline-block;
+  color: var(--gold);
+  font-size: 14px;
+}
+.art-info h3 {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .artwork-information summary {
+    font-size: 14px;
+  }
+  .artwork-information dl,
+  .art-info .artwork-information p,
+  .artwork-information a {
+    font-size: 13px;
+  }
 }

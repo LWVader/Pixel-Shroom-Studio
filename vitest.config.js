@@ -5,7 +5,14 @@ export default defineConfig({
     testTimeout: 60000,
     coverage: {
       provider: "v8",
-      include: ["public/catalog-core.js", "public/ebay-core.js", "ebay-feed.mjs", "worker.mjs"],
+      include: [
+        "public/catalog-core.js",
+        "public/ebay-core.js",
+        "public/studio-catalog.js",
+        "public/studio-home-core.js",
+        "ebay-feed.mjs",
+        "worker.mjs",
+      ],
       reporter: ["text", "html", "lcov"],
     },
   },

@@ -3,6 +3,9 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./config.js";
 
 const form = document.querySelector("#contact-form");
 const status = document.querySelector("#contact-message");
+const request = new URLSearchParams(location.search);
+if (form && request.get("product") === "custom-print")
+  form.elements.subject.value = "Artwork on apparel or canvas";
 
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();

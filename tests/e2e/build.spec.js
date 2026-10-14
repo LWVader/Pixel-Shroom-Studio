@@ -25,11 +25,13 @@ test("compiled collections, full-catalog search, keyboard preview and unsafe che
 }) => {
   await page.goto("/all-artwork.html");
   await expect(page.locator(".genre-sample")).toHaveCount(9);
-  await expect(page.locator(".art-card")).toHaveCount(36);
+  await expect(page.locator(".art-card")).toHaveCount(32);
   for (const section of await page.locator(".genre-sample").all())
-    await expect(section.locator(".art-card")).toHaveCount(4);
+    await expect(section.locator(".art-card")).toHaveCount(
+      (await section.getAttribute("data-genre-section")) === "nft" ? 0 : 4,
+    );
   await page.locator("#shuffle-samples").click();
-  await expect(page.locator(".art-card")).toHaveCount(36);
+  await expect(page.locator(".art-card")).toHaveCount(32);
   await page.locator("#search").fill("Fantasy artwork 5");
   await expect(page.locator(".art-card")).toHaveCount(2);
   await page.locator("#search").fill("");
@@ -44,7 +46,7 @@ test("compiled collections, full-catalog search, keyboard preview and unsafe che
 for (const genre of genres)
   test(`${genre} canonical and complete collection`, async ({ page }) => {
     await page.goto("/genre.html?genre=" + genre);
-    await expect(page.locator(".art-card")).toHaveCount(6);
+    await expect(page.locator(".art-card")).toHaveCount(genre === "nft" ? 0 : 6);
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator("link[rel=canonical]")).toHaveAttribute(
       "href",

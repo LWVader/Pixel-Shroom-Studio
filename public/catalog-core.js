@@ -1,3 +1,4 @@
+import { correctedArtwork } from "./studio-catalog.js";
 // Shared by the browser and the routing Worker: the only supported genres.
 export const GENRES = {
   portrait: {
@@ -90,14 +91,16 @@ export const formatPrice = (value) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value));
 export function validRows(rows) {
   return Array.isArray(rows)
-    ? rows.filter(
-        (x) =>
-          x &&
-          Object.values(GENRES).some((g) => g.name === x.category) &&
-          safePreviewUrl(x.preview_url) &&
-          Number.isFinite(Number(x.price)) &&
-          Number(x.price) > 0,
-      )
+    ? rows
+        .filter(
+          (x) =>
+            x &&
+            Object.values(GENRES).some((g) => g.name === x.category) &&
+            safePreviewUrl(x.preview_url) &&
+            Number.isFinite(Number(x.price)) &&
+            Number(x.price) > 0,
+        )
+        .map(correctedArtwork)
     : [];
 }
 export function randomSample(rows, limit = 4, rng = Math.random) {
@@ -107,6 +110,22 @@ export function randomSample(rows, limit = 4, rng = Math.random) {
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result.slice(0, limit);
+}
+export function artworkInformation(row) {
+  const formats = {
+    "image/png": "PNG",
+    "image/jpeg": "JPEG",
+    "image/webp": "WebP",
+    "application/zip": "ZIP package",
+  };
+  const format = formats[row.original_format] || "Not recorded — ask the studio";
+  const w = Number(row.original_width),
+    h = Number(row.original_height);
+  const dimensions =
+    Number.isInteger(w) && w > 0 && Number.isInteger(h) && h > 0
+      ? `${w.toLocaleString("en-US")} × ${h.toLocaleString("en-US")} px${row.original_dimensions_source === "decoded" ? "" : " (registered)"}`
+      : "Not recorded — confirm before printing";
+  return `<details class="artwork-information"><summary>What you’ll receive</summary><dl><dt>File format</dt><dd>${escapeHtml(format)}</dd><dt>Original pixels</dt><dd>${escapeHtml(dimensions)}</dd><dt>Delivery</dt><dd>Watermark-free digital file after verified payment.</dd><dt>Included use</dt><dd>Personal and commercial use, including editing, redistribution and resale. Nonexclusive unless the listing says otherwise.</dd><dt>Suitable uses</dt><dd>Digital projects, design work and printing at a size appropriate to the recorded resolution.</dd></dl><p>Verification confirms the studio-issued file’s source and integrity; a serial number does not make ownership exclusive.</p><a href="/usage-rights.html">Read the full usage rights →</a></details>`;
 }
 export function cardMarkup(row, { interactive = true } = {}) {
   const width = Math.min(1600, Math.max(160, Number(row.display_width) || 600)),
@@ -133,7 +152,7 @@ export function cardMarkup(row, { interactive = true } = {}) {
     : `<div class="art-image">${img}</div>`;
   const actions =
     row.category === "NFT"
-      ? '<p class="muted">NFT release coming soon.</p>'
+      ? '<p class="muted">NFT release coming soon.</p><a class="text-link" href="/?updates=nft#studio-updates">Request release notifications →</a>'
       : `<div class="payment-actions" hidden>
   <button class="button" type="button" data-buy="${escapeHtml(row.id)}" data-provider="stripe">
     Buy with Stripe ↗
@@ -145,9 +164,10 @@ export function cardMarkup(row, { interactive = true } = {}) {
     <p>${escapeHtml(row.category)} · ${escapeHtml(row.serial_number)}</p>
     <div>
       <h3>${escapeHtml(row.title)}</h3>
-      <span class="price">${formatPrice(row.price)}</span>
+      ${row.category === "NFT" ? "" : `<span class="price">${formatPrice(row.price)}</span>`}
     </div>
     <p class="artist">by ${escapeHtml(row.artist || "LWVader")}</p>
+    ${row.category === "NFT" ? "" : artworkInformation(row)}
     ${actions}
     <p class="card-status muted" role="status"></p>
     <a class="verify-link" href="/verify.html?serial=${encodeURIComponent(row.serial_number)}">Verify an original →</a>
@@ -165,12 +185,15 @@ export function renderCompiled(rows, { term = "", sampleIds } = {}) {
   return Object.entries(GENRES)
     .map(([slug, genre]) => {
       const all = visible.filter((x) => x.category === genre.name);
-      const selected = sampleIds?.[slug]
-        ? sampleIds[slug]
-            .map((id) => all.find((x) => String(x.id) === String(id)))
-            .filter(Boolean)
-            .slice(0, 4)
-        : randomSample(all, 4);
+      const selected =
+        slug === "nft"
+          ? []
+          : sampleIds?.[slug]
+            ? sampleIds[slug]
+                .map((id) => all.find((x) => String(x.id) === String(id)))
+                .filter(Boolean)
+                .slice(0, 4)
+            : randomSample(all, 4);
       const message =
         slug === "nft"
           ? "NFT releases are coming soon."
@@ -219,6 +242,8 @@ export function renderLatest(rows, { term = "" } = {}) {
   return list.map((row) => cardMarkup(row)).join("");
 }
 export function renderGenre(rows, slug, { term = "" } = {}) {
+  if (slug === "nft")
+    return `<div class="empty"><h2>Be first to hear about a release.</h2><p>NFT purchases are not offered here yet. Request a release notification or browse available digital artwork.</p><a class="button" href="/?updates=nft#studio-updates">Request NFT notifications →</a> <a class="text-link" href="/all-artwork.html">Explore digital artwork →</a></div>`;
   const name = GENRES[slug]?.name;
   const list = matching(rows, term).filter((x) => x.category === name);
   if (!list.length)
@@ -237,17 +262,29 @@ export async function readPublishedArtworks(base, key, { fetcher = fetch, signal
   for (let offset = 0; offset < 100000; offset += size) {
     const query = new URLSearchParams({
       select:
-        "id,title,artist,category,serial_number,price,preview_url,display_width,display_height,created_at",
+        "id,title,artist,category,serial_number,price,preview_url,display_width,display_height,created_at,original_width,original_height,original_format,original_dimensions_source",
       status: "eq.published",
       order: "created_at.desc,id.desc",
       limit: String(size),
       offset: String(offset),
     });
-    const response = await fetcher(`${base.replace(/\/$/, "")}/rest/v1/artworks?${query}`, {
+    let response = await fetcher(`${base.replace(/\/$/, "")}/rest/v1/artworks?${query}`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
       signal,
       cache: "no-store",
     });
+    // Keep the current gallery usable before the optional metadata migration is applied.
+    if (response.status === 400) {
+      query.set(
+        "select",
+        "id,title,artist,category,serial_number,price,preview_url,display_width,display_height,created_at",
+      );
+      response = await fetcher(`${base.replace(/\/$/, "")}/rest/v1/artworks?${query}`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+        signal,
+        cache: "no-store",
+      });
+    }
     if (!response.ok) throw new Error("The live collection could not be loaded.");
     const page = await response.json();
     if (!Array.isArray(page)) throw new Error("Invalid catalog response.");
@@ -256,7 +293,32 @@ export async function readPublishedArtworks(base, key, { fetcher = fetch, signal
       seen.add(String(row.id));
       rows.push(row);
     }
-    if (page.length < size) return validRows(rows);
+    if (page.length < size) {
+      try {
+        const ids = rows.map((row) => row.id).filter((id) => /^\d+$/.test(String(id)));
+        const specs = new Map();
+        for (let start = 0; start < ids.length; start += 200) {
+          const q = new URLSearchParams({
+            select: "artwork_id,mime_type",
+            artwork_id: `in.(${ids.slice(start, start + 200).join(",")})`,
+          });
+          const metadata = await fetcher(
+            `${base.replace(/\/$/, "")}/rest/v1/artwork_signatures?${q}`,
+            { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal, cache: "no-store" },
+          );
+          if (!metadata?.ok) continue;
+          const records = await metadata.json();
+          if (Array.isArray(records))
+            for (const record of records) specs.set(String(record.artwork_id), record.mime_type);
+        }
+        for (const row of rows)
+          if (!row.original_format && specs.has(String(row.id)))
+            row.original_format = specs.get(String(row.id));
+      } catch {
+        /* Missing metadata must never break listings or existing checkout paths. */
+      }
+      return validRows(rows);
+    }
   }
   throw new Error("The catalog exceeded the supported page limit.");
 }

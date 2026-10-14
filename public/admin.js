@@ -321,7 +321,7 @@ async function generatePreview(originalFile, serialNumber) {
   coverWithWatermark(context, width, height, serialNumber);
   const blob = await toBlob(canvas);
   image.source.close();
-  return { blob, width: image.width, height: image.height };
+  return { blob, width, height, originalWidth: image.width, originalHeight: image.height };
 }
 
 // SECTION: Private original and public derivative uploads
@@ -336,6 +336,10 @@ async function uploadFiles(formData, current) {
       width: current.display_width,
       height: current.display_height,
       signatureRecord: null,
+      originalWidth: current.original_width || null,
+      originalHeight: current.original_height || null,
+      originalFormat: current.original_format || null,
+      dimensionsSource: current.original_dimensions_source || null,
     };
   }
 
@@ -368,6 +372,10 @@ async function uploadFiles(formData, current) {
     width: preview.width,
     height: preview.height,
     signatureRecord,
+    originalWidth: preview.originalWidth,
+    originalHeight: preview.originalHeight,
+    originalFormat: signedOriginal.type,
+    dimensionsSource: "decoded",
   };
 }
 
@@ -706,6 +714,10 @@ artForm.addEventListener("submit", async (event) => {
       price: Number(values.get("price")),
       display_width: files.width,
       display_height: files.height,
+      original_width: files.originalWidth,
+      original_height: files.originalHeight,
+      original_format: files.originalFormat,
+      original_dimensions_source: files.dimensionsSource,
       status: current?.status || "published",
       preview_url: files.previewUrl,
       original_path: files.originalPath,

@@ -10,12 +10,14 @@ import {
   validRows,
   escapeHtml,
   checkoutUrl,
-} from "./catalog-core.js?v=20261005-stripe-only";
+} from "./catalog-core.js?v=20261014";
+import { updateArtworkFeatures } from "./studio-home.js?v=20261014";
 const catalog = document.querySelector("#catalog"),
   search = document.querySelector("#search"),
   status = document.querySelector("#catalog-status");
 const mode = catalog?.dataset.mode,
   slug = catalog?.dataset.genre;
+if (search) search.value = (new URLSearchParams(location.search).get("search") || "").slice(0, 160);
 let rows = [],
   sampleIds = {};
 function chooseSamples() {
@@ -43,6 +45,7 @@ function render() {
       : mode === "latest"
         ? renderLatest(rows, { term })
         : renderGenre(rows, slug, { term });
+  updateArtworkFeatures(rows);
   enableActions();
   catalog.setAttribute("aria-busy", "false");
   const relevant =
@@ -92,6 +95,7 @@ async function loadCatalog() {
       mode === "compiled"
         ? renderCompiled([])
         : '<div class="empty"><h2>Collection temporarily unavailable</h2><p>Please try again or contact the studio.</p><a class="text-link" href="/contact.html">Contact LWVader →</a></div>';
+    updateArtworkFeatures([]);
     status.textContent = "The live collection could not be loaded. Please try again shortly.";
   }
 }
@@ -168,7 +172,8 @@ function openPreview(trigger) {
   dialog.showModal();
 }
 async function loadArticles() {
-  const articles = document.querySelector("#articles");
+  const articles = document.querySelector("#articles"),
+    journal = document.querySelector("#journal");
   if (!articles) return;
   try {
     const query = new URLSearchParams({
@@ -184,17 +189,23 @@ async function loadArticles() {
     if (!response.ok) throw new Error();
     const list = await response.json();
     if (!Array.isArray(list)) throw new Error();
-    articles.innerHTML = list.length
-      ? list
-          .map(
-            (a) =>
-              `<article><p class="eyebrow">Studio journal</p><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.excerpt)}</p><details><summary>Read article</summary><div class="article-body">${escapeHtml(a.body)}</div></details></article>`,
-          )
-          .join("")
-      : '<p class="muted">Studio articles are being prepared.</p>';
+    const published = list.filter(
+      (a) =>
+        typeof a.title === "string" &&
+        a.title.trim() &&
+        typeof a.body === "string" &&
+        a.body.trim(),
+    );
+    articles.innerHTML = published
+      .map(
+        (a) =>
+          `<article><p class="eyebrow">Studio journal</p><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.excerpt || "")}</p><details><summary>Read article</summary><div class="article-body">${escapeHtml(a.body)}</div></details></article>`,
+      )
+      .join("");
+    if (journal) journal.hidden = !published.length;
   } catch {
-    articles.innerHTML =
-      '<p class="muted">The journal is temporarily unavailable. You can still explore the artwork.</p>';
+    articles.replaceChildren();
+    if (journal) journal.hidden = true;
   } finally {
     articles.setAttribute("aria-busy", "false");
   }
