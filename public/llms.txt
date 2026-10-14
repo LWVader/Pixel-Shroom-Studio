@@ -10,6 +10,8 @@ Use the linked pages for current listings, purchase details and usage rights. Av
 
 ## Studio and artwork
 
+- [About LWVader](https://www.pixelshroomstudio.com/about.html): Artist statement and the scope of serial numbers, SHA-256 fingerprints and studio signatures.
+
 - [Home](https://www.pixelshroomstudio.com/): Studio introduction and recent artwork.
 - [All artwork](https://www.pixelshroomstudio.com/all-artwork.html): Overview of the genre collections.
 - [Portrait](https://www.pixelshroomstudio.com/genre.html?genre=portrait): Portrait artwork.

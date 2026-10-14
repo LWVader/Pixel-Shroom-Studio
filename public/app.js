@@ -10,7 +10,7 @@ import {
   validRows,
   escapeHtml,
   checkoutUrl,
-} from "./catalog-core.js?v=20261014-size";
+} from "./catalog-core.js?v=20261014-identity";
 import { updateArtworkFeatures } from "./studio-home.js?v=20261014-size";
 const catalog = document.querySelector("#catalog"),
   status = document.querySelector("#catalog-status");

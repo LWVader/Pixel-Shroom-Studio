@@ -173,6 +173,7 @@ export function cardMarkup(row, { interactive = true } = {}) {
     ${row.category === "NFT" ? "" : artworkInformation(row)}
     ${actions}
     <p class="card-status muted" role="status"></p>
+    <p class="artwork-provenance"><strong>Individually Serialized. Cryptographically Fingerprinted.</strong><br>Each registered LWVADER creation carries a unique serial and digital fingerprint to document its identity and connection to the artist. Verification confirms source and file integrity, not exclusivity.</p>
     <a class="verify-link" href="/verify.html?serial=${encodeURIComponent(row.serial_number)}">Verify an original →</a>
   </div>
 </article>`;

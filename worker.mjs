@@ -21,6 +21,7 @@ const aliases = new Set([
   "pixel-shroom-studio.phantasmocazdor.workers.dev",
 ]);
 const pages = new Set([
+  "about",
   "faq",
   "all-artwork",
   "canvases",
