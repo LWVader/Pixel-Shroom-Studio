@@ -1187,3 +1187,8 @@ button.art-image {
     font-size: 13px;
   }
 }
+
+/* Keep genre navigation readable at every viewport. */
+.category-nav {
+  font-size: 16px;
+}

@@ -1,4 +1,11 @@
-import { GENRES, genreUrl, escapeHtml, safePreviewUrl, latestArtworks } from "./catalog-core.js";
+import {
+  GENRES,
+  genreUrl,
+  escapeHtml,
+  safePreviewUrl,
+  latestArtworks,
+  artworkDimensions,
+} from "./catalog-core.js";
 import { FEATURED_SERIALS } from "./studio-catalog.js";
 import { validateCatalog } from "./ebay-core.js";
 export function featuredArtworks(rows) {
@@ -17,8 +24,8 @@ export function renderFeatured(rows) {
   return selected
     .map((row) => {
       const slug = Object.keys(GENRES).find((slug) => GENRES[slug].name === row.category);
-      const url = `${genreUrl(slug)}&search=${encodeURIComponent(row.serial_number)}#genre-gallery`;
-      return `<article class="featured-card"><a href="${url}"><img src="${escapeHtml(safePreviewUrl(row.preview_url))}" width="600" height="600" loading="lazy" alt="${escapeHtml(row.title)}, protected digital artwork preview"><div><p class="eyebrow">${escapeHtml(row.category)}</p><h3>${escapeHtml(row.title)}</h3><span class="text-link">Explore this artwork →</span></div></a></article>`;
+      const url = `${genreUrl(slug)}#genre-gallery`;
+      return `<article class="featured-card"><a href="${url}"><img src="${escapeHtml(safePreviewUrl(row.preview_url))}" width="600" height="600" loading="lazy" alt="${escapeHtml(row.title)}, protected digital artwork preview"><div><p class="eyebrow">${escapeHtml(row.category)}</p><h3>${escapeHtml(row.title)}</h3><p class="artwork-size">Original image: ${escapeHtml(artworkDimensions(row))}</p><span class="text-link">Explore this artwork →</span></div></a></article>`;
     })
     .join("");
 }
@@ -36,7 +43,7 @@ export function renderProductExamples(catalog) {
 export function renderProjectExample(rows) {
   const row = featuredArtworks(rows)[0];
   return row
-    ? `<div class="project-screen"><div class="project-toolbar" aria-hidden="true"><span></span><span></span><span></span></div><img src="${escapeHtml(safePreviewUrl(row.preview_url))}" width="600" height="600" loading="lazy" alt="Protected artwork shown in an illustrative creative-project screen mockup"></div>`
+    ? `<div class="project-screen"><div class="project-toolbar" aria-hidden="true"><span></span><span></span><span></span></div><img src="${escapeHtml(safePreviewUrl(row.preview_url))}" width="600" height="600" loading="lazy" alt="Protected artwork shown in an illustrative creative-project screen mockup"><p class="artwork-size">Original image: ${escapeHtml(artworkDimensions(row))}</p></div>`
     : '<div class="example-placeholder">Your next creative project starts here.</div>';
 }
 export function renderFeedback(records) {

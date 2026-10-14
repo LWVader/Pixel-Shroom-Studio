@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
     return route.abort();
   });
 });
-test("compiled collections, full-catalog search, keyboard preview and unsafe checkout", async ({
+test("compiled collections without search, keyboard preview and unsafe checkout", async ({
   page,
 }) => {
   await page.goto("/all-artwork.html");
@@ -32,9 +32,7 @@ test("compiled collections, full-catalog search, keyboard preview and unsafe che
     );
   await page.locator("#shuffle-samples").click();
   await expect(page.locator(".art-card")).toHaveCount(32);
-  await page.locator("#search").fill("Fantasy artwork 5");
-  await expect(page.locator(".art-card")).toHaveCount(2);
-  await page.locator("#search").fill("");
+  await expect(page.locator("#search")).toHaveCount(0);
   await page.locator(".preview-trigger").first().click();
   await expect(page.locator("dialog")).toBeVisible();
   await page.keyboard.press("Escape");

@@ -111,6 +111,13 @@ export function randomSample(rows, limit = 4, rng = Math.random) {
   }
   return result.slice(0, limit);
 }
+export function artworkDimensions(row) {
+  const w = Number(row.original_width),
+    h = Number(row.original_height);
+  return Number.isInteger(w) && w > 0 && Number.isInteger(h) && h > 0
+    ? `${w.toLocaleString("en-US")} × ${h.toLocaleString("en-US")} px${row.original_dimensions_source === "decoded" ? "" : " (registered)"}`
+    : "Not recorded — confirm before printing";
+}
 export function artworkInformation(row) {
   const formats = {
     "image/png": "PNG",
@@ -119,12 +126,7 @@ export function artworkInformation(row) {
     "application/zip": "ZIP package",
   };
   const format = formats[row.original_format] || "Not recorded — ask the studio";
-  const w = Number(row.original_width),
-    h = Number(row.original_height);
-  const dimensions =
-    Number.isInteger(w) && w > 0 && Number.isInteger(h) && h > 0
-      ? `${w.toLocaleString("en-US")} × ${h.toLocaleString("en-US")} px${row.original_dimensions_source === "decoded" ? "" : " (registered)"}`
-      : "Not recorded — confirm before printing";
+  const dimensions = artworkDimensions(row);
   return `<details class="artwork-information"><summary>What you’ll receive</summary><dl><dt>File format</dt><dd>${escapeHtml(format)}</dd><dt>Original pixels</dt><dd>${escapeHtml(dimensions)}</dd><dt>Delivery</dt><dd>Watermark-free digital file after verified payment.</dd><dt>Included use</dt><dd>Personal and commercial use, including editing, redistribution and resale. Nonexclusive unless the listing says otherwise.</dd><dt>Suitable uses</dt><dd>Digital projects, design work and printing at a size appropriate to the recorded resolution.</dd></dl><p>Verification confirms the studio-issued file’s source and integrity; a serial number does not make ownership exclusive.</p><a href="/usage-rights.html">Read the full usage rights →</a></details>`;
 }
 export function cardMarkup(row, { interactive = true } = {}) {
@@ -167,6 +169,7 @@ export function cardMarkup(row, { interactive = true } = {}) {
       ${row.category === "NFT" ? "" : `<span class="price">${formatPrice(row.price)}</span>`}
     </div>
     <p class="artist">by ${escapeHtml(row.artist || "LWVader")}</p>
+    <p class="artwork-size">Original image: ${escapeHtml(artworkDimensions(row))}</p>
     ${row.category === "NFT" ? "" : artworkInformation(row)}
     ${actions}
     <p class="card-status muted" role="status"></p>

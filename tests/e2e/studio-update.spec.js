@@ -30,9 +30,14 @@ test("three shopping paths, featured previews, newest 14 and hidden empty sectio
   await expect(page.locator("#customer-feedback")).toBeHidden();
   await expect(page.locator("#art-in-use .example-card")).toHaveCount(3);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.locator(".art-card .artwork-size")).toHaveCount(14);
+  await expect(page.locator(".featured-card .artwork-size")).toHaveCount(3);
+  expect(await page.locator(".category-nav").evaluate((el) => getComputedStyle(el).fontSize)).toBe(
+    "16px",
+  );
   await page.locator(".featured-card a").first().click();
-  await expect(page.locator("#search")).not.toHaveValue("");
-  await expect(page.locator("#catalog .art-card")).toHaveCount(1);
+  await expect(page.locator("#search")).toHaveCount(0);
+  await expect(page.locator("#catalog .art-card")).toHaveCount(6);
 });
 test("NFT notification path records selected topics and explicit consent in existing inbox", async ({
   page,

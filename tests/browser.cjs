@@ -46,10 +46,7 @@ const fs = require("node:fs");
     .locator("[data-artwork-id]")
     .evaluateAll((cards) => cards.map((c) => c.dataset.artworkId));
   assert.notDeepEqual(before, after);
-  await page.locator("#search").fill("Fantasy artwork 5");
-  assert.equal(await page.locator(".art-card").count(), 2);
-  await page.locator("#search").fill("");
-  assert.equal(await page.locator(".art-card").count(), 36);
+  assert.equal(await page.locator("#search").count(), 0);
   await page.locator(".preview-trigger").first().click();
   assert(await page.locator("dialog").evaluate((d) => d.open));
   await page.keyboard.press("Escape");

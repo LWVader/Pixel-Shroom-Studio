@@ -10,14 +10,12 @@ import {
   validRows,
   escapeHtml,
   checkoutUrl,
-} from "./catalog-core.js?v=20261014";
-import { updateArtworkFeatures } from "./studio-home.js?v=20261014";
+} from "./catalog-core.js?v=20261014-size";
+import { updateArtworkFeatures } from "./studio-home.js?v=20261014-size";
 const catalog = document.querySelector("#catalog"),
-  search = document.querySelector("#search"),
   status = document.querySelector("#catalog-status");
 const mode = catalog?.dataset.mode,
   slug = catalog?.dataset.genre;
-if (search) search.value = (new URLSearchParams(location.search).get("search") || "").slice(0, 160);
 let rows = [],
   sampleIds = {};
 function chooseSamples() {
@@ -38,7 +36,7 @@ function enableActions() {
 }
 function render() {
   if (!catalog) return;
-  const term = search?.value || "";
+  const term = "";
   catalog.innerHTML =
     mode === "compiled"
       ? renderCompiled(rows, { term, sampleIds: term.trim() ? undefined : sampleIds })
@@ -99,7 +97,6 @@ async function loadCatalog() {
     status.textContent = "The live collection could not be loaded. Please try again shortly.";
   }
 }
-search?.addEventListener("input", render);
 document.querySelector("#shuffle-samples")?.addEventListener("click", () => {
   chooseSamples();
   render();

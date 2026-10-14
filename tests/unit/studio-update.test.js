@@ -73,7 +73,7 @@ it("uses protected featured previews and direct eBay product destinations", () =
   const $ = load(renderFeatured(validRows([row])));
   expect($(".featured-card")).toHaveLength(1);
   expect($("img").attr("src")).toBe(row.preview_url);
-  expect($("a").attr("href")).toContain("genre=dark-fantasy&search=");
+  expect($("a").attr("href")).toContain("genre=dark-fantasy#genre-gallery");
   const catalog = {
     seller: "lwvader",
     storeUrl: "https://www.ebay.com/sch/i.html?_ssn=lwvader",

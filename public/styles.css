@@ -46,7 +46,7 @@ body {
   color: var(--ink);
   background: var(--navy);
   font:
-    18px/1.5 Georgia,
+    16px/1.5 Georgia,
     serif;
 }
 a {
@@ -950,4 +950,9 @@ dialog::backdrop {
 /* Preserve semantic hidden state when component display styles apply. */
 [hidden] {
   display: none !important;
+}
+
+/* Keep genre navigation readable at every viewport. */
+.category-nav {
+  font-size: 16px;
 }
