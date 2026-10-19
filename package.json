@@ -25,7 +25,9 @@
     "build": "node tools/build-static.mjs",
     "mint:keys": "node tools/mint-keygen.mjs",
     "mint:worker": "node --env-file-if-exists=mint-worker/.env mint-worker/worker.mjs",
-    "mint:once": "node --env-file-if-exists=mint-worker/.env mint-worker/worker.mjs --once"
+    "mint:once": "node --env-file-if-exists=mint-worker/.env mint-worker/worker.mjs --once",
+    "demo": "node tools/demo-server.mjs",
+    "demo:test": "node tests/local-demo.mjs"
   },
   "dependencies": {
     "fast-xml-parser": "5.11.2",

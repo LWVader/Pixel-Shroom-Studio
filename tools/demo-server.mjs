@@ -1,0 +1,256 @@
+// Local visual demo only. No credentials, upstream requests or real transactions.
+import http from "node:http";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { generateKeyPairSync, webcrypto } from "node:crypto";
+import { renderMint, renderMarketPreview, sha256 } from "../mint-worker/render.mjs";
+const root = fileURLToPath(new URL("../public/", import.meta.url));
+const tiers = ["Standard", "Silver", "Gold", "Prismatic"];
+const port = Number(process.env.DEMO_PORT || 8030);
+const origin = `http://127.0.0.1:${port}`;
+const mintId = "11111111-1111-4111-8111-111111111111";
+const leaseId = "22222222-2222-4222-8222-222222222222";
+const bytes = await fs.readFile(path.join(root, "assets/art-fantasy.png"));
+const key = await webcrypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+  "sign",
+  "verify",
+]);
+const payload = {
+  version: 1,
+  serialNumber: "LWV-0000000001",
+  creator: "LOCAL DEMO — not a studio issuance",
+  sha256: sha256(bytes),
+};
+const listing = {
+  max_supply: 500,
+  master_serial: payload.serialNumber,
+  master_sha256: payload.sha256,
+  master_record: {
+    payload_version: 1,
+    serial_number: payload.serialNumber,
+    creator: payload.creator,
+    sha256: payload.sha256,
+    public_key_jwk: await webcrypto.subtle.exportKey("jwk", key.publicKey),
+    signature: Buffer.from(
+      await webcrypto.subtle.sign(
+        { name: "ECDSA", hash: "SHA-256" },
+        key.privateKey,
+        new TextEncoder().encode(JSON.stringify(payload)),
+      ),
+    ).toString("base64"),
+  },
+};
+const { privateKey } = generateKeyPairSync("ed25519");
+const variants = new Map();
+console.log("Preparing four local foil variants. Please wait for the Open URL message…");
+for (const tier of tiers) {
+  const rendered = await renderMint(
+    bytes,
+    { listing, mint: { id: mintId, listing_id: 1, tier, mint_number: 42 } },
+    privateKey,
+    "LOCAL-DEMO-ONLY",
+  );
+  variants.set(tier, {
+    ...rendered,
+    preview: await renderMarketPreview(rendered.bytes, {
+      sha256: sha256(rendered.bytes),
+      mintNumber: 42,
+    }),
+  });
+}
+const edition = {
+  artworkId: 1,
+  enabled: true,
+  maxSupply: 500,
+  totalMinted: 42,
+  reserved: 2,
+  prismaticsRemaining: 3,
+  silverCap: 100,
+  goldCap: 45,
+  prismaticCap: 5,
+  price: 15,
+};
+const banner = `<div style="position:relative;z-index:1000;background:#f4c07b;color:#040907;padding:10px;text-align:center;font:16px system-ui">LOCAL DEMO · Simulated account and payment · No real orders · <a style="color:inherit" href="/" target="_top">Demo controls</a></div>`;
+const mime = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript",
+  ".css": "text/css",
+  ".webp": "image/webp",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
+  ".ico": "image/x-icon",
+};
+function client() {
+  return `const session={access_token:'local-demo-user'};
+  const send=async(name,body)=>{const q=new URLSearchParams(location.search);const r=await fetch('/demo/api/'+name+'?tier='+(q.get('tier')||'Prismatic'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await r.json();if(!r.ok)throw Error(result.error);return result;};
+  export const invoke=send;
+  export const functionUrl=name=>location.origin+'/demo/api/'+name;
+  export const supabase={auth:{getSession:async()=>({data:{session}}),onAuthStateChange:()=>{},signOut:async()=>{},signInWithPassword:async()=>({data:{session}}),signUp:async()=>({data:{session}})},rpc:async()=>({data:${JSON.stringify([edition])}})};
+  export const mapArtwork=row=>row;`;
+}
+function page() {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pixel Shroom Studio — local buying demo</title><link rel="stylesheet" href="/storefront.css"><style>body{margin:0}header{padding:18px;background:var(--surface);border-bottom:1px solid var(--line)}h1{font-size:28px;margin:0 0 8px}p{margin:8px 0}nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}button,select{padding:10px;font:inherit;background:var(--gold);color:var(--navy);border:1px solid var(--line);cursor:pointer}iframe{display:block;width:100%;height:78vh;border:0}label{display:flex;gap:8px;align-items:center}</style></head><body><header><h1>Pixel Shroom Studio · local buying demo</h1><p>Actual collection, marketplace and reveal pages with local sample data. No login, API keys or real payment. Tier selection is a demo control, not a customer option.</p><nav aria-label="Demo controls"><label>Tier <select id="tier">${tiers.map((t) => `<option${t === "Prismatic" ? " selected" : ""}>${t}</option>`).join("")}</select></label><button data-screen="buy">Simulate mint purchase</button><button data-screen="reveal">Replay reveal</button><button data-screen="collection">My collection / sell</button><button data-screen="market">Marketplace / buy</button></nav><p id="help" role="status">Choose a screen. Replay reveal shows the existing 0.9-second card rotation.</p></header><iframe title="Local studio demo" id="screen" src="/collection.html?tier=Prismatic"></iframe><script>const frame=document.querySelector('#screen'),tier=document.querySelector('#tier');let active='collection';function show(screen){active=screen;const paths={buy:'/collection.html?mint=1',reveal:'/checkout-success.html?order=demo&access=demo',collection:'/collection.html?',market:'/market.html?'};const url=new URL(paths[screen],location.origin);url.searchParams.set('tier',tier.value);url.searchParams.set('replay',Date.now());frame.src=url.href;}document.querySelectorAll('[data-screen]').forEach(button=>button.onclick=()=>show(button.dataset.screen));tier.onchange=()=>show(active);</script></body></html>`;
+}
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, origin);
+  const tier = tiers.includes(url.searchParams.get("tier"))
+    ? url.searchParams.get("tier")
+    : "Prismatic";
+  const variant = variants.get(tier);
+  const send = (body, type = "text/html; charset=utf-8", status = 200) => {
+    res.writeHead(status, {
+      "Content-Type": type,
+      "Cache-Control": "no-store",
+      "Content-Security-Policy":
+        "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; frame-ancestors 'self'; form-action 'self'",
+      "X-Robots-Tag": "noindex, nofollow",
+    });
+    res.end(body);
+  };
+  const json = (body, status = 200) => send(JSON.stringify(body), "application/json", status);
+  try {
+    if (url.pathname === "/") return send(page());
+    if (url.pathname === "/config.js")
+      return send(
+        `export const SUPABASE_URL=${JSON.stringify(origin)}; export const SUPABASE_ANON_KEY='local-demo-only';`,
+        "text/javascript",
+      );
+    if (url.pathname === "/supabase-client.js") return send(client(), "text/javascript");
+    if (url.pathname === "/demo/checkout")
+      return send(
+        `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Simulated checkout</title><link rel="stylesheet" href="/storefront.css"></head><body>${banner}<main style="max-width:650px;margin:60px auto;padding:24px"><h1>Simulated checkout</h1><p>This is a local placeholder, not Stripe Checkout. No card details are collected.</p><p>${tier} edition #42 of 500 · ${url.searchParams.get("market") ? "$50 secondary sale" : "$15 primary mint"}</p><a class="button" href="${url.searchParams.get("market") ? `/market.html?purchase=demo&tier=${tier}` : `/checkout-success.html?order=demo&access=demo&tier=${tier}`}">Simulate successful payment →</a><p><a href="/collection.html?tier=${tier}">Cancel / return to collection</a></p></main></body></html>`,
+      );
+    if (url.pathname.startsWith("/demo/api/")) {
+      if (req.method !== "POST") return json({ error: "POST required" }, 405);
+      let input = "";
+      for await (const chunk of req) {
+        input += chunk;
+        if (input.length > 8192) return json({ error: "Request too large" }, 413);
+      }
+      const body = JSON.parse(input || "{}");
+      const name = url.pathname.split("/").pop();
+      const item = {
+        id: mintId,
+        title: "Forest light — local sample",
+        state: "ready",
+        mintNumber: 42,
+        maxSupply: 500,
+        tier,
+        width: variant.width,
+        height: variant.height,
+        imageUrl: `${origin}/storage/v1/object/sign/minted/demo/variant.webp?tier=${tier}`,
+        manifest: variant.manifest,
+        canList: true,
+      };
+      if (name === "mint-access") return json({ items: [item], hasMore: false });
+      if (name === "order-status")
+        return json({ status: "paid", kind: "foil", mint: { id: mintId, state: "ready" } });
+      if (name === "mint-checkout")
+        return json({ checkoutUrl: `${origin}/demo/checkout?tier=${tier}` });
+      if (name === "market-api") {
+        if (body.action === "feed")
+          return json({
+            enabled: true,
+            hasMore: false,
+            items:
+              (body.tier && body.tier !== tier) ||
+              (body.search &&
+                !"forest light lwv-0000000001".includes(String(body.search).toLowerCase()))
+                ? []
+                : [
+                    {
+                      id: mintId,
+                      tier,
+                      title: item.title,
+                      mint_number: 42,
+                      max_supply: 500,
+                      serial: "LWV-0000000001",
+                      price_cents: 5000,
+                      preview_path: `secondary/${mintId}/${leaseId}.webp?tier=${tier}`.split(
+                        "?",
+                      )[0],
+                    },
+                  ],
+          });
+        if (body.action === "seller_status")
+          return json({ enabled: true, ready: true, hasAccount: true });
+        if (body.action === "mine")
+          return json({
+            enabled: true,
+            items: [
+              { id: "local-demo-listing", mint_id: mintId, price_cents: 5000, status: "active" },
+            ],
+          });
+        if (body.action === "checkout")
+          return json({ checkoutUrl: `${origin}/demo/checkout?market=1&tier=${tier}` });
+        if (body.action === "purchase") return json({ purchase: { state: "succeeded" } });
+        if (body.action === "list")
+          return json({ listingId: "local-demo-listing", status: "preparing" });
+        if (body.action === "cancel") return json({ cancelled: true });
+        return json(
+          { error: "Local demo: Stripe onboarding and dashboard are not connected." },
+          400,
+        );
+      }
+      return json({ error: "Unavailable in local demo" }, 404);
+    }
+    if (url.pathname.startsWith("/storage/v1/object/sign/minted/"))
+      return send(variant.bytes, "image/webp");
+    if (url.pathname.startsWith("/storage/v1/object/public/previews/"))
+      return send(variant.preview, "image/webp");
+    if (url.pathname.startsWith("/rest/")) return json([]);
+    const file = path.resolve(root, "." + decodeURIComponent(url.pathname));
+    if (
+      !file.startsWith(root) ||
+      ![".html", ".js", ".css", ".webp", ".png", ".jpg", ".svg", ".woff2", ".ico"].includes(
+        path.extname(file),
+      )
+    )
+      return send("Not found", "text/plain", 404);
+    let content = await fs.readFile(file);
+    // Adapt validators only in this loopback demo response. Production files stay untouched.
+    if (url.pathname === "/mint-core.js")
+      content = content.toString().replace('url.protocol === "https:"', 'url.protocol === "http:"');
+    if (url.pathname === "/catalog-core.js")
+      content =
+        content
+          .toString()
+          .replace(
+            "export function checkoutUrl(value, provider)",
+            "function productionCheckoutUrl(value, provider)",
+          ) +
+        `\nexport function checkoutUrl(value){ const u=new URL(value);if(u.origin!==location.origin||u.pathname!='/demo/checkout')throw Error('Local demo checkout only');return u.href;}`;
+    if (url.pathname === "/market-core.js")
+      content = content
+        .toString()
+        .replace(
+          'return base.replace(/\\/$/, "") + "/storage/v1/object/public/previews/" + path;',
+          'return base.replace(/\\/$/, "") + "/storage/v1/object/public/previews/" + path + "?tier=" + (new URLSearchParams(location.search).get("tier") || "Prismatic");',
+        );
+    if (path.extname(file) === ".html")
+      content = content.toString().replace(/<body[^>]*>/i, (match) => match + banner);
+    send(content, mime[path.extname(file)]);
+  } catch (error) {
+    send(
+      error.code === "ENOENT" ? "Not found" : "Local demo request failed",
+      "text/plain",
+      error.code === "ENOENT" ? 404 : 500,
+    );
+  }
+});
+server.on("error", (error) => {
+  console.error(
+    error.code === "EADDRINUSE"
+      ? `Port ${port} is in use. Close the previous demo or set DEMO_PORT.`
+      : error.message,
+  );
+  process.exitCode = 1;
+});
+server.listen(port, "127.0.0.1", () =>
+  console.log(
+    `\nPixel Shroom Studio LOCAL DEMO\nOpen ${origin}\nNo API keys or payments. Ctrl+C stops the demo.\n`,
+  ),
+);
