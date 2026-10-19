@@ -90,3 +90,15 @@ Official references: https://docs.stripe.com/connect/destination-charges.md?plat
 ### Package validation
 
 The update passed 92 desktop/mobile Playwright tests, the 61-test unit suite plus the added endpoint authorization test (62 unit tests in total), five Modal adapter tests, JavaScript syntax checks, Prettier and the Cloudflare deployment dry run. Financial tests use fixtures and local PostgreSQL-compatible SQL execution; they do not establish live Stripe Connect eligibility or real payout behavior. The local Cloudflare runtime check could not start in this execution environment because `uv_interface_addresses` was blocked. Run `npm.cmd run test:runtime` on your development machine or CI before production activation.
+
+## Current testing-branch package
+
+This refreshed package uses the latest six-tier renderer and explicit post-reveal profile flow. Apply it over the current foil-engine build, preserving your existing secrets and signing keys. It includes the renderer's local dependencies to prevent missing-module errors.
+
+Apply pending migrations in numeric order: `202610190001` (existing prerequisite), `202610190002`, `202610190003`, then `202610190004`. Do not rerun migrations already recorded as applied. The profile migration depends on the marketplace's ownership/hold columns. Follow `docs/PAID-REVEAL-PROFILE-UPDATE.md` for the separate add-to-profile action.
+
+For primary purchases: choose artwork → pay → verified payment → secure allocation and concealed opening → image revealed → Add to my collection. Secondary sales transfer the same existing edition and tier; they do not reroll, generate a new mint, or change its signed file. Use two different accounts for the seller and buyer during testing.
+
+Start the local demo with `npm.cmd run demo`, then open the address printed in the terminal. Use **My collection / sell** to test the price dialog and **Marketplace / buy** to test resale checkout and confirmation. This demo simulates payments and seller readiness; the staging checklist above is still required to exercise actual Stripe test-mode onboarding and webhooks.
+
+Current validation: 66 unit/integration tests, 102 desktop/mobile browser tests, and the six-tier local demo pass. The marketplace is implemented but has not been deployed or activated in your account by this update.

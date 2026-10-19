@@ -5,6 +5,7 @@ const ts = require("typescript"),
 const minted = [
   {
     id: "mint-a",
+    collection_added_at: "2026-10-19",
     order_id: "order-a",
     owner_id: "owner-a",
     state: "ready",
@@ -48,6 +49,11 @@ const db = {
       },
     }),
   },
+  rpc: async (name, fields) => {
+    assert.equal(name, "add_mint_to_collection");
+    assert.equal(fields.holder, "owner-a");
+    return { data: true };
+  },
   from: (table) => {
     let filters = [];
     const source = table === "mints" ? minted : orders;
@@ -59,17 +65,29 @@ const db = {
         filters.push([key, value]);
         return this;
       },
+      not(key) {
+        filters.push([key, "NOT_NULL"]);
+        return this;
+      },
+      is(key) {
+        filters.push([key, null]);
+        return this;
+      },
       order() {
         return this;
       },
       range() {
         return Promise.resolve({
-          data: source.filter((row) => filters.every(([k, v]) => row[k] === v)),
+          data: source.filter((row) =>
+            filters.every(([k, v]) => (v === "NOT_NULL" ? row[k] != null : row[k] === v)),
+          ),
         });
       },
       single() {
         return Promise.resolve({
-          data: source.find((row) => filters.every(([k, v]) => row[k] === v)),
+          data: source.find((row) =>
+            filters.every(([k, v]) => (v === "NOT_NULL" ? row[k] != null : row[k] === v)),
+          ),
         });
       },
     };
@@ -146,6 +164,19 @@ async function call(body, token = "") {
   minted[0].market_frozen = true;
   response = await call({ action: "collection" }, "owner-a-token");
   assert.equal((await response.json()).items[0].imageUrl, null);
+  assert.equal((await call({ action: "add_to_collection", mintId: "mint-a" })).status, 401);
+  const added = await call(
+    { action: "add_to_collection", mintId: "mint-a", holder: "owner-b" },
+    "owner-a-token",
+  );
+  assert.equal((await added.json()).added, true);
+  minted[0].collection_added_at = null;
+  response = await call({ action: "collection" }, "owner-a-token");
+  assert.equal((await response.json()).items.length, 0);
+  response = await call({ action: "uncollected" }, "owner-a-token");
+  result = await response.json();
+  assert.equal(result.items[0].imageUrl, null);
+  assert.equal(result.items[0].paymentConfirmed, true);
   console.log(
     "PASS private ownership, order-token isolation, refund/queued blocking, minted-only storage",
   );

@@ -1,5 +1,5 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { editionDisclosure } from "./mint-core.js?v=20261019-six-tiers";
+import { editionDisclosure } from "./mint-core.js?v=20261019-uploaded-tiers";
 let editions = [];
 export function applyFoilListings() {
   for (const card of document.querySelectorAll(".art-card[data-artwork-id]")) {
@@ -19,7 +19,15 @@ export function applyFoilListings() {
     const text = document.createElement("p");
     text.textContent =
       editionDisclosure(edition) +
-      " Delivered as a private WebP variant with a signed receipt. The master file is not included. Existing usage permissions apply.";
+      " Delivered as a numbered private copy of the studio-uploaded tier image (PNG, JPEG or WebP), with a preassigned unique file hash and individual signed receipt. Copy-identification metadata is added; visible pixels are preserved. The master file is not included. Existing usage permissions apply.";
+    if (edition.tierImages?.length) {
+      text.textContent +=
+        " Tier image sizes: " +
+        edition.tierImages
+          .map((image) => `${image.tier}: ${image.width} × ${image.height} px`)
+          .join("; ") +
+        ".";
+    }
     detail.append(summary, text);
     const progress = document.createElement("progress");
     progress.max = edition.maxSupply;
@@ -41,7 +49,7 @@ export function applyFoilListings() {
       link.setAttribute("aria-disabled", "true");
     }
     card.querySelector(".artwork-information")?.setAttribute("hidden", "");
-    // Original dimensions describe the master; variant dimensions appear after rendering.
+    // Original dimensions describe the master; tier dimensions are available before purchase and confirmed after delivery.
     const size = card.querySelector(".artwork-size");
     if (size) size.textContent = size.textContent.replace("Original image:", "Master image:");
   }

@@ -38,6 +38,15 @@ def needs_work():
         "or": f"(and(state.eq.queued,available_at.lte.{instant}),and(state.eq.processing,lease_until.lt.{instant}))"
     }):
         return True
+    try:
+        if rest_has_rows("foil_copy_inventory", {
+            "or": f"(and(state.eq.queued,available_at.lte.{instant}),and(state.eq.preparing,lease_until.lt.{instant}))"
+        }):
+            return True
+    except Exception as error:
+        # Existing staging deployments without migration 6 may not have this table yet.
+        if getattr(error, "code", None) != 404:
+            raise
     return now.minute % 5 == 0 and rest_has_rows(
         "orders", {"sale_kind": "eq.foil", "status": "eq.pending"}
     )

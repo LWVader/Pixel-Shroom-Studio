@@ -240,7 +240,7 @@
                   >Price ($)<input name="price" type="number" min="1" step="0.01" required
                 /></label>
                 <fieldset>
-                  <legend>Optional foil edition</legend>
+                  <legend>Artwork tier images and numbered editions</legend>
                   <label
                     ><input type="checkbox" name="foilEnabled" /> Enable numbered foil
                     minting</label
@@ -299,6 +299,76 @@
                       value="5"
                       required
                   /></label>
+                  <div id="tier-image-uploads">
+                    <h3>Finished images for each tier</h3>
+                    <p>
+                      Upload the complete design for each tier, including Standard. Buyers receive a
+                      numbered copy of the image selected by the secure tier roll. No borders or
+                      effects are added. PNG, JPEG or WebP; up to 100 MB and 100 million pixels per
+                      image. All six are required before publishing. Each authorized copy receives
+                      identity metadata and its own file hash before checkout opens.
+                    </p>
+                    <label
+                      >Standard image<input
+                        type="file"
+                        name="tierImageStandard"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Standard"
+                    /></label>
+                    <p id="tier-status-Standard">No finished image uploaded</p>
+                    <label
+                      >Silver image<input
+                        type="file"
+                        name="tierImageSilver"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Silver"
+                    /></label>
+                    <p id="tier-status-Silver">No finished image uploaded</p>
+                    <label
+                      >Gold image<input
+                        type="file"
+                        name="tierImageGold"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Gold"
+                    /></label>
+                    <p id="tier-status-Gold">No finished image uploaded</p>
+                    <label
+                      >Emerald image<input
+                        type="file"
+                        name="tierImageEmerald"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Emerald"
+                    /></label>
+                    <p id="tier-status-Emerald">No finished image uploaded</p>
+                    <label
+                      >Sapphire image<input
+                        type="file"
+                        name="tierImageSapphire"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Sapphire"
+                    /></label>
+                    <p id="tier-status-Sapphire">No finished image uploaded</p>
+                    <label
+                      >Prismatic image<input
+                        type="file"
+                        name="tierImagePrismatic"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Prismatic"
+                    /></label>
+                    <p id="tier-status-Prismatic">No finished image uploaded</p>
+                    <p>
+                      Tier images lock after the first reservation. Use Save private draft for
+                      incomplete uploads. Publishing requires all six images.
+                    </p>
+                  </div>
+                  <p>
+                    Standard prepares up to maximum supply for downgrade capacity. Rare tiers
+                    prepare their authorized caps. Total sold editions still cannot exceed maximum
+                    supply.
+                  </p>
+                  <p id="copy-inventory-status" role="status">
+                    Copy hashes are prepared after the finished images are saved.
+                  </p>
                   <p id="foil-odds-description">
                     Initial rolls: Standard 60%, Silver 20%, Gold 10%, Emerald 6%, Sapphire 3%,
                     Prismatic 1%.
@@ -366,6 +436,7 @@
                   >
                 </fieldset>
                 <button id="save-button" type="submit">Publish image</button
+                ><button type="submit" class="secondary" value="draft">Save private draft</button
                 ><button id="cancel-edit" type="button" class="secondary" hidden>
                   Cancel edit
                 </button>
@@ -475,6 +546,6 @@
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=20261019-six-tiers"></script>
+    <script type="module" src="/admin.js?v=20261019-copy-inventory"></script>
   </body>
 </html>

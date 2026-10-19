@@ -18,13 +18,28 @@ Deno.serve(async (request: Request) => {
     const {
       data: { user },
     } = await db.auth.getUser(bearer);
+    if (body.action === "add_to_collection") {
+      if (!user) return json({ error: "Sign in to add this edition." }, 401, request);
+      if (!body.mintId) return json({ error: "Mint ID required." }, 400, request);
+      const { data, error } = await db.rpc("add_mint_to_collection", {
+        target_mint: body.mintId,
+        holder: user.id,
+      });
+      if (error)
+        return json(
+          { error: "This paid edition is not ready to add to your collection." },
+          409,
+          request,
+        );
+      return json({ added: data === true }, 200, request);
+    }
     let query = db
       .from("mints")
       .select(
-        "id,order_id,owner_id,ownership_version,market_frozen,listing_id,state,mint_number,tier,artifact_path,manifest,width,height,created_at,foil_listings(master_title,master_serial,max_supply)",
+        "id,order_id,owner_id,collection_added_at,ownership_version,market_frozen,listing_id,state,mint_number,tier,artifact_path,manifest,width,height,created_at,foil_listings(master_title,master_serial,max_supply)",
       );
     let orderCredentialAccess = false;
-    if (body.orderId && body.accessToken && body.action !== "collection") {
+    if (body.orderId && body.accessToken && !["collection", "uncollected"].includes(body.action)) {
       const { data: order, error } = await db
         .from("orders")
         .select("id,status,access_token_hash,sale_kind")
@@ -44,13 +59,17 @@ Deno.serve(async (request: Request) => {
       query = query.eq("owner_id", user.id);
       if (body.mintId) query = query.eq("id", body.mintId);
     }
-    if (!["collection", "status", "download"].includes(body.action))
+    if (!["collection", "uncollected", "status", "download"].includes(body.action))
       return json({ error: "Invalid action." }, 400, request);
     if (body.action === "download" && !body.mintId)
       return json({ error: "Mint ID required." }, 400, request);
     if (body.mintId) query = query.eq("id", body.mintId);
+    if (body.action === "collection") query = query.not("collection_added_at", "is", null);
+    if (body.action === "uncollected") query = query.is("collection_added_at", null);
     const offset =
-      body.action === "collection" && Number.isInteger(body.offset) && body.offset >= 0
+      ["collection", "uncollected"].includes(body.action) &&
+      Number.isInteger(body.offset) &&
+      body.offset >= 0
         ? Math.min(body.offset, 1000000)
         : 0;
     const { data: rows, error } = await query
@@ -69,6 +88,7 @@ Deno.serve(async (request: Request) => {
         .single();
       let imageUrl = null;
       if (
+        body.action !== "uncollected" &&
         row.state === "ready" &&
         !row.market_frozen &&
         order?.status === "paid" &&
@@ -82,6 +102,8 @@ Deno.serve(async (request: Request) => {
       }
       result.push({
         id: row.id,
+        paymentConfirmed: order?.status === "paid",
+        inCollection: Boolean(row.collection_added_at),
         title: listing?.master_title,
         serial: listing?.master_serial,
         maxSupply: listing?.max_supply,

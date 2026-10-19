@@ -34,9 +34,15 @@ async function routes(page, items = [item]) {
     }),
   );
   await page.route("**/rest/v1/rpc/foil_catalog", (route) => route.fulfill({ json: [edition] }));
-  await page.route("**/functions/v1/mint-access", (route) =>
-    route.fulfill({ json: { items, hasMore: false } }),
-  );
+  await page.route("**/functions/v1/mint-access", (route) => {
+    const body = route.request().postDataJSON();
+    return route.fulfill({
+      json:
+        body.action === "add_to_collection"
+          ? { added: true }
+          : { items: body.action === "uncollected" ? [] : items, hasMore: false },
+    });
+  });
   await page.route("**/storage/v1/object/sign/minted/**", (route) =>
     route.fulfill({ path: "public/assets/art-fantasy.png" }),
   );
@@ -82,6 +88,8 @@ test("collection shows only private variants and confirmation reveals the mint",
   await expect(page.locator("h1")).toHaveText("Prismatic edition revealed");
   await expect(page.locator("#download-link")).toBeHidden();
   await expect(page.getByRole("button", { name: "Download minted variant" })).toBeVisible();
+  await page.getByRole("button", { name: "Add to my collection" }).click();
+  await expect(page.getByRole("button", { name: "Added to my collection" })).toBeDisabled();
 });
 test("pending or failed rendering never exposes the original download", async ({ page }) => {
   await routes(page, []);
@@ -91,14 +99,14 @@ test("pending or failed rendering never exposes the original download", async ({
     }),
   );
   await page.goto("/checkout-success.html?order=fixture&access=fixture");
-  await expect(page.locator("#checkout-message")).toContainText("Rendering needs studio attention");
+  await expect(page.locator("#checkout-message")).toContainText(
+    "Image delivery needs studio attention",
+  );
   await expect(page.locator("#download-link")).toBeHidden();
   await expect(page.locator("img")).toHaveCount(0);
 });
 
-test("Buy opens effects immediately while server checkout runs, without submitting a tier", async ({
-  page,
-}) => {
+test("Buy redirects to payment without opening effects or submitting a tier", async ({ page }) => {
   await routes(page);
   let release;
   const gate = new Promise((resolve) => {
@@ -117,10 +125,9 @@ test("Buy opens effects immediately while server checkout runs, without submitti
   );
   await page.goto("/collection.html?mint=1");
   await page.locator("#start-mint").click();
-  await expect(page.locator(".foil-opening-dialog[open]")).toBeVisible();
-  await expect(page.locator(".foil-opening-dialog")).toContainText("after payment is confirmed");
+  await expect(page.locator(".foil-opening-dialog")).toHaveCount(0);
   await expect.poll(() => checkoutBody).toEqual({ artworkId: "1" });
-  await expect(page.locator(".foil-opening-dialog img")).toBeHidden();
+
   release();
   await expect(page).toHaveURL("https://checkout.stripe.com/foil-opening-fixture");
 });
@@ -137,4 +144,30 @@ test("failed checkout removes the opening and allows retry without allocating a 
   await expect(page.locator("#collection-status")).toContainText("Sold out fixture");
   await expect(page.locator(".foil-opening-dialog")).toHaveCount(0);
   await expect(page.locator("#start-mint")).toBeEnabled();
+});
+
+test("only verified payment starts a concealed reveal; saving waits for completion", async ({
+  page,
+}) => {
+  await routes(page);
+  let paid = false,
+    ready = false;
+  await page.route("**/functions/v1/order-status", (route) =>
+    route.fulfill({
+      json: {
+        status: paid ? "paid" : "pending",
+        kind: "foil",
+        mint: { id: item.id, state: ready ? "ready" : "queued" },
+      },
+    }),
+  );
+  await page.goto("/checkout-success.html?order=fixture&access=fixture");
+  await expect(page.locator(".foil-scene")).toHaveCount(0);
+  paid = true;
+  await expect(page.locator(".foil-scene")).toHaveCount(1);
+  await expect(page.locator(".foil-purchase-reveal img")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Add to my collection" })).toHaveCount(0);
+  ready = true;
+  await expect(page.locator("h1")).toHaveText("Prismatic edition revealed", { timeout: 10000 });
+  await expect(page.getByRole("button", { name: "Add to my collection" })).toBeVisible();
 });

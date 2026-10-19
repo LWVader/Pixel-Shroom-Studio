@@ -1,4 +1,8 @@
-import { editionDisclosure, SIX_TIER_RATES } from "./mint-core.js?v=20261019-six-tiers";
+import {
+  editionDisclosure,
+  SIX_TIER_RATES,
+  FOIL_TIERS,
+} from "./mint-core.js?v=20261019-uploaded-tiers";
 // SECTION: Dashboard state and shared helpers
 import { supabase } from "./supabase-client.js";
 const loginPanel = document.querySelector("#login-panel");
@@ -9,6 +13,8 @@ const adminCatalog = document.querySelector("#admin-catalog");
 const cancelEdit = document.querySelector("#cancel-edit");
 let items = [];
 let editingArtworkId = null;
+let savedTierAssets = [];
+let tierAssetsLocked = false;
 let orders = [];
 let messages = [];
 let articles = [];
@@ -643,8 +649,58 @@ async function showDashboard() {
   await loadDashboard();
 }
 
+// SECTION: Finished tier images (no generated effects)
+function updateTierUploadStatus() {
+  for (const tier of FOIL_TIERS) {
+    const input = artForm.elements.namedItem("tierImage" + tier);
+    if (!input) continue;
+    input.disabled = tierAssetsLocked;
+    const saved = savedTierAssets.find((asset) => asset.tier === tier);
+    document.querySelector("#tier-status-" + tier).textContent = saved
+      ? `${saved.width} × ${saved.height} px saved${tierAssetsLocked ? " · locked" : ""}`
+      : "No finished image uploaded";
+  }
+}
+async function uploadTierImages(artworkId) {
+  const assets = [];
+  for (const tier of FOIL_TIERS) {
+    const file = artForm.elements.namedItem("tierImage" + tier).files[0];
+    if (!file) continue;
+    if (tierAssetsLocked) throw new Error("Tier images are locked for this edition.");
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 104857600)
+      throw new Error(`${tier}: use PNG, JPEG or WebP up to 100 MB.`);
+    const image = await readImage(file);
+    const { width, height } = image;
+    image.source.close();
+    if (width * height > 100000000) throw new Error(`${tier}: maximum 100 million pixels.`);
+    const sha256 = bytesToHex(
+      new Uint8Array(await crypto.subtle.digest("SHA-256", await file.arrayBuffer())),
+    );
+    const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }[file.type];
+    const path = `foil-tiers/${artworkId}/${tier.toLowerCase()}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("originals")
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (error) throw error;
+    assets.push({ tier, path, sha256, mimeType: file.type, width, height });
+  }
+  if (assets.length) {
+    const { error } = await supabase.rpc("set_foil_tier_assets", {
+      target_artwork: artworkId,
+      assets,
+    });
+    if (error)
+      throw new Error("Artwork saved, but tier images were not registered: " + error.message);
+  }
+}
+
 // SECTION: Artwork form state and automatic dimensions
 function resetArtworkForm() {
+  savedTierAssets = [];
+  document.querySelector("#copy-inventory-status").textContent =
+    "Copy hashes are prepared after the finished images are saved.";
+  tierAssetsLocked = false;
+  updateTierUploadStatus();
   delete artForm.dataset.foilConfigured;
   const savedSigningToken = sessionStorage.getItem("pixelShroomSigningToken") || "";
   editingArtworkId = null;
@@ -725,6 +781,12 @@ artForm.addEventListener("submit", async (event) => {
     const values = new FormData(artForm);
     const current = items.find((item) => item.id === editingArtworkId);
     const foilEnabled = values.get("foilEnabled") === "on";
+    const foilIntent =
+      values.get("category") !== "NFT" ||
+      foilEnabled ||
+      artForm.dataset.foilConfigured === "true" ||
+      FOIL_TIERS.some((tier) => artForm.elements.namedItem("tierImage" + tier).files.length);
+    const publish = event.submitter?.value !== "draft";
     const foilSupply = Number(values.get("foilSupply"));
     const foilCaps = ["foilSilver", "foilGold", "foilEmerald", "foilSapphire", "foilPrismatic"].map(
       (name) => Number(values.get(name)),
@@ -737,6 +799,18 @@ artForm.addEventListener("submit", async (event) => {
         foilCaps.reduce((a, b) => a + b, 0) > foilSupply)
     )
       throw new Error("Foil tier caps must be whole numbers and fit within maximum supply.");
+    if (
+      foilIntent &&
+      publish &&
+      FOIL_TIERS.some(
+        (tier) =>
+          !artForm.elements.namedItem("tierImage" + tier).files[0] &&
+          !savedTierAssets.some((asset) => asset.tier === tier),
+      )
+    )
+      throw new Error(
+        "Upload the finished image for all six tiers before publishing this foil listing.",
+      );
     const files = await uploadFiles(values, current);
     const row = {
       title: values.get("title").trim(),
@@ -750,17 +824,25 @@ artForm.addEventListener("submit", async (event) => {
       original_height: files.originalHeight,
       original_format: files.originalFormat,
       original_dimensions_source: files.dimensionsSource,
-      status: current?.status || "published",
+      status: foilIntent || !publish ? "draft" : current?.status || "published",
+      requires_tier_images: Boolean(foilIntent),
       preview_url: files.previewUrl,
       original_path: files.originalPath,
       updated_at: new Date().toISOString(),
     };
     const wasEditing = Boolean(editingArtworkId);
     const artworkId = await saveArtwork(row, wasEditing ? editingArtworkId : null);
+    // Preserve the private draft on partial upload failure so retry updates it.
+    editingArtworkId = artworkId;
+    if (!items.some((item) => item.id === artworkId)) items.push({ ...row, id: artworkId });
     if (files.signatureRecord) {
       await saveSignature(artworkId, files.signatureRecord);
     }
-    if (foilEnabled || artForm.dataset.foilConfigured === "true") {
+    if (
+      foilEnabled ||
+      artForm.dataset.foilConfigured === "true" ||
+      FOIL_TIERS.some((tier) => artForm.elements.namedItem("tierImage" + tier).files.length)
+    ) {
       const { error: foilError } = await supabase.rpc("configure_foil_listing_v2", {
         target_artwork: artworkId,
         active: foilEnabled,
@@ -774,13 +856,19 @@ artForm.addEventListener("submit", async (event) => {
       if (foilError)
         throw new Error("Artwork saved, but foil settings were not applied: " + foilError.message);
     }
+    await uploadTierImages(artworkId);
+    if (foilIntent && publish) await saveRow("artworks", { status: "published" }, artworkId);
     delete artForm.dataset.foilConfigured;
     resetArtworkForm();
     showMessage(
       "#form-message",
-      files.signatureRecord
-        ? `${wasEditing ? "Listing updated" : "Listing created"} and cryptographic identity registered.`
-        : `${wasEditing ? "Listing updated" : "Listing created"}.`,
+      !publish
+        ? "Private draft saved. This artwork has not been published."
+        : foilIntent
+          ? "Listing published. Authorized copy hashes are prepared in the background; checkout stays paused until preparation is complete."
+          : files.signatureRecord
+            ? `${wasEditing ? "Listing updated" : "Listing created"} and cryptographic identity registered.`
+            : `${wasEditing ? "Listing updated" : "Listing created"}.`,
       true,
     );
     await loadItems();
@@ -802,6 +890,22 @@ adminCatalog.addEventListener("click", async (event) => {
     const { data: foilSettings } = await supabase.rpc("admin_foil_settings", {
       target_artwork: item.id,
     });
+    const { data: tierSettings, error: tierError } = await supabase.rpc("admin_foil_tier_assets", {
+      target_artwork: item.id,
+    });
+    if (tierError) {
+      showMessage(
+        "#form-message",
+        "Tier upload settings unavailable. Apply the uploaded-tier migration first.",
+      );
+      return;
+    }
+    savedTierAssets = tierSettings?.assets || [];
+    document.querySelector("#copy-inventory-status").textContent =
+      `Copy hashes prepared: ${tierSettings?.prepared || 0}/${tierSettings?.authorized || 0}. Checkout opens when preparation is complete.`;
+    tierAssetsLocked = Boolean(tierSettings?.locked);
+    for (const tier of FOIL_TIERS) artForm.elements.namedItem("tierImage" + tier).value = "";
+    updateTierUploadStatus();
     artForm.dataset.foilConfigured = foilSettings ? "true" : "false";
     artForm.elements.namedItem("foilEnabled").checked = Boolean(foilSettings?.enabled);
     for (const [name, key, fallback] of [
@@ -858,13 +962,30 @@ adminCatalog.addEventListener("click", async (event) => {
   }
   if (toggle) {
     const item = items.find((entry) => entry.id === Number(toggle.dataset.toggle));
-    await saveRow(
-      "artworks",
-      { status: item.status === "published" ? "archived" : "published" },
-      item.id,
-    );
-    await loadItems();
-    await loadDashboard();
+    toggle.disabled = true;
+    try {
+      if (item.status !== "published" && item.requires_tier_images) {
+        const { data, error } = await supabase.rpc("admin_foil_tier_assets", {
+          target_artwork: item.id,
+        });
+        if (error) throw error;
+        if (data?.assets?.length !== 6)
+          throw new Error(
+            "All six tier images are required before publishing. Edit this private draft to upload the missing images.",
+          );
+      }
+      await saveRow(
+        "artworks",
+        { status: item.status === "published" ? "archived" : "published" },
+        item.id,
+      );
+      await loadItems();
+      await loadDashboard();
+    } catch (error) {
+      showMessage("#form-message", error.message);
+    } finally {
+      toggle.disabled = false;
+    }
   }
   if (remove) {
     const item = items.find((entry) => entry.id === Number(remove.dataset.delete));

@@ -18,6 +18,7 @@ worker_image = (
     .run_commands("cd /opt/pixel && npm ci --omit=dev")
     .add_local_file(ROOT / "mint-worker/worker.mjs", "/opt/pixel/mint-worker/worker.mjs", copy=True)
     .add_local_file(ROOT / "mint-worker/render.mjs", "/opt/pixel/mint-worker/render.mjs", copy=True)
+    .add_local_file(ROOT / "mint-worker/copy-identity.mjs", "/opt/pixel/mint-worker/copy-identity.mjs", copy=True)
     .add_local_file(ROOT / "mint-worker/prismatic.mjs", "/opt/pixel/mint-worker/prismatic.mjs", copy=True)
     .add_local_file(ROOT / "mint-worker/finishes.mjs", "/opt/pixel/mint-worker/finishes.mjs", copy=True)
     .add_local_file(ROOT / "public/mint-core.js", "/opt/pixel/public/mint-core.js", copy=True)

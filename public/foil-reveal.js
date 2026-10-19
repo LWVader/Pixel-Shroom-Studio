@@ -102,7 +102,7 @@ export function mountFoilReveal(panel, image, options = {}) {
     if (announce) options.onComplete?.();
     if (announce)
       status.textContent = options.concealed
-        ? "Waiting for secure checkout…"
+        ? options.waitingMessage || "Preparing your paid edition…"
         : motion.matches
           ? "Motion effects off. Edition ready."
           : "Edition ready.";
@@ -239,6 +239,7 @@ export function mountFoilReveal(panel, image, options = {}) {
     else finish();
   }
   async function play() {
+    options.onStart?.();
     const token = ++generation;
     finish(false);
     scene.dataset.animation = "preparing";

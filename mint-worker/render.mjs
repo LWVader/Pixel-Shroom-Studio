@@ -1,6 +1,5 @@
+import { prepareCopyImage } from "./copy-identity.mjs";
 import sharp from "sharp";
-import { finishLayers } from "./finishes.mjs";
-import { prismaticLayers } from "./prismatic.mjs";
 import { createHash, sign, verify, webcrypto } from "node:crypto";
 import { canonicalMintPayload, FOIL_TIERS } from "../public/mint-core.js";
 export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -36,7 +35,8 @@ export async function validateMaster(bytes, listing) {
   )
     throw new Error("Invalid master signature");
 }
-export async function renderMint(bytes, { mint, listing }, privateKey, keyId) {
+export async function renderMint(bytes, job, privateKey, keyId) {
+  const { mint, listing, tier_asset: source } = job;
   if (
     !FOIL_TIERS.includes(mint.tier) ||
     !Number.isInteger(mint.mint_number) ||
@@ -44,6 +44,76 @@ export async function renderMint(bytes, { mint, listing }, privateKey, keyId) {
     mint.mint_number > listing.max_supply
   )
     throw new Error("Invalid allocated mint");
+  if (["uploaded", "inventory"].includes(mint.asset_mode)) {
+    if (
+      !source ||
+      source.tier !== mint.tier ||
+      Number(source.listing_id) !== Number(mint.listing_id) ||
+      sha256(bytes) !== source.sha256
+    )
+      throw new Error("Uploaded tier identity mismatch");
+    const image = sharp(bytes, { limitInputPixels: 100_000_000, animated: false });
+    const metadata = await image.metadata();
+    const mimeType = { png: "image/png", jpeg: "image/jpeg", webp: "image/webp" }[metadata.format];
+    const swapped = [5, 6, 7, 8].includes(metadata.orientation);
+    const width = swapped ? metadata.height : metadata.width;
+    const height = swapped ? metadata.width : metadata.height;
+    if (
+      !mimeType ||
+      mimeType !== source.mime_type ||
+      (metadata.pages || 1) !== 1 ||
+      width !== source.width ||
+      height !== source.height
+    )
+      throw new Error("Uploaded tier format or dimensions mismatch");
+    // Force a complete decode to reject truncated/corrupt inputs. Keep original bytes.
+    await image.stats();
+    let output = Buffer.from(bytes);
+    if (mint.asset_mode === "inventory") {
+      const copy = job.copy;
+      if (
+        !copy ||
+        copy.id !== mint.copy_id ||
+        copy.mint_id !== mint.id ||
+        copy.tier !== mint.tier ||
+        Number(copy.listing_id) !== Number(mint.listing_id) ||
+        copy.source_sha256 !== source.sha256
+      )
+        throw new Error("Assigned copy identity mismatch");
+      output = prepareCopyImage(bytes, mimeType, copy);
+      if (sha256(output) !== copy.sha256) throw new Error("Prepared copy hash mismatch");
+    }
+    const payload = {
+      version: 1,
+      mintId: mint.id,
+      listingId: String(mint.listing_id),
+      masterSerial: listing.master_serial,
+      masterSha256: listing.master_sha256,
+      mintNumber: mint.mint_number,
+      maxSupply: listing.max_supply,
+      tier: mint.tier,
+      width,
+      height,
+      mimeType,
+      sha256: sha256(output),
+      tierSourceSha256: source.sha256,
+      keyId,
+      ...(job.copy ? { copyId: job.copy.id, copyNumber: job.copy.copy_number } : {}),
+      pipelineVersion:
+        mint.asset_mode === "inventory" ? "foil-v5-prehashed-copy" : "foil-v4-uploaded-copy",
+    };
+    const signature = sign(null, Buffer.from(canonicalMintPayload(payload)), privateKey).toString(
+      "base64",
+    );
+    return {
+      bytes: output,
+      manifest: { algorithm: "Ed25519", payload, signature },
+      width,
+      height,
+    };
+  }
+  if (mint.asset_mode && mint.asset_mode !== "legacy") throw new Error("Unknown delivery mode");
+  // Only jobs reserved before the uploaded-image migration use the legacy renderer.
   await validateMaster(bytes, listing);
   // Decode/re-encode deliberately: master C2PA metadata cannot describe a derivative.
   let image = sharp(bytes, { limitInputPixels: 100_000_000, animated: false })
@@ -51,12 +121,15 @@ export async function renderMint(bytes, { mint, listing }, privateKey, keyId) {
     .resize({ width: 16000, height: 16000, fit: "inside", withoutEnlargement: true });
   const base = await image.png().toBuffer({ resolveWithObject: true });
   const { width, height } = base.info;
-  const overlay =
-    mint.tier === "Prismatic"
-      ? prismaticLayers(width, height, `${listing.master_serial}|${mint.id}`)
-      : mint.tier === "Standard"
-        ? []
-        : finishLayers(width, height, mint.tier, `${listing.master_serial}|${mint.id}`);
+  // Generated treatments are loaded only for reservations made before migration 5.
+  let overlay = [];
+  if (mint.tier === "Prismatic") {
+    const { prismaticLayers } = await import("./prismatic.mjs");
+    overlay = prismaticLayers(width, height, `${listing.master_serial}|${mint.id}`);
+  } else if (mint.tier !== "Standard") {
+    const { finishLayers } = await import("./finishes.mjs");
+    overlay = finishLayers(width, height, mint.tier, `${listing.master_serial}|${mint.id}`);
+  }
   // Identity metadata is embedded BEFORE hashing. The detached signed receipt
   // then authenticates the final bytes, avoiding a self-referential file hash.
   const identity = `${mint.id}|${listing.master_serial}|${mint.mint_number}/${listing.max_supply}|${mint.tier}`;

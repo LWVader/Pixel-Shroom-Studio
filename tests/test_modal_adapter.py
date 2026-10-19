@@ -34,14 +34,14 @@ class ModalAdapterTests(unittest.TestCase):
             self.assertIn("lease_until.lt",probe.call_args.args[1]["or"])
 
     def test_missing_webhooks_checked_every_five_minutes(self):
-        with patch.object(runtime,"datetime") as clock, patch.object(runtime,"rest_has_rows",side_effect=[False,True]) as probe:
+        with patch.object(runtime,"datetime") as clock, patch.object(runtime,"rest_has_rows",side_effect=[False,False,True]) as probe:
             clock.now.return_value=datetime(2026,10,19,12,5,tzinfo=timezone.utc)
             self.assertTrue(runtime.needs_work())
             self.assertEqual(probe.call_args.args[0],"orders")
         with patch.object(runtime,"datetime") as clock, patch.object(runtime,"rest_has_rows",return_value=False) as probe:
             clock.now.return_value=datetime(2026,10,19,12,6,tzinfo=timezone.utc)
             self.assertFalse(runtime.needs_work())
-            self.assertEqual(probe.call_count,1)
+            self.assertEqual(probe.call_count,2)
 
     def test_runtime_uses_finite_batch_without_printing_secrets(self):
         with patch.object(runtime.subprocess,"run") as execute:

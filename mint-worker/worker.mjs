@@ -1,3 +1,5 @@
+import sharp from "sharp";
+import { prepareCopyImage } from "./copy-identity.mjs";
 import fs from "node:fs";
 import { createPrivateKey, createPublicKey } from "node:crypto";
 import Stripe from "stripe";
@@ -40,11 +42,15 @@ await api(
 );
 async function processOne() {
   const job = await rpc("claim_foil_job");
-  if (!job) return processMarketPreview();
+  if (!job) return (await processCopyInventory()) || processMarketPreview();
   const { mint, listing } = job;
   try {
+    const sourcePath = ["uploaded", "inventory"].includes(mint.asset_mode)
+      ? job.tier_asset?.path
+      : listing.master_path;
+    if (!sourcePath || sourcePath.includes("..")) throw new Error("Private tier source missing");
     const download = await fetch(
-      `${base}/storage/v1/object/authenticated/originals/${listing.master_path.split("/").map(encodeURIComponent).join("/")}`,
+      `${base}/storage/v1/object/authenticated/originals/${sourcePath.split("/").map(encodeURIComponent).join("/")}`,
       { headers, signal: AbortSignal.timeout(60000) },
     );
     if (!download.ok || Number(download.headers.get("content-length")) > 104857600)
@@ -52,10 +58,13 @@ async function processOne() {
     const bytes = Buffer.from(await download.arrayBuffer());
     if (bytes.length > 104857600) throw new Error("Master exceeds size limit");
     const artifact = await renderMint(bytes, job, privateKey, keyId);
-    const path = `${mint.owner_id}/${mint.id}/${mint.lease_id}.webp`;
+    const mimeType = artifact.manifest.payload.mimeType;
+    const extension = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }[mimeType];
+    if (!extension) throw new Error("Unsupported delivery format");
+    const path = `${mint.owner_id}/${mint.id}/${mint.lease_id}.${extension}`;
     const uploaded = await fetch(`${base}/storage/v1/object/minted/${path}`, {
       method: "POST",
-      headers: { ...headers, "Content-Type": "image/webp", "x-upsert": "false" },
+      headers: { ...headers, "Content-Type": mimeType, "x-upsert": "false" },
       body: artifact.bytes,
       signal: AbortSignal.timeout(60000),
     });
@@ -73,6 +82,55 @@ async function processOne() {
   } catch (error) {
     console.error("Mint rendering failed", mint.id, error.message);
     await rpc("fail_foil_job", { target_mint: mint.id, lease: mint.lease_id });
+  }
+  return true;
+}
+async function processCopyInventory() {
+  let batch;
+  try {
+    batch = await rpc("claim_foil_copy_batch");
+  } catch (error) {
+    if (error.message.includes("404")) return false;
+    throw error;
+  }
+  if (!batch) return false;
+  const copies = batch.copies || [];
+  try {
+    const source = batch.source;
+    const response = await fetch(
+      `${base}/storage/v1/object/authenticated/originals/${source.path.split("/").map(encodeURIComponent).join("/")}`,
+      { headers, signal: AbortSignal.timeout(60000) },
+    );
+    if (!response.ok || Number(response.headers.get("content-length")) > 104857600)
+      throw Error("Tier source unavailable");
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (bytes.length > 104857600 || sha256(bytes) !== source.sha256)
+      throw Error("Tier source mismatch");
+    const image = sharp(bytes, { limitInputPixels: 100_000_000, animated: false });
+    const metadata = await image.metadata();
+    const swapped = [5, 6, 7, 8].includes(metadata.orientation);
+    if (
+      { png: "image/png", jpeg: "image/jpeg", webp: "image/webp" }[metadata.format] !==
+        source.mime_type ||
+      (metadata.pages || 1) !== 1 ||
+      (swapped ? metadata.height : metadata.width) !== source.width ||
+      (swapped ? metadata.width : metadata.height) !== source.height
+    )
+      throw Error("Tier source format mismatch");
+    await image.stats();
+    for (const copy of copies) {
+      const output = prepareCopyImage(bytes, source.mime_type, copy);
+      await rpc("finish_foil_copy", {
+        target: copy.id,
+        lease: copy.lease_id,
+        digest: sha256(output),
+      });
+    }
+    console.log("Prepared copy hashes", copies.length);
+  } catch (error) {
+    console.error("Copy inventory preparation will retry", error.message);
+    for (const copy of copies)
+      await rpc("fail_foil_copy", { target: copy.id, lease: copy.lease_id });
   }
   return true;
 }

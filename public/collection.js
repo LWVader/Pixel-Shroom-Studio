@@ -1,4 +1,3 @@
-import { beginCheckoutOpening } from "./foil-reveal.js?v=20261019-template";
 import { setupMarketSelling } from "./market-sell.js";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
@@ -25,6 +24,45 @@ previous.onclick = () => {
   offset = Math.max(0, offset - 25);
   load();
 };
+// Paid editions remain recoverable if the buyer leaves before saving to profile.
+let pendingOffset = 0;
+const pending = document.createElement("section");
+pending.id = "uncollected-purchases";
+grid.before(pending);
+async function loadUncollected() {
+  const { items, hasMore } = await call("uncollected", { offset: pendingOffset });
+  pending.replaceChildren();
+  if (!items.length && pendingOffset === 0) return;
+  const title = document.createElement("h2");
+  title.textContent = "Purchases waiting to add";
+  pending.append(title);
+  for (const item of items) {
+    const row = document.createElement("p");
+    row.append(document.createTextNode(`${item.title}: `));
+    if (item.paymentConfirmed) {
+      const link = document.createElement("a");
+      link.href = "/checkout-success.html?mint=" + encodeURIComponent(item.id);
+      link.textContent = "View reveal and add to my collection";
+      row.append(link);
+    } else row.append(document.createTextNode("Awaiting payment confirmation"));
+    pending.append(row);
+  }
+  for (const [label, enabled, direction] of [
+    ["Previous purchases", pendingOffset > 0, -1],
+    ["Next purchases", hasMore, 1],
+  ]) {
+    if (!enabled) continue;
+    const button = document.createElement("button");
+    button.textContent = label;
+    button.className = "button";
+    button.onclick = () => {
+      pendingOffset = Math.max(0, pendingOffset + direction * 25);
+      loadUncollected().catch((error) => showStatus(error.message));
+    };
+    pending.append(button);
+  }
+}
+
 const seen = new Set();
 const selling = setupMarketSelling({ getSession: () => session, showStatus });
 function showStatus(message) {
@@ -48,6 +86,7 @@ async function load() {
         return `<article class="foil-card${fresh ? " revealed" : ""}" data-tier="${escapeHtml(item.tier || "Standard")}"><h2>${escapeHtml(item.title)}</h2><p>${item.tier ? `${escapeHtml(item.tier)} · #${item.mintNumber} of ${item.maxSupply}` : "Awaiting verified payment"}</p>${url ? `<img src="${escapeHtml(url)}" alt="Your ${escapeHtml(item.tier)} variant of ${escapeHtml(item.title)}" loading="lazy"><p>${item.width} × ${item.height} px</p><button class="button" data-download="${escapeHtml(item.id)}">Download variant</button> <button class="button" data-receipt="${escapeHtml(item.id)}">Save signed receipt</button>${item.canList ? `<button class="button" data-sell="${escapeHtml(item.id)}">List on Market</button>` : ""}` : `<p>${item.state === "failed" ? "Processing needs studio attention; your number and tier are retained. Please contact us." : escapeHtml(item.state)}</p>`}</article>`;
       })
       .join("");
+    await loadUncollected();
     next.hidden = !hasMore;
     previous.hidden = offset === 0;
     showStatus(
@@ -71,8 +110,14 @@ async function updateSession() {
     next.hidden = true;
     previous.hidden = true;
     grid.replaceChildren();
+    pending.replaceChildren();
     showStatus("Sign in to mint and view your private editions.");
   } else {
+    const recover = new URLSearchParams(location.search).get("reveal");
+    if (recover) {
+      location.assign("/checkout-success.html?mint=" + encodeURIComponent(recover));
+      return;
+    }
     await load();
     if (!sellerReturnChecked && new URLSearchParams(location.search).has("connect")) {
       sellerReturnChecked = true;
@@ -90,18 +135,22 @@ async function showMintOffer() {
     return;
   }
   mintPanel.hidden = false;
-  mintPanel.innerHTML = `<h2>Mint a numbered foil edition</h2><p>${edition.totalMinted}/${edition.maxSupply} allocated · ${edition.prismaticsRemaining} Prismatics remaining · ${edition.reserved} checkout reservations</p><p>${escapeHtml(editionDisclosure(edition))}</p><p>The artwork shown in the gallery is the protected master preview. Your finished variant may have a border or color effect. The private master is not delivered. Usage rights stay as published; a numbered edition does not make the underlying design exclusive.</p><p>Price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(edition.price))}</p><button class="button" id="start-mint" ${!session || edition.totalMinted + edition.reserved >= edition.maxSupply ? "disabled" : ""}>${session ? "Pay with Stripe and mint" : "Sign in below to mint"}</button>`;
+  mintPanel.innerHTML = `<h2>Mint a numbered foil edition</h2><p>${edition.totalMinted}/${edition.maxSupply} allocated · ${edition.prismaticsRemaining} Prismatics remaining · ${edition.reserved} checkout reservations</p><p>${escapeHtml(editionDisclosure(edition))}</p><p>The artwork shown in the gallery is the protected master preview. Your tier selects one of the studio’s finished uploaded images; no effects are generated at checkout. The private master is not delivered. Usage rights stay as published; a numbered edition does not make the underlying design exclusive.</p><p>Price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(edition.price))}</p><button class="button" id="start-mint" ${!session || edition.totalMinted + edition.reserved >= edition.maxSupply ? "disabled" : ""}>${session ? "Pay with Stripe and mint" : "Sign in below to mint"}</button>`;
+  if (edition.tierImages?.length) {
+    const sizes = document.createElement("p");
+    sizes.textContent =
+      "Finished tier sizes: " +
+      edition.tierImages
+        .map((image) => `${image.tier}: ${image.width} × ${image.height} px`)
+        .join("; ");
+    mintPanel.querySelector("#start-mint").before(sizes);
+  }
   mintPanel.querySelector("#start-mint").onclick = async (event) => {
     event.target.disabled = true;
-    const opening = beginCheckoutOpening();
     try {
-      const [result] = await Promise.all([
-        invoke("mint-checkout", { artworkId: target }, session.access_token),
-        opening.ready,
-      ]);
+      const result = await invoke("mint-checkout", { artworkId: target }, session.access_token);
       location.assign(checkoutUrl(result.checkoutUrl, "stripe"));
     } catch (error) {
-      opening.close();
       showStatus(error.message);
       event.target.disabled = false;
     }

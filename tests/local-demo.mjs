@@ -46,7 +46,7 @@ try {
   for (const tier of ["Standard", "Silver", "Gold", "Emerald", "Sapphire", "Prismatic"]) {
     await page.locator("#tier").selectOption(tier);
     await page.getByRole("button", { name: "Replay reveal" }).click();
-    await demo.getByRole("heading", { name: `${tier} edition revealed` }).waitFor();
+    await demo.getByRole("heading", { name: "Revealing your paid edition" }).waitFor();
     await demo.locator(".foil-card img").evaluate(async (image) => {
       await image.decode();
     });
@@ -134,6 +134,8 @@ try {
   await demo.getByRole("heading", { name: "Simulated checkout" }).waitFor();
   await demo.getByRole("link", { name: "Simulate successful payment" }).click();
   await demo.getByRole("heading", { name: "Prismatic edition revealed" }).waitFor();
+  await demo.getByRole("button", { name: "Add to my collection", exact: true }).click();
+  await demo.getByRole("button", { name: "Added to my collection", exact: true }).waitFor();
   await page.getByRole("button", { name: "My collection / sell" }).click();
   await demo.getByRole("button", { name: "List on Market" }).click();
   await demo.locator("dialog[open]").waitFor();
@@ -150,7 +152,7 @@ try {
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(
-    "PASS local demo: six real rendered tiers, reveal, purchase, selling quote and resale confirmation; no external requests",
+    "PASS local demo: six uploaded-image tier copies, reveal, purchase, selling quote and resale confirmation; no external requests",
   );
 } finally {
   await browser?.close();

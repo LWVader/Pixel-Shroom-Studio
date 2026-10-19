@@ -1,3 +1,4 @@
+import { prepareCopyImage } from "../mint-worker/copy-identity.mjs";
 // Local visual demo only. No credentials, upstream requests or real transactions.
 import http from "node:http";
 import sharp from "sharp";
@@ -71,11 +72,63 @@ const listing = {
 };
 const { privateKey } = generateKeyPairSync("ed25519");
 const variants = new Map();
-console.log("Preparing six local foil variants. Please wait for the Open URL message…");
+console.log("Preparing local uploaded-image copies. Please wait for the Open URL message…");
 for (const tier of tiers) {
+  let tierBytes = bytes;
+  if (process.env.DEMO_TIER_DIR) {
+    let found = false;
+    for (const ext of ["webp", "png", "jpg", "jpeg"]) {
+      try {
+        tierBytes = await fs.readFile(
+          path.join(process.env.DEMO_TIER_DIR, `${tier.toLowerCase()}.${ext}`),
+        );
+        found = true;
+        break;
+      } catch (error) {
+        if (error.code !== "ENOENT") throw error;
+      }
+    }
+    if (!found) throw new Error(`Missing finished ${tier} image in DEMO_TIER_DIR`);
+  }
+  const metadata = await sharp(tierBytes).metadata();
+  const swapped = [5, 6, 7, 8].includes(metadata.orientation);
+  const copy = {
+    id: `44444444-4444-4444-8444-${String(tiers.indexOf(tier) + 1).padStart(12, "0")}`,
+    listing_id: 1,
+    tier,
+    copy_number: 1,
+    source_sha256: sha256(tierBytes),
+    mint_id: mintId,
+  };
+  copy.sha256 = sha256(
+    prepareCopyImage(
+      tierBytes,
+      { png: "image/png", jpeg: "image/jpeg", webp: "image/webp" }[metadata.format],
+      copy,
+    ),
+  );
   const rendered = await renderMint(
-    bytes,
-    { listing, mint: { id: mintId, listing_id: 1, tier, mint_number: 42 } },
+    tierBytes,
+    {
+      listing,
+      mint: {
+        id: mintId,
+        listing_id: 1,
+        tier,
+        mint_number: 42,
+        asset_mode: "inventory",
+        copy_id: copy.id,
+      },
+      copy,
+      tier_asset: {
+        listing_id: 1,
+        tier,
+        sha256: sha256(tierBytes),
+        mime_type: { png: "image/png", jpeg: "image/jpeg", webp: "image/webp" }[metadata.format],
+        width: swapped ? metadata.height : metadata.width,
+        height: swapped ? metadata.width : metadata.height,
+      },
+    },
     privateKey,
     "LOCAL-DEMO-ONLY",
   );
@@ -103,7 +156,7 @@ const edition = {
   prismaticCap: 5,
   price: 15,
 };
-const banner = `<div style="position:relative;z-index:1000;background:#f4c07b;color:#040907;padding:10px;text-align:center;font:16px system-ui">LOCAL DEMO · Simulated account and payment · No real orders · <a style="color:inherit" href="/" target="_top">Demo controls</a></div>`;
+const banner = `<div style="position:relative;z-index:1000;background:#f4c07b;color:#040907;padding:10px;text-align:center;font:16px system-ui">LOCAL DEMO · Simulated account and payment · No real orders · Uploaded tier images: set DEMO_TIER_DIR; otherwise all tiers use the same sample · <a style="color:inherit" href="/" target="_top">Demo controls</a></div>`;
 const mime = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript",
@@ -125,6 +178,7 @@ function client() {
 }
 const demoPage = await fs.readFile(new URL("./demo-page.html", import.meta.url), "utf8");
 
+const purchases = new Map();
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, origin);
   const tier = tiers.includes(url.searchParams.get("tier"))
@@ -150,9 +204,16 @@ const server = http.createServer(async (req, res) => {
         "text/javascript",
       );
     if (url.pathname === "/supabase-client.js") return send(client(), "text/javascript");
+    if (url.pathname === "/demo/paid") {
+      purchases.set(tier, { paidAt: Date.now(), added: false });
+      res.writeHead(302, {
+        Location: `/checkout-success.html?order=demo&access=demo&tier=${tier}`,
+      });
+      return res.end();
+    }
     if (url.pathname === "/demo/checkout")
       return send(
-        `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Simulated checkout</title><link rel="stylesheet" href="/storefront.css"></head><body>${banner}<main style="max-width:650px;margin:60px auto;padding:24px"><h1>Simulated checkout</h1><p>This is a local placeholder, not Stripe Checkout. No card details are collected.</p><p>${tier} edition #42 of 500 · ${url.searchParams.get("market") ? "$50 secondary sale" : "$15 primary mint"}</p><a class="button" href="${url.searchParams.get("market") ? `/market.html?purchase=demo&tier=${tier}` : `/checkout-success.html?order=demo&access=demo&tier=${tier}`}">Simulate successful payment →</a><p><a href="/collection.html?tier=${tier}">Cancel / return to collection</a></p></main></body></html>`,
+        `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Simulated checkout</title><link rel="stylesheet" href="/storefront.css"></head><body>${banner}<main style="max-width:650px;margin:60px auto;padding:24px"><h1>Simulated checkout</h1><p>This is a local placeholder, not Stripe Checkout. No card details are collected.</p><p>${tier} edition #42 of 500 · ${url.searchParams.get("market") ? "$50 secondary sale" : "$15 primary mint"}</p><a class="button" href="${url.searchParams.get("market") ? `/market.html?purchase=demo&tier=${tier}` : `/demo/paid?tier=${tier}`}">Simulate successful payment →</a><p><a href="/collection.html?tier=${tier}">Cancel / return to collection</a></p></main></body></html>`,
       );
     if (url.pathname.startsWith("/demo/api/")) {
       if (req.method !== "POST") return json({ error: "POST required" }, 405);
@@ -172,15 +233,41 @@ const server = http.createServer(async (req, res) => {
         tier,
         width: variant.width,
         height: variant.height,
-        imageUrl: `${origin}/storage/v1/object/sign/minted/demo/variant.webp?tier=${tier}`,
+        imageUrl: `${origin}/storage/v1/object/sign/minted/demo/variant.${{ "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }[variant.manifest.payload.mimeType]}?tier=${tier}`,
         manifest: variant.manifest,
         canList: true,
       };
-      if (name === "mint-access") return json({ items: [item], hasMore: false });
+      const purchase = purchases.get(tier);
+      const paid = !purchase || Boolean(purchase.paidAt);
+      const ready = paid && (!purchase || Date.now() - purchase.paidAt > 2500);
+      item.state = ready ? "ready" : "queued";
+      item.paymentConfirmed = paid;
+      item.inCollection = !purchase || purchase.added;
+      if (!ready) item.imageUrl = null;
+      if (name === "mint-access") {
+        if (body.action === "add_to_collection") {
+          if (!ready) return json({ error: "Edition not ready" }, 409);
+          if (purchase) purchase.added = true;
+          return json({ added: true });
+        }
+        const include =
+          body.action === "collection"
+            ? item.inCollection
+            : body.action === "uncollected"
+              ? !item.inCollection
+              : true;
+        return json({ items: include ? [item] : [], hasMore: false });
+      }
       if (name === "order-status")
-        return json({ status: "paid", kind: "foil", mint: { id: mintId, state: "ready" } });
-      if (name === "mint-checkout")
+        return json({
+          status: paid ? "paid" : "pending",
+          kind: "foil",
+          mint: { id: mintId, state: item.state },
+        });
+      if (name === "mint-checkout") {
+        purchases.set(tier, { paidAt: null, added: false });
         return json({ checkoutUrl: `${origin}/demo/checkout?tier=${tier}` });
+      }
       if (name === "market-api") {
         if (body.action === "feed")
           return json({
@@ -231,7 +318,7 @@ const server = http.createServer(async (req, res) => {
       return json({ error: "Unavailable in local demo" }, 404);
     }
     if (url.pathname.startsWith("/storage/v1/object/sign/minted/"))
-      return send(variant.bytes, "image/webp");
+      return send(variant.bytes, variant.manifest.payload.mimeType);
     if (url.pathname.startsWith("/storage/v1/object/public/previews/"))
       return send(variant.preview, "image/webp");
     if (url.pathname.startsWith("/rest/")) return json([]);

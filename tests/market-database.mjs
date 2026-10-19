@@ -18,6 +18,7 @@ for (const file of [
   "202610190001_foil_mint_engine.sql",
   "202610190003_six_foil_tiers.sql",
   "202610190002_secondary_market.sql",
+  "202610190004_post_reveal_collection.sql",
 ])
   await db.exec(await fs.readFile(`supabase/migrations/${file}`, "utf8"));
 const a = "11111111-1111-4111-8111-111111111111",
@@ -29,15 +30,50 @@ await db.exec(
 );
 const primary = (await db.query("select reserve_foil_order(1,$1,repeat('b',64)) as p", [a])).rows[0]
   .p;
+// Saving is a separate authenticated action, after payment and rendering.
+await assert.rejects(
+  () => db.query("select add_mint_to_collection($1,$2)", [primary.mintId, a]),
+  /Paid, ready/,
+);
 await db.query("update orders set provider_order_id='primary' where id=$1", [primary.orderId]);
 await db.query(
   "select fulfill_stripe_checkout_verified('primary-paid','primary',$1,1500,'usd',null)",
   [primary.orderId],
 );
+await assert.rejects(
+  () => db.query("select add_mint_to_collection($1,$2)", [primary.mintId, a]),
+  /Paid, ready/,
+);
 await db.query(
   "update mints set state='ready',artifact_path='private/original-variant.webp',crypto_sha256=repeat('c',64) where id=$1",
   [primary.mintId],
 );
+assert.equal(
+  (await db.query("select collection_added_at from mints where id=$1", [primary.mintId])).rows[0]
+    .collection_added_at,
+  null,
+);
+await assert.rejects(
+  () => db.query("select add_mint_to_collection($1,$2)", [primary.mintId, b]),
+  /Paid, ready/,
+);
+await db.query("select add_mint_to_collection($1,$2)", [primary.mintId, a]);
+const saved = (
+  await db.query("select collection_added_at from mints where id=$1", [primary.mintId])
+).rows[0].collection_added_at;
+await db.query("select add_mint_to_collection($1,$2)", [primary.mintId, a]);
+assert.deepEqual(
+  (await db.query("select collection_added_at from mints where id=$1", [primary.mintId])).rows[0]
+    .collection_added_at,
+  saved,
+);
+await db.exec("set role authenticated");
+await assert.rejects(
+  () => db.query("select add_mint_to_collection($1,$2)", [primary.mintId, a]),
+  /permission denied/,
+);
+await db.exec("reset role");
+
 for (const [id, account] of [
   [a, "acct_A"],
   [b, "acct_B"],

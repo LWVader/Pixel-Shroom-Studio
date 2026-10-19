@@ -1,4 +1,3 @@
-import { beginCheckoutOpening } from "./foil-reveal.js?v=20261019-template";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
 import { escapeHtml, checkoutUrl } from "./catalog-core.js";
@@ -71,15 +70,10 @@ grid.onclick = async (event) => {
     return;
   }
   button.disabled = true;
-  const opening = beginCheckoutOpening({ resale: true });
   try {
-    const [result] = await Promise.all([
-      call({ action: "checkout", listingId: button.dataset.marketBuy }),
-      opening.ready,
-    ]);
+    const result = await call({ action: "checkout", listingId: button.dataset.marketBuy });
     location.assign(checkoutUrl(result.checkoutUrl, "stripe"));
   } catch (error) {
-    opening.close();
     status.textContent = error.message;
     button.disabled = false;
   }
