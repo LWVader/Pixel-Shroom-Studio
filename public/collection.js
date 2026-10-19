@@ -1,4 +1,4 @@
-import { beginCheckoutOpening } from "./foil-reveal.js?v=20261019-six-tiers";
+import { beginCheckoutOpening } from "./foil-reveal.js?v=20261019-template";
 import { setupMarketSelling } from "./market-sell.js";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";

@@ -7,11 +7,12 @@ const PALETTES = {
   Sapphire: ["#5798ff", "#b8eeff"],
   Prismatic: ["#b991ff", "#72efff"],
 };
-const DURATION = 4400;
+const DURATION = 1800;
 export function mountFoilReveal(panel, image, options = {}) {
   const duration = options.duration || DURATION;
   const colors = PALETTES[panel.dataset.tier] || PALETTES.Standard;
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  const hover = matchMedia("(hover: hover) and (pointer: fine)");
   const scene = document.createElement("div");
   scene.className = "foil-scene";
   scene.dataset.animation = "preparing";
@@ -20,11 +21,17 @@ export function mountFoilReveal(panel, image, options = {}) {
   scene.style.setProperty("--foil-spark", colors[1]);
   const rotor = document.createElement("div");
   rotor.className = "foil-rotor";
+  if (!options.concealed) {
+    rotor.tabIndex = 0;
+    rotor.setAttribute("role", "button");
+    rotor.setAttribute("aria-label", "Replay artwork reveal");
+    rotor.setAttribute("aria-disabled", "true");
+  }
   const back = document.createElement("div");
   back.className = "foil-back";
   back.setAttribute("aria-hidden", "true");
   back.innerHTML =
-    "<span>PIXEL SHROOM<br>STUDIO</span><span class='foil-back-emblem'>✦</span><span>LWVADER<br>VERIFIABLE ART</span>";
+    "<span class='foil-back-title'>PIXEL<br>SHROOM<br>STUDIO</span><span class='foil-back-emblem'></span><span class='foil-back-footer'>LWVADER<br>VERIFIABLE ART</span>";
   const seal = back.cloneNode(true);
   seal.className = "foil-back foil-seal";
   const shine = document.createElement("div");
@@ -62,6 +69,7 @@ export function mountFoilReveal(panel, image, options = {}) {
   let width = 1,
     height = 1,
     nextStrike = 0,
+    burstTriggered = false,
     bolts = [],
     particles = [];
   function resize() {
@@ -78,8 +86,12 @@ export function mountFoilReveal(panel, image, options = {}) {
   function finish(announce = true) {
     cancelAnimationFrame(frame);
     running = false;
-    scene.classList.remove("is-spinning");
+    scene.classList.remove("is-spinning", "is-tilting");
     scene.dataset.animation = "complete";
+    scene.dataset.phase = "complete";
+    rotor.setAttribute("aria-disabled", String(Boolean(options.concealed)));
+    shine.style.removeProperty("opacity");
+    shine.style.removeProperty("background");
     image.style.visibility = options.concealed ? "hidden" : "visible";
     seal.hidden = !options.concealed;
     rotor.style.transform = "";
@@ -170,7 +182,7 @@ export function mountFoilReveal(panel, image, options = {}) {
       context.arc(
         particle.x + particle.vx * age,
         particle.y + particle.vy * age + 100 * age * age,
-        1.5,
+        particle.radius || 1.5,
         0,
         Math.PI * 2,
       );
@@ -186,14 +198,40 @@ export function mountFoilReveal(panel, image, options = {}) {
     }
     const elapsed = now - started;
     const progress = Math.min(1, elapsed / duration);
-    // Ease out over three full turns; the image and branded back share one 3D plane.
-    const eased = 1 - Math.pow(1 - progress, 2.4);
-    rotor.style.transform = `rotateY(${-1080 * (1 - eased)}deg) rotateX(${Math.sin(progress * Math.PI) * 9}deg) rotateZ(${Math.sin(progress * Math.PI * 2) * 3}deg) scale(${0.84 + 0.16 * eased})`;
+    // Charge, then a single spring-eased flip. The seal remains opaque until
+    // the whole sequence settles; the artwork never appears mid-flip.
+    if (progress < 0.3) {
+      const charge = progress / 0.3;
+      scene.dataset.phase = "charge";
+      const pulse = Math.sin(charge * Math.PI);
+      rotor.style.transform = `rotateY(180deg) scale(${1 - 0.065 * pulse}) translateY(${8 * pulse}px)`;
+    } else {
+      const flip = Math.min(1, (progress - 0.3) / 0.46);
+      const shifted = flip - 1;
+      const spring = 1 + 2.70158 * shifted ** 3 + 1.70158 * shifted ** 2;
+      scene.dataset.phase = flip < 1 ? "flip" : "settle";
+      rotor.style.transform = `rotateY(${180 + 180 * spring}deg) rotateX(${Math.sin(flip * Math.PI) * -5}deg) scale(${1 + 0.035 * Math.sin(flip * Math.PI)})`;
+    }
+    if (!burstTriggered && progress >= 0.53) {
+      burstTriggered = true;
+      for (let i = 0; i < 40; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = width * (0.2 + Math.random() * 0.4);
+        particles.push({
+          x: width / 2,
+          y: height / 2,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          born: elapsed,
+          radius: 1 + Math.random() * 1.7,
+        });
+      }
+    }
     if (
       nextStrike < 3 &&
       elapsed >= [duration * 0.15, duration * 0.45, duration * 0.74][nextStrike]
     ) {
-      strike(elapsed, eased);
+      strike(elapsed, progress);
       nextStrike++;
     }
     draw(elapsed);
@@ -206,6 +244,8 @@ export function mountFoilReveal(panel, image, options = {}) {
     scene.dataset.animation = "preparing";
     image.style.visibility = "hidden";
     seal.hidden = false;
+    rotor.setAttribute("aria-disabled", "true");
+    rotor.style.transform = "rotateY(180deg)";
     status.textContent = "Preparing artwork…";
     replay.disabled = true;
     try {
@@ -213,7 +253,10 @@ export function mountFoilReveal(panel, image, options = {}) {
     } catch {
       if (token === generation) {
         finish(false);
-        status.textContent = "Image could not load. Reload to retry.";
+        scene.dataset.animation = "error";
+        image.style.visibility = "hidden";
+        seal.hidden = false;
+        status.textContent = "Image could not load. Replay to retry.";
       }
       return;
     }
@@ -224,11 +267,13 @@ export function mountFoilReveal(panel, image, options = {}) {
     }
     resize();
     nextStrike = 0;
+    burstTriggered = false;
     bolts = [];
     particles = [];
     running = true;
     scene.classList.add("is-spinning");
     scene.dataset.animation = "running";
+    scene.dataset.phase = "charge";
     status.textContent = "Revealing your edition…";
     skip.hidden = Boolean(options.concealed);
     started = performance.now();
@@ -239,10 +284,54 @@ export function mountFoilReveal(panel, image, options = {}) {
     generation++;
     finish();
   };
+  function replayCard() {
+    if (
+      !options.concealed &&
+      !running &&
+      !disposed &&
+      ["complete", "error"].includes(scene.dataset.animation)
+    )
+      play();
+  }
+  function keyboardReplay(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      replayCard();
+    }
+  }
+  function resetTilt() {
+    if (!running) rotor.style.transform = "";
+    shine.style.removeProperty("opacity");
+    shine.style.removeProperty("background");
+  }
+  function tilt(event) {
+    if (
+      options.concealed ||
+      running ||
+      disposed ||
+      motion.matches ||
+      !hover.matches ||
+      scene.dataset.animation !== "complete" ||
+      event.pointerType === "touch"
+    )
+      return;
+    const box = scene.getBoundingClientRect();
+    const x = Math.max(-1, Math.min(1, ((event.clientX - box.left) / box.width) * 2 - 1));
+    const y = Math.max(-1, Math.min(1, ((event.clientY - box.top) / box.height) * 2 - 1));
+    scene.classList.add("is-tilting");
+    rotor.style.transform = `rotateX(${-y * 12}deg) rotateY(${x * 12}deg) scale(1.025)`;
+    shine.style.opacity = ".65";
+    shine.style.background = `linear-gradient(${135 + x * 30 + y * 30}deg, transparent 15%, #ffffff45 35%, ${colors[0]}55 52%, transparent 75%)`;
+  }
+  rotor.addEventListener("click", replayCard);
+  rotor.addEventListener("keydown", keyboardReplay);
+  scene.addEventListener("pointermove", tilt);
+  scene.addEventListener("pointerleave", resetTilt);
   function changedMotion() {
     if (motion.matches) {
       generation++;
       finish();
+      resetTilt();
     }
   }
   function visibility() {
@@ -260,6 +349,11 @@ export function mountFoilReveal(panel, image, options = {}) {
     observer.disconnect();
     motion.removeEventListener("change", changedMotion);
     document.removeEventListener("visibilitychange", visibility);
+    rotor.removeEventListener("click", replayCard);
+    rotor.removeEventListener("keydown", keyboardReplay);
+    scene.removeEventListener("pointermove", tilt);
+    scene.removeEventListener("pointerleave", resetTilt);
+    window.removeEventListener("pagehide", cleanup);
   }
   window.addEventListener("pagehide", cleanup, { once: true });
   play();

@@ -20,7 +20,7 @@ An unpaid click does **not** consume a tier or mint a result. Stripe's verified 
 
 Caps are the configured per-artwork global limits, not per-buyer limits. A Prismatic cap of five permits at most five paid Prismatic allocations for that artwork. Caps are locked after the first checkout reservation. The initial percentages change as caps fill; the existing offer disclosure remains visible before purchase. No browser-provided roll, tier, price or rarity result is accepted by the mint-checkout handler.
 
-The private worker renders and signs the allocated variant. The confirmation page polls the verified order status, then loads the permitted private variant. Its separate 4.4-second reveal keeps the artwork hidden behind a studio seal until completion. Replays are presentation only and never trigger another roll. Neither the master file nor a guessed rarity is delivered while payment or processing is pending.
+The private worker renders and signs the allocated variant. The confirmation page polls the verified order status, then loads the permitted private variant. Its separate 1.8-second charge-up and spring-flip reveal keeps the artwork hidden behind a studio seal until completion. Replays are presentation only and never trigger another roll. Neither the master file nor a guessed rarity is delivered while payment or processing is pending.
 
 Secondary-marketplace Buy buttons get the same checkout-opening effects but preserve the existing edition's tier. Resales transfer custody after verified payment; they do not mint another variant or consume rarity supply. Ordinary digital checkout and direct eBay links retain their existing behavior.
 

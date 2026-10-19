@@ -143,10 +143,10 @@
   --impact: 0;
   position: relative;
   isolation: isolate;
-  perspective: 1000px;
+  perspective: 1200px;
   width: 100%;
-  max-width: 500px;
-  aspect-ratio: 1;
+  max-width: 380px;
+  aspect-ratio: 320 / 380;
   margin: 0 auto 18px;
   padding: 7%;
   box-sizing: border-box;
@@ -197,7 +197,7 @@
   padding: 12%;
   border: 2px solid var(--foil-light);
   border-radius: 10px;
-  background: repeating-linear-gradient(45deg, #10261b, #10261b 12px, #193625 12px, #193625 13px);
+  background: radial-gradient(ellipse at center, #163b2c, #07110c 80%);
   color: #fff4c4;
   text-align: center;
   font-size: clamp(12px, 3vw, 20px);
@@ -206,10 +206,49 @@
   transform: rotateY(180deg) translateZ(1px);
   box-sizing: border-box;
 }
-.foil-back-emblem {
-  color: var(--foil-light);
-  font-size: clamp(36px, 12vw, 90px);
+.foil-back-title {
+  font-size: clamp(15px, 4vw, 23px);
+  font-weight: 600;
+  letter-spacing: 0.18em;
 }
+.foil-back-footer {
+  font-size: clamp(10px, 2vw, 13px);
+  color: var(--muted, #b8c9c0);
+  line-height: 1.5;
+}
+.foil-back-emblem {
+  display: block;
+  width: clamp(26px, 6vw, 42px);
+  aspect-ratio: 1;
+  background: var(--foil-light);
+  transform: rotate(45deg);
+  border-radius: 2px;
+  box-shadow: 0 0 24px var(--foil-light);
+}
+.is-spinning .foil-back-emblem {
+  animation: foil-diamond-pulse 1.6s ease-in-out alternate infinite;
+}
+.foil-rotor[role="button"] {
+  cursor: pointer;
+}
+.foil-scene.is-tilting .foil-rotor {
+  transition: transform 0.2s ease-out;
+}
+.foil-rotor:focus-visible {
+  outline: 2px solid var(--foil-spark);
+  outline-offset: 5px;
+}
+@keyframes foil-diamond-pulse {
+  from {
+    transform: rotate(45deg) scale(0.9);
+    box-shadow: 0 0 12px var(--foil-light);
+  }
+  to {
+    transform: rotate(45deg) scale(1.12);
+    box-shadow: 0 0 32px var(--foil-light);
+  }
+}
+
 .foil-shine {
   position: absolute;
   inset: 0;
@@ -220,10 +259,11 @@
   opacity: 0;
   background: linear-gradient(115deg, transparent 25%, #ffffff50 47%, transparent 67%);
   background-size: 300% 100%;
+  mix-blend-mode: color-dodge;
 }
 .is-spinning .foil-shine {
   opacity: 0.65;
-  animation: foil-sweep 4.4s ease-out both;
+  animation: foil-sweep 1.8s ease-out both;
 }
 .foil-lightning {
   position: absolute;
@@ -313,4 +353,13 @@
 .foil-card[data-tier="Sapphire"] {
   border-color: #5798ff;
   box-shadow: 0 0 20px #5798ff22;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-spinning .foil-back-emblem {
+    animation: none;
+  }
+  .foil-scene.is-tilting .foil-rotor {
+    transition: none;
+  }
 }

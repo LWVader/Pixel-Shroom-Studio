@@ -16,7 +16,7 @@ Wait for `Open http://127.0.0.1:8030`, then open that address in your browser. P
 ## Controls
 
 - **Simulate mint purchase:** opens the actual mint offer page. Click **Pay with Stripe and mint**, watch the concealed checkout-opening effect, then click **Simulate successful payment** on the clearly labeled local checkout placeholder. It does not load Stripe Checkout.
-- **Replay reveal:** reloads the actual confirmation page and its 4.4-second three-turn reveal with three lightning strikes and sparks. Use this button to replay it.
+- **Replay reveal:** reloads the actual confirmation page and its 1.8-second charge-up and spring-flip reveal with lightning and a 40-spark burst. Use this button to replay it. After revealing, move the mouse over the card for 3D tilt and holographic glare. Clicking the card or pressing Enter/Space while it is focused also replays the reveal. Replays always finish with the artwork visible rather than toggling back to a hidden card.
 - **Tier:** choose Standard, Silver, Gold, Emerald, Sapphire or Prismatic. This selector is a visual testing control, not a choice offered to paying customers. Variants use the actual Sharp mint renderer, with temporary demo signing identities.
 - **My collection / sell:** view the edition and click **List on Market** to inspect the pricing dialog and 10% fee quote.
 - **Marketplace / buy:** inspect the protected public variant preview, filters and simulated resale checkout/confirmation.

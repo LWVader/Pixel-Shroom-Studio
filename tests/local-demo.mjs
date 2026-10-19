@@ -101,6 +101,22 @@ try {
       "none",
     );
   }
+  // The supplied template's post-reveal pointer tilt and sheen work without rerolling.
+  const box = await demo.locator(".foil-scene").boundingBox();
+  await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.3);
+  assert.equal(
+    await demo.locator(".foil-scene").evaluate((scene) => scene.classList.contains("is-tilting")),
+    true,
+  );
+  assert.notEqual(await demo.locator(".foil-rotor").evaluate((card) => card.style.transform), "");
+  await demo.getByRole("button", { name: "Replay artwork reveal", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await demo.locator('.foil-scene[data-animation="running"]').waitFor();
+  assert.equal(
+    await demo.locator(".foil-rotor > img").evaluate((image) => getComputedStyle(image).visibility),
+    "hidden",
+  );
+  await demo.locator('.foil-scene[data-animation="complete"]').waitFor();
   await page.emulateMedia({ reducedMotion: "reduce" });
   await demo.getByRole("button", { name: "Replay reveal", exact: true }).click();
   await demo.locator('.foil-scene[data-animation="complete"]').waitFor();
