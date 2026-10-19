@@ -1,4 +1,4 @@
-import { mountFoilReveal } from "./foil-reveal.js";
+import { mountFoilReveal } from "./foil-reveal.js?v=20261019-opening";
 import { safeMintImage } from "./mint-core.js";
 import { SUPABASE_URL } from "./config.js";
 // SECTION: Supabase function client and checkout-return parameters

@@ -95,3 +95,46 @@ test("pending or failed rendering never exposes the original download", async ({
   await expect(page.locator("#download-link")).toBeHidden();
   await expect(page.locator("img")).toHaveCount(0);
 });
+
+test("Buy opens effects immediately while server checkout runs, without submitting a tier", async ({
+  page,
+}) => {
+  await routes(page);
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  let checkoutBody;
+  await page.route("**/functions/v1/mint-checkout", async (route) => {
+    checkoutBody = route.request().postDataJSON();
+    await gate;
+    await route.fulfill({
+      json: { checkoutUrl: "https://checkout.stripe.com/foil-opening-fixture" },
+    });
+  });
+  await page.route("https://checkout.stripe.com/**", (route) =>
+    route.fulfill({ contentType: "text/html", body: "<h1>Fixture checkout</h1>" }),
+  );
+  await page.goto("/collection.html?mint=1");
+  await page.locator("#start-mint").click();
+  await expect(page.locator(".foil-opening-dialog[open]")).toBeVisible();
+  await expect(page.locator(".foil-opening-dialog")).toContainText("after payment is confirmed");
+  await expect.poll(() => checkoutBody).toEqual({ artworkId: "1" });
+  await expect(page.locator(".foil-opening-dialog img")).toBeHidden();
+  release();
+  await expect(page).toHaveURL("https://checkout.stripe.com/foil-opening-fixture");
+});
+
+test("failed checkout removes the opening and allows retry without allocating a result", async ({
+  page,
+}) => {
+  await routes(page);
+  await page.route("**/functions/v1/mint-checkout", (route) =>
+    route.fulfill({ status: 409, json: { error: "Sold out fixture" } }),
+  );
+  await page.goto("/collection.html?mint=1");
+  await page.locator("#start-mint").click();
+  await expect(page.locator("#collection-status")).toContainText("Sold out fixture");
+  await expect(page.locator(".foil-opening-dialog")).toHaveCount(0);
+  await expect(page.locator("#start-mint")).toBeEnabled();
+});

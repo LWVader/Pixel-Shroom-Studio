@@ -1,3 +1,4 @@
+import { beginCheckoutOpening } from "./foil-reveal.js?v=20261019-opening";
 import { setupMarketSelling } from "./market-sell.js";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
@@ -92,10 +93,15 @@ async function showMintOffer() {
   mintPanel.innerHTML = `<h2>Mint a numbered foil edition</h2><p>${edition.totalMinted}/${edition.maxSupply} allocated · ${edition.prismaticsRemaining} Prismatics remaining · ${edition.reserved} checkout reservations</p><p>${escapeHtml(editionDisclosure(edition))}</p><p>The artwork shown in the gallery is the protected master preview. Your finished variant may have a border or color effect. The private master is not delivered. Usage rights stay as published; a numbered edition does not make the underlying design exclusive.</p><p>Price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(edition.price))}</p><button class="button" id="start-mint" ${!session || edition.totalMinted + edition.reserved >= edition.maxSupply ? "disabled" : ""}>${session ? "Pay with Stripe and mint" : "Sign in below to mint"}</button>`;
   mintPanel.querySelector("#start-mint").onclick = async (event) => {
     event.target.disabled = true;
+    const opening = beginCheckoutOpening();
     try {
-      const result = await invoke("mint-checkout", { artworkId: target }, session.access_token);
+      const [result] = await Promise.all([
+        invoke("mint-checkout", { artworkId: target }, session.access_token),
+        opening.ready,
+      ]);
       location.assign(checkoutUrl(result.checkoutUrl, "stripe"));
     } catch (error) {
+      opening.close();
       showStatus(error.message);
       event.target.disabled = false;
     }

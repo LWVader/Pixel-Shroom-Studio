@@ -123,6 +123,43 @@ await assert.rejects(
     ),
   /mismatch/,
 );
+// Even when every deterministic fixture roll hits Prismatic, the global cap is five.
+await db.exec(`insert into artworks values(4,'Fantasy','published','capped.png','Five cap','LWV-0000000004',15);
+insert into artwork_signatures values(4,'LWV-0000000004','image/png',repeat('a',64));
+select configure_foil_listing(4,true,8,0,0,5);`);
+const capped = [];
+for (let i = 0; i < 8; i++) {
+  const reservation = (
+    await db.query("select reserve_foil_order(4,$1,repeat('b',64)) as value", [owner])
+  ).rows[0].value;
+  capped.push(reservation);
+}
+assert.equal(
+  (await db.query("select count(*)::int n from mints where listing_id=4 and tier is not null"))
+    .rows[0].n,
+  0,
+);
+for (const [i, reservation] of capped.entries()) {
+  await db.query("update orders set provider_order_id=$1 where id=$2", [
+    `cap_session_${i}`,
+    reservation.orderId,
+  ]);
+  await db.query("select fulfill_stripe_checkout_verified($1,$2,$3,1500,'usd',null)", [
+    `cap_event_${i}`,
+    `cap_session_${i}`,
+    reservation.orderId,
+  ]);
+}
+assert.equal(
+  (await db.query("select count(*)::int n from mints where listing_id=4 and tier='Prismatic'"))
+    .rows[0].n,
+  5,
+);
+assert.equal(
+  (await db.query("select count(*)::int n from mints where listing_id=4 and tier='Standard'"))
+    .rows[0].n,
+  3,
+);
 await db.exec("set role anon");
 await assert.rejects(() => db.query("select * from mints"));
 await assert.rejects(() => db.query("select claim_foil_job()"));

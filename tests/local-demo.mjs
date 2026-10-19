@@ -52,12 +52,30 @@ try {
     });
     assert.equal(await demo.locator(".foil-card").getAttribute("data-tier"), tier);
     await demo.locator('.foil-scene[data-animation="running"]').waitFor();
+    assert.equal(
+      await demo
+        .locator(".foil-rotor > img")
+        .evaluate((image) => getComputedStyle(image).visibility),
+      "hidden",
+    );
+    assert.equal(
+      await demo
+        .locator(".foil-seal")
+        .evaluate((seal) => getComputedStyle(seal).display !== "none"),
+      true,
+    );
     // Observe actual painted lightning pixels rather than mirroring its implementation.
     await demo.locator("canvas.foil-lightning").evaluate(
       (canvas) =>
         new Promise((resolve, reject) => {
           const start = performance.now();
           function check() {
+            if (
+              canvas.closest(".foil-scene").dataset.animation !== "complete" &&
+              getComputedStyle(canvas.closest(".foil-scene").querySelector("img")).visibility !==
+                "hidden"
+            )
+              return reject(Error("Artwork leaked during the spin"));
             const context = canvas.getContext("2d");
             const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
             if (pixels.some((value, index) => index % 4 === 3 && value > 0)) return resolve();
@@ -72,6 +90,16 @@ try {
     if (tier !== "Standard")
       await demo.getByRole("button", { name: "Skip animation", exact: true }).click();
     await demo.locator('.foil-scene[data-animation="complete"]').waitFor();
+    assert.equal(
+      await demo
+        .locator(".foil-rotor > img")
+        .evaluate((image) => getComputedStyle(image).visibility),
+      "visible",
+    );
+    assert.equal(
+      await demo.locator(".foil-seal").evaluate((seal) => getComputedStyle(seal).display),
+      "none",
+    );
   }
   await page.emulateMedia({ reducedMotion: "reduce" });
   await demo.getByRole("button", { name: "Replay reveal", exact: true }).click();
@@ -96,6 +124,7 @@ try {
   await demo.locator("#sell-form input[name=price]").fill("50");
   assert.match(await demo.locator("#sell-summary").textContent(), /\$45\.00/);
   await page.getByRole("button", { name: "Marketplace / buy" }).click();
+  await demo.locator("[data-market-buy]").waitFor();
   await demo.locator(".foil-card img").evaluate(async (image) => {
     await image.decode();
   });

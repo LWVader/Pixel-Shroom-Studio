@@ -6,11 +6,14 @@ const PALETTES = {
   Prismatic: ["#b991ff", "#72efff"],
 };
 const DURATION = 4400;
-export function mountFoilReveal(panel, image) {
+export function mountFoilReveal(panel, image, options = {}) {
+  const duration = options.duration || DURATION;
   const colors = PALETTES[panel.dataset.tier] || PALETTES.Standard;
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   const scene = document.createElement("div");
   scene.className = "foil-scene";
+  scene.dataset.animation = "preparing";
+  image.style.visibility = "hidden";
   scene.style.setProperty("--foil-light", colors[0]);
   scene.style.setProperty("--foil-spark", colors[1]);
   const rotor = document.createElement("div");
@@ -20,6 +23,8 @@ export function mountFoilReveal(panel, image) {
   back.setAttribute("aria-hidden", "true");
   back.innerHTML =
     "<span>PIXEL SHROOM<br>STUDIO</span><span class='foil-back-emblem'>✦</span><span>LWVADER<br>VERIFIABLE ART</span>";
+  const seal = back.cloneNode(true);
+  seal.className = "foil-back foil-seal";
   const shine = document.createElement("div");
   shine.className = "foil-shine";
   shine.setAttribute("aria-hidden", "true");
@@ -27,7 +32,7 @@ export function mountFoilReveal(panel, image) {
   canvas.className = "foil-lightning";
   canvas.setAttribute("aria-hidden", "true");
   image.before(scene);
-  rotor.append(image, shine, back);
+  rotor.append(image, seal, shine, back);
   scene.append(rotor, canvas);
   const controls = document.createElement("div");
   controls.className = "foil-reveal-controls";
@@ -45,6 +50,7 @@ export function mountFoilReveal(panel, image) {
   status.setAttribute("role", "status");
   controls.append(replay, skip, status);
   scene.after(controls);
+  if (options.concealed) replay.hidden = true;
   const context = canvas.getContext("2d");
   let frame = 0,
     started = 0,
@@ -72,13 +78,20 @@ export function mountFoilReveal(panel, image) {
     running = false;
     scene.classList.remove("is-spinning");
     scene.dataset.animation = "complete";
+    image.style.visibility = options.concealed ? "hidden" : "visible";
+    seal.hidden = !options.concealed;
     rotor.style.transform = "";
     scene.style.setProperty("--impact", "0");
     context?.clearRect(0, 0, width, height);
     skip.hidden = true;
     replay.disabled = false;
+    if (announce) options.onComplete?.();
     if (announce)
-      status.textContent = motion.matches ? "Motion effects off. Edition ready." : "Edition ready.";
+      status.textContent = options.concealed
+        ? "Waiting for secure checkout…"
+        : motion.matches
+          ? "Motion effects off. Edition ready."
+          : "Edition ready.";
   }
   function strike(elapsed, progress) {
     const side = nextStrike % 2 ? 1 : -1;
@@ -170,11 +183,14 @@ export function mountFoilReveal(panel, image) {
       return;
     }
     const elapsed = now - started;
-    const progress = Math.min(1, elapsed / DURATION);
+    const progress = Math.min(1, elapsed / duration);
     // Ease out over three full turns; the image and branded back share one 3D plane.
     const eased = 1 - Math.pow(1 - progress, 2.4);
     rotor.style.transform = `rotateY(${-1080 * (1 - eased)}deg) rotateX(${Math.sin(progress * Math.PI) * 9}deg) rotateZ(${Math.sin(progress * Math.PI * 2) * 3}deg) scale(${0.84 + 0.16 * eased})`;
-    if (nextStrike < 3 && elapsed >= [650, 1950, 3250][nextStrike]) {
+    if (
+      nextStrike < 3 &&
+      elapsed >= [duration * 0.15, duration * 0.45, duration * 0.74][nextStrike]
+    ) {
       strike(elapsed, eased);
       nextStrike++;
     }
@@ -185,6 +201,9 @@ export function mountFoilReveal(panel, image) {
   async function play() {
     const token = ++generation;
     finish(false);
+    scene.dataset.animation = "preparing";
+    image.style.visibility = "hidden";
+    seal.hidden = false;
     status.textContent = "Preparing artwork…";
     replay.disabled = true;
     try {
@@ -209,7 +228,7 @@ export function mountFoilReveal(panel, image) {
     scene.classList.add("is-spinning");
     scene.dataset.animation = "running";
     status.textContent = "Revealing your edition…";
-    skip.hidden = false;
+    skip.hidden = Boolean(options.concealed);
     started = performance.now();
     frame = requestAnimationFrame(tick);
   }
@@ -250,4 +269,56 @@ export function mountFoilReveal(panel, image) {
     },
     cleanup,
   };
+}
+
+// Starts immediately on Buy while the checkout request runs in parallel.
+// This stage never allocates a tier, confirms a payment or exposes artwork.
+export function beginCheckoutOpening({ resale = false } = {}) {
+  const dialog = document.createElement("dialog");
+  dialog.className = "foil-opening-dialog";
+  const title = document.createElement("h2");
+  title.id = "foil-opening-title";
+  title.textContent = "Opening secure checkout";
+  dialog.setAttribute("aria-labelledby", title.id);
+  const message = document.createElement("p");
+  message.textContent = resale
+    ? "Preparing the transfer of this existing edition. Its tier will not change."
+    : "Your rarity roll happens on the server after payment is confirmed. Tier caps apply.";
+  const panel = document.createElement("article");
+  panel.className = "foil-card foil-purchase-reveal";
+  panel.dataset.tier = "Standard";
+  const image = document.createElement("img");
+  image.alt = "";
+  image.src =
+    "data:image/svg+xml," +
+    encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>');
+  panel.append(image);
+  const hide = document.createElement("button");
+  hide.type = "button";
+  hide.className = "buy-button";
+  hide.textContent = "Hide effects";
+  dialog.append(title, message, panel, hide);
+  document.body.append(dialog);
+  dialog.showModal();
+  let resolve;
+  const ready = new Promise((done) => {
+    resolve = done;
+  });
+  const effect = mountFoilReveal(panel, image, {
+    concealed: true,
+    duration: 2200,
+    onComplete: () => resolve(),
+  });
+  function close() {
+    resolve();
+    effect.cleanup();
+    if (dialog.open) dialog.close();
+    dialog.remove();
+  }
+  hide.onclick = close;
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    close();
+  });
+  return { ready, close };
 }

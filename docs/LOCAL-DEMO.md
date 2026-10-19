@@ -15,7 +15,7 @@ Wait for `Open http://127.0.0.1:8030`, then open that address in your browser. P
 
 ## Controls
 
-- **Simulate mint purchase:** opens the actual mint offer page. Click **Pay with Stripe and mint**, then **Simulate successful payment** on the clearly labeled local checkout placeholder. It does not load Stripe Checkout.
+- **Simulate mint purchase:** opens the actual mint offer page. Click **Pay with Stripe and mint**, watch the concealed checkout-opening effect, then click **Simulate successful payment** on the clearly labeled local checkout placeholder. It does not load Stripe Checkout.
 - **Replay reveal:** reloads the actual confirmation page and its 4.4-second three-turn reveal with three lightning strikes and sparks. Use this button to replay it.
 - **Tier:** choose Standard, Silver, Gold or Prismatic. This selector is a visual testing control, not a choice offered to paying customers. Variants use the actual Sharp mint renderer, with temporary demo signing identities.
 - **My collection / sell:** view the edition and click **List on Market** to inspect the pricing dialog and 10% fee quote.

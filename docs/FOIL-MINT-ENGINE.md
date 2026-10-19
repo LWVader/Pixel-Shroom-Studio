@@ -45,7 +45,7 @@ The recovery scan pages through pending orders in creation order. Monitor unlink
 
 Retries keep the exact allocated number/tier. After five render failures or expired final leases, the mint stops for review. Investigate the master file or worker first, then an authenticated admin can call `retry_foil_job(target_mint)` through the Supabase SQL/RPC tooling. Do not put a service-role key into Admin's browser. Private storage artifacts from lost leases are unreferenced and can be deleted after confirming no ledger row references them. A stale worker cannot overwrite a current artifact because each lease writes a different private path.
 
-Counters report paid **allocations**, including rendering jobs; they do not pretend queued work has already been rendered. Refunded editions keep their original number and consume supply. Use your existing refund procedure and mark the corresponding order `refunded`; this stops issuing new private URLs. Already downloaded files cannot be recalled. Automated refund events, secondary sales, account-to-account transfers and blockchain token issuance are not implemented.
+Counters report paid **allocations**, including rendering jobs; they do not pretend queued work has already been rendered. Refunded editions keep their original number and consume supply. Use your existing refund procedure and mark the corresponding order `refunded`; this stops issuing new private URLs. Already downloaded files cannot be recalled. Optional internal secondary sales, account-to-account transfers and their financial recovery are documented in `docs/SECONDARY-MARKETPLACE.md`. Blockchain token issuance is not implemented.
 
 Collection access uses the purchaser's Supabase Auth account; it does not match accounts merely by email. Buyers must retain their account access. The confirmation link also retains the existing high-entropy order credential. Signed receipts prove file integrity and studio issuance, not current holder identity or market value. Existing personal/commercial permissions remain unchanged.
 
@@ -56,3 +56,5 @@ Collection access uses the purchaser's Supabase Auth account; it does not match 
 The new `/verify-mint.html` hashes the selected derivative locally, fetches the trusted registered studio public key and verifies the detached receipt. The private key never reaches the browser. `/verify.html` remains the separate unchanged-master verifier.
 
 Technical references: https://sharp.pixelplumbing.com/api-composite/ , https://sharp.pixelplumbing.com/api-output/ , https://docs.stripe.com/api/checkout/sessions/expire .
+
+Buy-button opening effects and the paid-only server roll are documented in `docs/BUY-OPENING-FLOW.md`. The animation does not allocate rarity or bypass payment verification.

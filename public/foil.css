@@ -268,3 +268,40 @@
     animation: none;
   }
 }
+
+/* A studio seal covers the front throughout preparation and the full spin. */
+.foil-seal {
+  transform: translateZ(1.5px);
+}
+.foil-seal[hidden] {
+  display: none;
+}
+.foil-scene:not([data-animation="complete"]) .foil-rotor > img {
+  visibility: hidden;
+}
+
+.foil-opening-dialog {
+  width: min(540px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: clamp(16px, 4vw, 28px);
+  border: 1px solid var(--gold, #f4c07b);
+  border-radius: 18px;
+  color: var(--ink, #fff4c4);
+  background: var(--surface, #0f2118);
+}
+.foil-opening-dialog::backdrop {
+  background: #020805dc;
+  backdrop-filter: blur(5px);
+}
+.foil-opening-dialog h2 {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 5vw, 34px);
+}
+.foil-opening-dialog .foil-scene {
+  max-width: min(300px, 44vh);
+}
+.foil-opening-dialog .foil-purchase-reveal {
+  border: 0;
+  padding: 0;
+}
