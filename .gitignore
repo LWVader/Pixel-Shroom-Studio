@@ -6,3 +6,8 @@ test-results/
 .wrangler/
 
 dist/
+
+# Private mint processor configuration and signing keys
+private-mint-keys/
+mint-worker/.env
+*.private.pem

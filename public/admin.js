@@ -285,8 +285,8 @@ function coverWithWatermark(context, width, height, serialNumber) {
   tileContext.font = `700 ${fontSize}px Arial, sans-serif`;
   tileContext.lineJoin = "round";
   tileContext.lineWidth = 2;
-  tileContext.strokeStyle = "rgba(0,0,0,.74)";
-  tileContext.fillStyle = "rgba(255,255,255,.74)";
+  tileContext.strokeStyle = "rgba(0,0,0,.58)";
+  tileContext.fillStyle = "rgba(255,255,255,.58)";
 
   ["PIXEL SHROOM STUDIO", "PROTECTED PREVIEW", serialNumber].forEach((line, index) => {
     const y = (index - 1) * lineSpacing;
@@ -644,6 +644,7 @@ async function showDashboard() {
 
 // SECTION: Artwork form state and automatic dimensions
 function resetArtworkForm() {
+  delete artForm.dataset.foilConfigured;
   const savedSigningToken = sessionStorage.getItem("pixelShroomSigningToken") || "";
   editingArtworkId = null;
   artForm.reset();
@@ -705,6 +706,19 @@ artForm.addEventListener("submit", async (event) => {
     await requireAdmin();
     const values = new FormData(artForm);
     const current = items.find((item) => item.id === editingArtworkId);
+    const foilEnabled = values.get("foilEnabled") === "on";
+    const foilSupply = Number(values.get("foilSupply"));
+    const foilCaps = ["foilSilver", "foilGold", "foilPrismatic"].map((name) =>
+      Number(values.get(name)),
+    );
+    if (
+      foilEnabled &&
+      (!Number.isInteger(foilSupply) ||
+        foilSupply < 1 ||
+        foilCaps.some((cap) => !Number.isInteger(cap) || cap < 0) ||
+        foilCaps.reduce((a, b) => a + b, 0) > foilSupply)
+    )
+      throw new Error("Foil tier caps must be whole numbers and fit within maximum supply.");
     const files = await uploadFiles(values, current);
     const row = {
       title: values.get("title").trim(),
@@ -728,6 +742,19 @@ artForm.addEventListener("submit", async (event) => {
     if (files.signatureRecord) {
       await saveSignature(artworkId, files.signatureRecord);
     }
+    if (foilEnabled || artForm.dataset.foilConfigured === "true") {
+      const { error: foilError } = await supabase.rpc("configure_foil_listing", {
+        target_artwork: artworkId,
+        active: foilEnabled,
+        supply: foilSupply,
+        silver: foilCaps[0],
+        gold: foilCaps[1],
+        prismatic: foilCaps[2],
+      });
+      if (foilError)
+        throw new Error("Artwork saved, but foil settings were not applied: " + foilError.message);
+    }
+    delete artForm.dataset.foilConfigured;
     resetArtworkForm();
     showMessage(
       "#form-message",
@@ -752,6 +779,18 @@ adminCatalog.addEventListener("click", async (event) => {
   if (edit) {
     const item = items.find((entry) => entry.id === Number(edit.dataset.edit));
     editingArtworkId = item.id;
+    const { data: foilSettings } = await supabase.rpc("admin_foil_settings", {
+      target_artwork: item.id,
+    });
+    artForm.dataset.foilConfigured = foilSettings ? "true" : "false";
+    artForm.elements.namedItem("foilEnabled").checked = Boolean(foilSettings?.enabled);
+    for (const [name, key, fallback] of [
+      ["foilSupply", "maxSupply", 500],
+      ["foilSilver", "silverCap", 100],
+      ["foilGold", "goldCap", 45],
+      ["foilPrismatic", "prismaticCap", 5],
+    ])
+      artForm.elements.namedItem(name).value = foilSettings?.[key] ?? fallback;
     const values = {
       title: item.title,
       artist: item.artist,

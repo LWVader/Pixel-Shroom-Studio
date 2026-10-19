@@ -14,3 +14,8 @@ verify_jwt = false
 
 [functions.physical-checkout]
 verify_jwt = false
+
+[functions.mint-checkout]
+verify_jwt = false
+[functions.mint-access]
+verify_jwt = false

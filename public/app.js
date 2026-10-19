@@ -1,3 +1,4 @@
+import { applyFoilListings } from "./foil-store.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import {
   GENRES,
@@ -45,6 +46,7 @@ function render() {
         : renderGenre(rows, slug, { term });
   updateArtworkFeatures(rows);
   enableActions();
+  applyFoilListings();
   catalog.setAttribute("aria-busy", "false");
   const relevant =
     mode === "genre"

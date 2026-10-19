@@ -4,6 +4,7 @@ import { json, service } from "../_shared/common.ts";
 
 const HANDLED_EVENTS = new Set([
   "checkout.session.completed",
+  "checkout.session.expired",
   "checkout.session.async_payment_succeeded",
 ]);
 
@@ -45,6 +46,17 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
   try {
     const session = event.data.object as Stripe.Checkout.Session;
+
+    if (event.type === "checkout.session.expired") {
+      if (session.metadata?.kind === "foil" && session.metadata?.order_id) {
+        const { error } = await service().rpc("release_foil_order", {
+          target_order: session.metadata.order_id,
+          checkout_session: session.id,
+        });
+        if (error) throw error;
+      }
+      return json({ received: true });
+    }
 
     if (session.payment_status !== "paid") {
       return json({

@@ -21,6 +21,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
       .select(
         `
         status,
+        sale_kind,
         access_token_hash,
         artworks(original_path, category)
       `,
@@ -33,6 +34,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
       orderError ||
       !order ||
       order.status !== "paid" ||
+      order.sale_kind === "foil" ||
       artwork?.category === "NFT" ||
       !artwork?.original_path ||
       (await sha256(accessToken)) !== order.access_token_hash

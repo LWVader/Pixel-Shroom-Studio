@@ -176,6 +176,17 @@ Deno.serve(async (request) => {
 
     if (artwork.category === "NFT") return respond({ error: "NFT releases are coming soon." }, 409);
 
+    const { data: foil } = await service()
+      .from("foil_listings")
+      .select("enabled")
+      .eq("artwork_id", artwork.id)
+      .maybeSingle();
+    if (foil)
+      return respond(
+        { error: "This listing is a foil edition. Sign in and use Mint with Stripe." },
+        409,
+      );
+
     const accessToken = randomToken();
     const order = await createPendingOrder(artwork, provider, buyerEmail, accessToken);
     const siteUrl = normalizeSiteUrl();

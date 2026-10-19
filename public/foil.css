@@ -1,0 +1,89 @@
+.foil-counter {
+  font-size: 14px;
+}
+.payment-actions:has(.foil-counter) {
+  display: grid;
+  gap: 12px;
+}
+.payment-actions progress {
+  width: 100%;
+  accent-color: var(--gold);
+}
+.collection-auth {
+  display: grid;
+  gap: 15px;
+  max-width: 480px;
+}
+.collection-auth label {
+  display: grid;
+  gap: 8px;
+}
+.collection-auth input {
+  padding: 12px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font: inherit;
+}
+.collection-auth .buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.foil-card {
+  padding: 20px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.foil-card img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+.foil-card[data-tier="Silver"] {
+  border-color: #c6cedc;
+}
+.foil-card[data-tier="Gold"] {
+  border-color: #eac15a;
+}
+.foil-card[data-tier="Prismatic"] {
+  border-color: #d879ff;
+  box-shadow: 0 0 24px #af53d744;
+}
+.foil-card.revealed {
+  animation: foil-reveal 0.9s ease-out;
+}
+.foil-card .button {
+  margin: 5px 0;
+}
+@keyframes foil-reveal {
+  from {
+    transform: perspective(900px) rotateY(-65deg) scale(0.9);
+  }
+  to {
+    transform: perspective(900px) rotateY(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .foil-card.revealed {
+    animation: none;
+  }
+}
+.foil-card h2 {
+  font-size: 30px;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+.foil-card .button {
+  overflow-wrap: normal;
+  word-break: normal;
+  max-width: 100%;
+}
+@media (max-width: 700px) {
+  #mint-collection {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
