@@ -66,6 +66,7 @@ function load(file, { db, stripe = {}, authenticated = true, enabled = true } = 
     },
     rpc: async (name, args) => {
       calls.push({ name, args });
+      if (name === "market_feed") return { data: [] };
       return {
         data: {
           purchaseId: "reserved-purchase",
@@ -120,6 +121,10 @@ function load(file, { db, stripe = {}, authenticated = true, enabled = true } = 
   assert.equal(checkout.payment_intent_data.transfer_data.destination, "acct_real_seller");
   assert.equal((await api({ action: "refund", purchaseId: "someone-elses" })).status, 403);
   assert.equal((await api({ action: "checkout" }, "invalid")).status, 401);
+  for (const tier of ["Emerald", "Sapphire"]) {
+    assert.equal((await api({ action: "feed", tier })).status, 200);
+    assert.equal(calls.at(-1).args.tier_filter, tier);
+  }
   const disabled = load("supabase/functions/market-api/index.ts", { db, enabled: false });
   assert.equal((await disabled({ action: "checkout" })).status, 503);
   assert.equal((await (await disabled({ action: "feed" })).json()).enabled, false);

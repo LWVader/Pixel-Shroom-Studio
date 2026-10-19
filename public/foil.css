@@ -305,3 +305,12 @@
   border: 0;
   padding: 0;
 }
+
+.foil-card[data-tier="Emerald"] {
+  border-color: #28d996;
+  box-shadow: 0 0 20px #28d99622;
+}
+.foil-card[data-tier="Sapphire"] {
+  border-color: #5798ff;
+  box-shadow: 0 0 20px #5798ff22;
+}

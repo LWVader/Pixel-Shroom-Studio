@@ -10,7 +10,11 @@ Deno.serve(async (request: Request) => {
       enabled = Deno.env.get("MARKETPLACE_ENABLED") === "true";
     if (body.action === "feed") {
       if (!enabled) return reply({ enabled: false, items: [], hasMore: false });
-      const tier = ["Standard", "Silver", "Gold", "Prismatic"].includes(body.tier) ? body.tier : "";
+      const tier = ["Standard", "Silver", "Gold", "Emerald", "Sapphire", "Prismatic"].includes(
+        body.tier,
+      )
+        ? body.tier
+        : "";
       const offset = Number.isInteger(body.offset) ? Math.max(0, Math.min(100000, body.offset)) : 0;
       const { data, error } = await db.rpc("market_feed", {
         search_term: String(body.search ?? "").slice(0, 120),

@@ -3,6 +3,8 @@ const PALETTES = {
   Standard: ["#f4c07b", "#fff4c4"],
   Silver: ["#a5cbef", "#f4f9ff"],
   Gold: ["#eac15a", "#fff4c4"],
+  Emerald: ["#28d996", "#d3ffe5"],
+  Sapphire: ["#5798ff", "#b8eeff"],
   Prismatic: ["#b991ff", "#72efff"],
 };
 const DURATION = 4400;

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { generateKeyPairSync, webcrypto } from "node:crypto";
 import { renderMint, renderMarketPreview, sha256 } from "../mint-worker/render.mjs";
 const root = fileURLToPath(new URL("../public/", import.meta.url));
-const tiers = ["Standard", "Silver", "Gold", "Prismatic"];
+const tiers = ["Standard", "Silver", "Gold", "Emerald", "Sapphire", "Prismatic"];
 const port = Number(process.env.DEMO_PORT || 8030);
 const origin = `http://127.0.0.1:${port}`;
 const mintId = "11111111-1111-4111-8111-111111111111";
@@ -71,7 +71,7 @@ const listing = {
 };
 const { privateKey } = generateKeyPairSync("ed25519");
 const variants = new Map();
-console.log("Preparing four local foil variants. Please wait for the Open URL message…");
+console.log("Preparing six local foil variants. Please wait for the Open URL message…");
 for (const tier of tiers) {
   const rendered = await renderMint(
     bytes,
@@ -95,7 +95,11 @@ const edition = {
   reserved: 2,
   prismaticsRemaining: 3,
   silverCap: 100,
-  goldCap: 45,
+  goldCap: 50,
+  emeraldCap: 30,
+  sapphireCap: 15,
+  rulesVersion: 2,
+  dropRates: { Standard: 60, Silver: 20, Gold: 10, Emerald: 6, Sapphire: 3, Prismatic: 1 },
   prismaticCap: 5,
   price: 15,
 };

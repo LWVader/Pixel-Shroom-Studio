@@ -1,4 +1,6 @@
 import sharp from "sharp";
+import { finishLayers } from "./finishes.mjs";
+import { prismaticLayers } from "./prismatic.mjs";
 import { createHash, sign, verify, webcrypto } from "node:crypto";
 import { canonicalMintPayload, FOIL_TIERS } from "../public/mint-core.js";
 export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -47,23 +49,14 @@ export async function renderMint(bytes, { mint, listing }, privateKey, keyId) {
   let image = sharp(bytes, { limitInputPixels: 100_000_000, animated: false })
     .rotate()
     .resize({ width: 16000, height: 16000, fit: "inside", withoutEnlargement: true });
-  if (mint.tier === "Gold") image = image.modulate({ saturation: 1.2 });
-  if (mint.tier === "Prismatic")
-    image = image.negate({ alpha: false }).tint({ r: 195, g: 35, b: 220 });
   const base = await image.png().toBuffer({ resolveWithObject: true });
   const { width, height } = base.info;
-  const stroke = Math.max(3, Math.round(Math.min(width, height) * 0.035));
-  const color = mint.tier === "Gold" ? "#eac15a" : "#c6cedc";
   const overlay =
-    mint.tier === "Standard"
-      ? []
-      : [
-          {
-            input: Buffer.from(
-              `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="foil"><stop stop-color="${mint.tier === "Prismatic" ? "#58e8ff" : color}"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="${mint.tier === "Prismatic" ? "#ec52ee" : color}"/></linearGradient></defs><rect x="${stroke / 2}" y="${stroke / 2}" width="${width - stroke}" height="${height - stroke}" fill="none" stroke="url(#foil)" stroke-width="${stroke}"/></svg>`,
-            ),
-          },
-        ];
+    mint.tier === "Prismatic"
+      ? prismaticLayers(width, height, `${listing.master_serial}|${mint.id}`)
+      : mint.tier === "Standard"
+        ? []
+        : finishLayers(width, height, mint.tier, `${listing.master_serial}|${mint.id}`);
   // Identity metadata is embedded BEFORE hashing. The detached signed receipt
   // then authenticates the final bytes, avoiding a self-referential file hash.
   const identity = `${mint.id}|${listing.master_serial}|${mint.mint_number}/${listing.max_supply}|${mint.tier}`;
@@ -88,7 +81,12 @@ export async function renderMint(bytes, { mint, listing }, privateKey, keyId) {
     mimeType: "image/webp",
     sha256: sha256(output),
     keyId,
-    pipelineVersion: "foil-v1",
+    pipelineVersion:
+      mint.tier === "Prismatic"
+        ? "foil-v2-prismatic-holo"
+        : mint.tier === "Standard"
+          ? "foil-v1"
+          : "foil-v3-metal-gem",
   };
   const signature = sign(null, Buffer.from(canonicalMintPayload(payload)), privateKey).toString(
     "base64",

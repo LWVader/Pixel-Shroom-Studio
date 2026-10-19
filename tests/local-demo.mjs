@@ -43,7 +43,7 @@ try {
   await page.goto("http://127.0.0.1:8039/");
   const demo = page.frameLocator("#screen");
   await demo.getByRole("button", { name: "Download variant", exact: true }).waitFor();
-  for (const tier of ["Standard", "Silver", "Gold", "Prismatic"]) {
+  for (const tier of ["Standard", "Silver", "Gold", "Emerald", "Sapphire", "Prismatic"]) {
     await page.locator("#tier").selectOption(tier);
     await page.getByRole("button", { name: "Replay reveal" }).click();
     await demo.getByRole("heading", { name: `${tier} edition revealed` }).waitFor();
@@ -134,7 +134,7 @@ try {
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(
-    "PASS local demo: four real rendered tiers, reveal, purchase, selling quote and resale confirmation; no external requests",
+    "PASS local demo: six real rendered tiers, reveal, purchase, selling quote and resale confirmation; no external requests",
   );
 } finally {
   await browser?.close();

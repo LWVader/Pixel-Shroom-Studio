@@ -1,4 +1,4 @@
-import { applyFoilListings } from "./foil-store.js";
+import { applyFoilListings } from "./foil-store.js?v=20261019-six-tiers";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import {
   GENRES,

@@ -1,3 +1,4 @@
+import { editionDisclosure, SIX_TIER_RATES } from "./mint-core.js?v=20261019-six-tiers";
 // SECTION: Dashboard state and shared helpers
 import { supabase } from "./supabase-client.js";
 const loginPanel = document.querySelector("#login-panel");
@@ -648,6 +649,23 @@ function resetArtworkForm() {
   const savedSigningToken = sessionStorage.getItem("pixelShroomSigningToken") || "";
   editingArtworkId = null;
   artForm.reset();
+  for (const name of [
+    "foilSupply",
+    "foilSilver",
+    "foilGold",
+    "foilEmerald",
+    "foilSapphire",
+    "foilPrismatic",
+  ])
+    artForm.elements.namedItem(name).readOnly = false;
+  document.querySelector("#foil-odds-description").textContent = editionDisclosure({
+    rulesVersion: 2,
+    silverCap: 100,
+    goldCap: 50,
+    emeraldCap: 30,
+    sapphireCap: 15,
+    prismaticCap: 5,
+  });
   artForm.elements.signingHelperToken.value = savedSigningToken;
   artForm.elements.displayWidth.value = 600;
   artForm.elements.displayHeight.value = 600;
@@ -708,8 +726,8 @@ artForm.addEventListener("submit", async (event) => {
     const current = items.find((item) => item.id === editingArtworkId);
     const foilEnabled = values.get("foilEnabled") === "on";
     const foilSupply = Number(values.get("foilSupply"));
-    const foilCaps = ["foilSilver", "foilGold", "foilPrismatic"].map((name) =>
-      Number(values.get(name)),
+    const foilCaps = ["foilSilver", "foilGold", "foilEmerald", "foilSapphire", "foilPrismatic"].map(
+      (name) => Number(values.get(name)),
     );
     if (
       foilEnabled &&
@@ -743,13 +761,15 @@ artForm.addEventListener("submit", async (event) => {
       await saveSignature(artworkId, files.signatureRecord);
     }
     if (foilEnabled || artForm.dataset.foilConfigured === "true") {
-      const { error: foilError } = await supabase.rpc("configure_foil_listing", {
+      const { error: foilError } = await supabase.rpc("configure_foil_listing_v2", {
         target_artwork: artworkId,
         active: foilEnabled,
         supply: foilSupply,
         silver: foilCaps[0],
         gold: foilCaps[1],
-        prismatic: foilCaps[2],
+        emerald: foilCaps[2],
+        sapphire: foilCaps[3],
+        prismatic: foilCaps[4],
       });
       if (foilError)
         throw new Error("Artwork saved, but foil settings were not applied: " + foilError.message);
@@ -787,10 +807,38 @@ adminCatalog.addEventListener("click", async (event) => {
     for (const [name, key, fallback] of [
       ["foilSupply", "maxSupply", 500],
       ["foilSilver", "silverCap", 100],
-      ["foilGold", "goldCap", 45],
+      ["foilGold", "goldCap", 50],
+      ["foilEmerald", "emeraldCap", 30],
+      ["foilSapphire", "sapphireCap", 15],
       ["foilPrismatic", "prismaticCap", 5],
     ])
       artForm.elements.namedItem(name).value = foilSettings?.[key] ?? fallback;
+    for (const name of [
+      "foilSupply",
+      "foilSilver",
+      "foilGold",
+      "foilEmerald",
+      "foilSapphire",
+      "foilPrismatic",
+    ])
+      artForm.elements.namedItem(name).readOnly = Boolean(foilSettings?.locked);
+    const displayedFoilSettings = foilSettings
+      ? foilSettings.locked
+        ? foilSettings
+        : { ...foilSettings, rulesVersion: 2, dropRates: SIX_TIER_RATES }
+      : {
+          rulesVersion: 2,
+          silverCap: 100,
+          goldCap: 50,
+          emeraldCap: 30,
+          sapphireCap: 15,
+          prismaticCap: 5,
+        };
+    document.querySelector("#foil-odds-description").textContent =
+      (foilSettings?.locked
+        ? "Locked edition: "
+        : "Saving an unreserved draft uses six-tier rules. ") +
+      editionDisclosure(displayedFoilSettings);
     const values = {
       title: item.title,
       artist: item.artist,

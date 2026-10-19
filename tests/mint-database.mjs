@@ -16,6 +16,7 @@ create table webhook_events(provider text,event_id text,received_at timestamptz 
 for (const file of [
   "202610040001_payment_fulfillment_and_downloads.sql",
   "202610190001_foil_mint_engine.sql",
+  "202610190003_six_foil_tiers.sql",
 ])
   await db.exec(await fs.readFile(`supabase/migrations/${file}`, "utf8"));
 const owner = "11111111-1111-4111-8111-111111111111";

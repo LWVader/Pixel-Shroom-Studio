@@ -11,13 +11,13 @@ npm.cmd ci
 npm.cmd run demo
 ```
 
-Wait for `Open http://127.0.0.1:8030`, then open that address in your browser. Preparing four rendered variants can take a few seconds. Keep the terminal open; press Ctrl+C to stop. After installing dependencies once, you can also double-click `START-LOCAL-DEMO.cmd`.
+Wait for `Open http://127.0.0.1:8030`, then open that address in your browser. Preparing six rendered variants can take a few seconds. Keep the terminal open; press Ctrl+C to stop. After installing dependencies once, you can also double-click `START-LOCAL-DEMO.cmd`.
 
 ## Controls
 
 - **Simulate mint purchase:** opens the actual mint offer page. Click **Pay with Stripe and mint**, watch the concealed checkout-opening effect, then click **Simulate successful payment** on the clearly labeled local checkout placeholder. It does not load Stripe Checkout.
 - **Replay reveal:** reloads the actual confirmation page and its 4.4-second three-turn reveal with three lightning strikes and sparks. Use this button to replay it.
-- **Tier:** choose Standard, Silver, Gold or Prismatic. This selector is a visual testing control, not a choice offered to paying customers. Variants use the actual Sharp mint renderer, with temporary demo signing identities.
+- **Tier:** choose Standard, Silver, Gold, Emerald, Sapphire or Prismatic. This selector is a visual testing control, not a choice offered to paying customers. Variants use the actual Sharp mint renderer, with temporary demo signing identities.
 - **My collection / sell:** view the edition and click **List on Market** to inspect the pricing dialog and 10% fee quote.
 - **Marketplace / buy:** inspect the protected public variant preview, filters and simulated resale checkout/confirmation.
 
@@ -31,7 +31,7 @@ Playwright `--debug` opens an Inspector and pauses execution, including before t
 
 The server binds only to `127.0.0.1`, blocks external browser connections with a local Content Security Policy, reads only public assets, and keeps fixture data and generated images in memory. The local responses adapt URL checks for loopback use; the production JavaScript files and production payment/image URL validation remain unchanged. Do not deploy this development server as the storefront or expose it through a public tunnel.
 
-`npm.cmd run demo:test` checks all four reveals, image loading, purchase navigation, the seller quote and resale confirmation with no external requests. That automated check requires `npx.cmd playwright install chromium`; manually running `npm.cmd run demo` does not.
+`npm.cmd run demo:test` checks all six reveals, image loading, purchase navigation, the seller quote and resale confirmation with no external requests. That automated check requires `npx.cmd playwright install chromium`; manually running `npm.cmd run demo` does not.
 
 If port 8030 is occupied, stop the earlier demo or run:
 

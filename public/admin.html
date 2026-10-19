@@ -269,7 +269,25 @@
                       type="number"
                       min="0"
                       max="100000"
-                      value="45"
+                      value="50"
+                      required
+                  /></label>
+                  <label
+                    >Emerald cap<input
+                      name="foilEmerald"
+                      type="number"
+                      min="0"
+                      max="100000"
+                      value="30"
+                      required
+                  /></label>
+                  <label
+                    >Sapphire cap<input
+                      name="foilSapphire"
+                      type="number"
+                      min="0"
+                      max="100000"
+                      value="15"
                       required
                   /></label>
                   <label
@@ -281,11 +299,14 @@
                       value="5"
                       required
                   /></label>
+                  <p id="foil-odds-description">
+                    Initial rolls: Standard 60%, Silver 20%, Gold 10%, Emerald 6%, Sapphire 3%,
+                    Prismatic 1%.
+                  </p>
                   <p>
-                    Caps must fit within supply; Standard fills the rest. Initial rolls: 70%
-                    Standard, 20% Silver, 9% Gold, 1% Prismatic; exhausted tiers downgrade. Caps,
-                    master and mint price lock after the first reservation. Enable checkout only
-                    after the processor is deployed.
+                    Caps must fit within supply; Standard fills the rest. Odds, caps, master and
+                    mint price lock after the first reservation. Existing locked drops keep their
+                    original rules. Enable checkout only after the processor is deployed.
                   </p>
                 </fieldset>
                 <label
@@ -454,6 +475,6 @@
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=20261019-foil"></script>
+    <script type="module" src="/admin.js?v=20261019-six-tiers"></script>
   </body>
 </html>

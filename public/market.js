@@ -1,4 +1,4 @@
-import { beginCheckoutOpening } from "./foil-reveal.js?v=20261019-opening";
+import { beginCheckoutOpening } from "./foil-reveal.js?v=20261019-six-tiers";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
 import { escapeHtml, checkoutUrl } from "./catalog-core.js";

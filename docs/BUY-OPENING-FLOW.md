@@ -6,15 +6,17 @@ An unpaid click does **not** consume a tier or mint a result. Stripe's verified 
 
 - Locks the reserved mint and the artwork's `foil_listings` row inside the fulfillment transaction.
 - Uses PostgreSQL pgcrypto `gen_random_bytes` with rejection sampling to obtain an unbiased integer from 1 through 100.
-- Assigns the initial tier using the table below, enforces that artwork's global tier caps, and downgrades Prismatic → Gold → Silver → Standard when required.
+- Assigns the initial tier using the table below, enforces that artwork's global tier caps, and downgrades Prismatic → Sapphire → Emerald → Gold → Silver → Standard for six-tier drops; existing legacy drops retain their old chain.
 - Allocates the edition number once and queues rendering. Duplicate payment events or render retries do not reroll.
 
-| Tier      | Initial probability |
-| --------- | ------------------: |
-| Standard  |                 70% |
-| Silver    |                 20% |
-| Gold      |                  9% |
-| Prismatic |                  1% |
+| Tier      | New six-tier probability | Legacy probability |
+| --------- | -----------------------: | -----------------: |
+| Standard  |                      60% |                70% |
+| Silver    |                      20% |                20% |
+| Gold      |                      10% |                 9% |
+| Emerald   |                       6% |                 0% |
+| Sapphire  |                       3% |                 0% |
+| Prismatic |                       1% |                 1% |
 
 Caps are the configured per-artwork global limits, not per-buyer limits. A Prismatic cap of five permits at most five paid Prismatic allocations for that artwork. Caps are locked after the first checkout reservation. The initial percentages change as caps fill; the existing offer disclosure remains visible before purchase. No browser-provided roll, tier, price or rarity result is accepted by the mint-checkout handler.
 
@@ -24,6 +26,6 @@ Secondary-marketplace Buy buttons get the same checkout-opening effects but pres
 
 ## Testing branch
 
-No new database migration is required for this animation update. The existing foil migration, verified Stripe webhook, foil launch gate and private rendering worker must already be configured in your staging environment for real end-to-end minting. The standalone local demo uses simulated responses, not actual payments or a live rarity roll.
+The six-tier upgrade requires `202610190003_six_foil_tiers.sql`; see `docs/SIX-TIER-UPGRADE.md`. The opening animation by itself does not alter backend rules. The existing foil migration, verified Stripe webhook, foil launch gate and private rendering worker must already be configured in your staging environment for real end-to-end minting. The standalone local demo uses simulated responses, not actual payments or a live rarity roll.
 
 `npm.cmd run demo` previews the opening, checkout placeholder and final reveal. Browser tests cover immediate opening while the request is held, hidden artwork, server-authoritative request fields and checkout-error recovery. The SQL fixture additionally forces eight Prismatic roll outcomes against a five-Prismatic cap and verifies five Prismatics, three fallback Standards and no tiers allocated before payment. This does not replace a concurrent staging load test against hosted PostgreSQL.

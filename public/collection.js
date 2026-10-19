@@ -1,9 +1,9 @@
-import { beginCheckoutOpening } from "./foil-reveal.js?v=20261019-opening";
+import { beginCheckoutOpening } from "./foil-reveal.js?v=20261019-six-tiers";
 import { setupMarketSelling } from "./market-sell.js";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
 import { escapeHtml, checkoutUrl } from "./catalog-core.js";
-import { editionDisclosure, safeMintImage } from "./mint-core.js";
+import { editionDisclosure, safeMintImage } from "./mint-core.js?v=20261019-six-tiers";
 const status = document.querySelector("#collection-status");
 const grid = document.querySelector("#mint-collection");
 const login = document.querySelector("#collection-login");

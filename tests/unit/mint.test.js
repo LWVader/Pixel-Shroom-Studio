@@ -49,11 +49,18 @@ async function fixture() {
     },
   };
 }
-it("renders four distinct signed tiers and preserves final-byte identity", async () => {
+it("renders six distinct signed tiers and preserves final-byte identity", async () => {
   const { bytes, listing } = await fixture();
   const { privateKey, publicKey } = generateKeyPairSync("ed25519");
   const hashes = [];
-  for (const [i, tier] of ["Standard", "Silver", "Gold", "Prismatic"].entries()) {
+  for (const [i, tier] of [
+    "Standard",
+    "Silver",
+    "Gold",
+    "Emerald",
+    "Sapphire",
+    "Prismatic",
+  ].entries()) {
     const job = { listing, mint: { id: `fixture-${i}`, tier, mint_number: i + 1, listing_id: 1 } };
     const output = await renderMint(bytes, job, privateKey, "trusted-test-key");
     expect(verifyReceipt(output.bytes, output.manifest, publicKey)).toBe(true);
@@ -68,7 +75,7 @@ it("renders four distinct signed tiers and preserves final-byte identity", async
     expect(verifyReceipt(Buffer.from("changed"), output.manifest, publicKey)).toBe(false);
     hashes.push(sha256(output.bytes));
   }
-  expect(new Set(hashes).size).toBe(4);
+  expect(new Set(hashes).size).toBe(6);
 });
 it("rejects replaced masters and untrusted delivery URLs", async () => {
   const { bytes, listing } = await fixture();
@@ -176,4 +183,69 @@ it("processes a private queued master into a signed lease-fenced artifact", asyn
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+it("renders repeatable holographic Prismatics without inverting the source palette", async () => {
+  const { bytes, listing } = await fixture();
+  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+  const job = {
+    listing,
+    mint: { id: "repeatable-holo", tier: "Prismatic", mint_number: 42, listing_id: 1 },
+  };
+  const first = await renderMint(bytes, job, privateKey, "trusted-test-key");
+  const second = await renderMint(bytes, job, privateKey, "trusted-test-key");
+  expect(sha256(first.bytes)).toBe(sha256(second.bytes));
+  expect(first.manifest.payload.pipelineVersion).toBe("foil-v2-prismatic-holo");
+  expect(verifyReceipt(first.bytes, first.manifest, publicKey)).toBe(true);
+  const stats = await sharp(first.bytes)
+    .extract({ left: 32, top: 24, width: 64, height: 48 })
+    .stats();
+  // The blue test master must remain blue-led, rather than becoming a negative.
+  expect(stats.channels[2].mean).toBeGreaterThan(stats.channels[0].mean);
+  expect(stats.channels[0].mean).toBeLessThan(160);
+});
+
+it("fits the reusable Prismatic frame to portrait, landscape and small assets", async () => {
+  const { prismaticLayers } = await import("../../mint-worker/prismatic.mjs");
+  for (const [width, height] of [
+    [240, 360],
+    [360, 240],
+    [32, 32],
+  ]) {
+    const image = await sharp({ create: { width, height, channels: 3, background: "#243e62" } })
+      .composite(prismaticLayers(width, height, "aspect-test"))
+      .webp()
+      .toBuffer();
+    const metadata = await sharp(image).metadata();
+    expect([metadata.width, metadata.height]).toEqual([width, height]);
+  }
+  expect(() => prismaticLayers(0, 100, "bad")).toThrow();
+});
+
+it("preserves legacy drops and enforces six-tier odds, caps and reservation locks", () => {
+  expect(
+    execFileSync(process.execPath, ["tests/six-tier-database.mjs"], { encoding: "utf8" }),
+  ).toContain("PASS");
+});
+it("fits metallic and gemstone finishes to every aspect ratio without altering Standard", async () => {
+  const { finishLayers } = await import("../../mint-worker/finishes.mjs");
+  for (const tier of ["Silver", "Gold", "Emerald", "Sapphire"])
+    for (const [width, height] of [
+      [96, 144],
+      [144, 96],
+      [32, 32],
+    ]) {
+      const layers = finishLayers(width, height, tier, "stable-finish");
+      const a = await sharp({ create: { width, height, channels: 3, background: "#205b74" } })
+        .composite(layers)
+        .webp()
+        .toBuffer();
+      const b = await sharp({ create: { width, height, channels: 3, background: "#205b74" } })
+        .composite(finishLayers(width, height, tier, "stable-finish"))
+        .webp()
+        .toBuffer();
+      expect(sha256(a)).toBe(sha256(b));
+      const metadata = await sharp(a).metadata();
+      expect([metadata.width, metadata.height]).toEqual([width, height]);
+    }
 });

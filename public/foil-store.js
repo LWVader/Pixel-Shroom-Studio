@@ -1,5 +1,5 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { editionDisclosure } from "./mint-core.js";
+import { editionDisclosure } from "./mint-core.js?v=20261019-six-tiers";
 let editions = [];
 export function applyFoilListings() {
   for (const card of document.querySelectorAll(".art-card[data-artwork-id]")) {
