@@ -107,3 +107,21 @@ export function verifyReceipt(bytes, receipt, publicKey) {
     )
   );
 }
+export async function renderMarketPreview(bytes, job) {
+  if (sha256(bytes) !== job.sha256) throw new Error("Minted artifact hash mismatch");
+  const base = await sharp(bytes, { limitInputPixels: 100_000_000 })
+    .resize({ width: 960, height: 640, fit: "inside", withoutEnlargement: true })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height } = base.info;
+  const stamp = Math.min(226, width, height),
+    font = Math.max(6, (14 * stamp) / 226),
+    gap = font * 1.5;
+  const tile = Buffer.from(
+    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="protected" width="${stamp}" height="${stamp}" patternUnits="userSpaceOnUse"><g transform="translate(${stamp / 2},${stamp / 2}) rotate(-45)" text-anchor="middle" font-family="sans-serif" font-size="${font}" font-weight="700" fill="white" fill-opacity=".58" stroke="black" stroke-opacity=".58" stroke-width=".8"><text y="-${gap}">PIXEL SHROOM STUDIO</text><text y="0">PROTECTED PREVIEW</text><text y="${gap}">EDITION ${Number(job.mintNumber)}</text></g></pattern></defs><rect width="100%" height="100%" fill="url(#protected)"/></svg>`,
+  );
+  return sharp(base.data)
+    .composite([{ input: tile }])
+    .webp({ quality: 82 })
+    .toBuffer();
+}

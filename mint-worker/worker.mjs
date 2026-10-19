@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { createPrivateKey, createPublicKey } from "node:crypto";
 import Stripe from "stripe";
-import { renderMint, sha256 } from "./render.mjs";
+import { renderMint, renderMarketPreview, sha256 } from "./render.mjs";
 const base = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!base?.startsWith("https://") || !secret)
@@ -40,7 +40,7 @@ await api(
 );
 async function processOne() {
   const job = await rpc("claim_foil_job");
-  if (!job) return false;
+  if (!job) return processMarketPreview();
   const { mint, listing } = job;
   try {
     const download = await fetch(
@@ -73,6 +73,42 @@ async function processOne() {
   } catch (error) {
     console.error("Mint rendering failed", mint.id, error.message);
     await rpc("fail_foil_job", { target_mint: mint.id, lease: mint.lease_id });
+  }
+  return true;
+}
+async function processMarketPreview() {
+  let job;
+  try {
+    job = await rpc("claim_market_preview");
+  } catch (error) {
+    // Existing mint-only installations may not yet have the optional market migration.
+    if (error.message.includes("404")) return false;
+    throw error;
+  }
+  if (!job) return false;
+  try {
+    const source = await fetch(
+      `${base}/storage/v1/object/authenticated/minted/${job.artifactPath.split("/").map(encodeURIComponent).join("/")}`,
+      { headers, signal: AbortSignal.timeout(60000) },
+    );
+    if (!source.ok || Number(source.headers.get("content-length")) > 104857600)
+      throw new Error("Variant preview source unavailable");
+    const bytes = Buffer.from(await source.arrayBuffer());
+    if (bytes.length > 104857600) throw new Error("Variant source too large");
+    const preview = await renderMarketPreview(bytes, job);
+    const path = `secondary/${job.listingId}/${job.leaseId}.webp`;
+    const response = await fetch(`${base}/storage/v1/object/previews/${path}`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "image/webp", "x-upsert": "false" },
+      body: preview,
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!response.ok) throw new Error("Protected market preview upload failed");
+    await rpc("finish_market_preview", { target_listing: job.listingId, lease: job.leaseId, path });
+    console.log("Market protected preview ready", job.listingId);
+  } catch (error) {
+    console.error("Market preview will retry", job.listingId, error.message);
+    await rpc("fail_market_preview", { target_listing: job.listingId, lease: job.leaseId });
   }
   return true;
 }

@@ -1,8 +1,14 @@
 // SECTION: Stripe SDK and shared Supabase utilities
 import Stripe from "npm:stripe@18";
 import { json, service } from "../_shared/common.ts";
+import { completeMarketSession, handleMarketProblem } from "../_shared/market.ts";
 
 const HANDLED_EVENTS = new Set([
+  "account.updated",
+  "charge.refunded",
+  "refund.updated",
+  "charge.dispute.created",
+  "charge.dispute.closed",
   "checkout.session.completed",
   "checkout.session.expired",
   "checkout.session.async_payment_succeeded",
@@ -17,6 +23,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const signature = request.headers.get("stripe-signature");
   const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  const connectSecret = Deno.env.get("STRIPE_CONNECT_WEBHOOK_SECRET");
 
   if (!signature || !stripeSecretKey || !webhookSecret) {
     return json({ error: "Stripe webhook is not configured." }, 500);
@@ -29,7 +36,17 @@ Deno.serve(async (request: Request): Promise<Response> => {
   try {
     const rawBody = await request.text();
 
-    event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
+    let verified: Stripe.Event | undefined;
+    for (const secret of [webhookSecret, connectSecret].filter(Boolean)) {
+      try {
+        verified = await stripe.webhooks.constructEventAsync(rawBody, signature, secret!);
+        break;
+      } catch {
+        /* Try the other configured Stripe endpoint secret. */
+      }
+    }
+    if (!verified) throw new Error("Invalid Stripe signature");
+    event = verified;
   } catch (error) {
     console.error("Stripe signature verification failed:", error);
 
@@ -45,8 +62,53 @@ Deno.serve(async (request: Request): Promise<Response> => {
   }
 
   try {
+    if (event.type === "account.updated") {
+      const account = await stripe.accounts.retrieve((event.data.object as Stripe.Account).id);
+      if (
+        !account.deleted &&
+        account.metadata?.studio === "pixel-shroom" &&
+        account.metadata?.user_id
+      ) {
+        const { error } = await service()
+          .from("market_sellers")
+          .update({
+            stripe_account_id: account.id,
+            charges_enabled: account.charges_enabled,
+            payouts_enabled: account.payouts_enabled,
+            transfers_enabled: account.capabilities?.transfers === "active",
+            checked_at: new Date().toISOString(),
+          })
+          .eq("user_id", account.metadata.user_id);
+        if (error) throw error;
+      }
+      return json({ received: true });
+    }
+    if (event.account) return json({ received: true, ignored: true });
+    if (
+      [
+        "charge.refunded",
+        "refund.updated",
+        "charge.dispute.created",
+        "charge.dispute.closed",
+      ].includes(event.type)
+    ) {
+      await handleMarketProblem(service(), stripe, event);
+      return json({ received: true });
+    }
     const session = event.data.object as Stripe.Checkout.Session;
 
+    if (session.metadata?.kind === "secondary") {
+      if (event.type === "checkout.session.expired") {
+        const { error } = await service().rpc("expire_market_checkout", {
+          target_purchase: session.metadata.market_purchase_id,
+          session_id: session.id,
+        });
+        if (error) throw error;
+        return json({ received: true });
+      }
+      const result = await completeMarketSession(service(), stripe, session, event.id);
+      return json({ received: true, ...result });
+    }
     if (event.type === "checkout.session.expired") {
       if (session.metadata?.kind === "foil" && session.metadata?.order_id) {
         const { error } = await service().rpc("release_foil_order", {

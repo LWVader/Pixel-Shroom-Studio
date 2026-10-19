@@ -11,6 +11,7 @@ globalThis.fetch = async (input, init = {}) => {
   assert.equal(url.origin, "https://mint-fixture.invalid");
   assert.equal(init.headers.Authorization, "Bearer fixture-private-service");
   if (url.pathname === "/rest/v1/foil_keys") return new Response(null, { status: 201 });
+  if (url.pathname === "/rest/v1/rpc/claim_market_preview") return Response.json(null);
   if (url.pathname === "/rest/v1/rpc/claim_foil_job") {
     if (claimed) return Response.json(null);
     claimed = true;

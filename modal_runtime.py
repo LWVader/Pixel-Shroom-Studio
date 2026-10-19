@@ -61,3 +61,31 @@ def build_wake_app(spawn):
         return JSONResponse({"queued": True, "callId": call.object_id}, status_code=202)
 
     return api
+
+
+def market_needs_work():
+    import urllib.error
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        return rest_has_rows("market_preview_jobs", {"or": f"(and(state.eq.queued,available_at.lte.{now}),and(state.eq.processing,lease_until.lt.{now}))"})
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return False
+        raise
+
+
+def recover_market_payments():
+    import urllib.error
+    import urllib.request
+    if datetime.now(timezone.utc).minute % 5:
+        return
+    try:
+        if not rest_has_rows("market_purchases", {"state": "in.(pending,refund_pending)"}):
+            return
+        key=os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+        request=urllib.request.Request(os.environ["SUPABASE_URL"].rstrip("/")+"/functions/v1/market-reconcile",method="POST",data=b"{}",headers={"apikey":key,"Authorization":f"Bearer {key}","Content-Type":"application/json"})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            response.read()
+    except Exception as error:
+        # Primary mint queue recovery remains independent of marketplace availability.
+        print("Marketplace recovery will retry:",type(error).__name__)

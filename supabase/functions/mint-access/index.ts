@@ -21,8 +21,9 @@ Deno.serve(async (request: Request) => {
     let query = db
       .from("mints")
       .select(
-        "id,order_id,owner_id,listing_id,state,mint_number,tier,artifact_path,manifest,width,height,created_at,foil_listings(master_title,master_serial,max_supply)",
+        "id,order_id,owner_id,ownership_version,market_frozen,listing_id,state,mint_number,tier,artifact_path,manifest,width,height,created_at,foil_listings(master_title,master_serial,max_supply)",
       );
+    let orderCredentialAccess = false;
     if (body.orderId && body.accessToken && body.action !== "collection") {
       const { data: order, error } = await db
         .from("orders")
@@ -36,6 +37,7 @@ Deno.serve(async (request: Request) => {
         (await sha256(String(body.accessToken))) !== order.access_token_hash
       )
         return json({ error: "Invalid order credentials." }, 403, request);
+      orderCredentialAccess = true;
       query = query.eq("order_id", order.id);
     } else {
       if (!user) return json({ error: "Sign in to access your collection." }, 401, request);
@@ -57,6 +59,7 @@ Deno.serve(async (request: Request) => {
     if (error) throw error;
     const result = [];
     for (const row of (rows || []).slice(0, 25)) {
+      if (orderCredentialAccess && Number(row.ownership_version) > 0) continue;
       const listing = Array.isArray(row.foil_listings) ? row.foil_listings[0] : row.foil_listings;
       // Paid-only private access. Refunds/revocation stop fresh signed URLs.
       const { data: order } = await db
@@ -65,7 +68,12 @@ Deno.serve(async (request: Request) => {
         .eq("id", row.order_id)
         .single();
       let imageUrl = null;
-      if (row.state === "ready" && order?.status === "paid" && row.artifact_path) {
+      if (
+        row.state === "ready" &&
+        !row.market_frozen &&
+        order?.status === "paid" &&
+        row.artifact_path
+      ) {
         const { data, error: signingError } = await db.storage
           .from("minted")
           .createSignedUrl(row.artifact_path, 60, { download: body.action === "download" });
@@ -77,7 +85,8 @@ Deno.serve(async (request: Request) => {
         title: listing?.master_title,
         serial: listing?.master_serial,
         maxSupply: listing?.max_supply,
-        state: row.state,
+        state: row.market_frozen ? "held" : row.state,
+        canList: row.state === "ready" && !row.market_frozen && order?.status === "paid",
         mintNumber: row.mint_number,
         tier: row.tier,
         width: row.width,

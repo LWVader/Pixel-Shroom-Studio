@@ -23,6 +23,7 @@ const aliases = new Set([
 const pages = new Set([
   "about",
   "collection",
+  "market",
   "verify-mint",
   "faq",
   "all-artwork",

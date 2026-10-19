@@ -19,3 +19,8 @@ verify_jwt = false
 verify_jwt = false
 [functions.mint-access]
 verify_jwt = false
+
+[functions.market-api]
+verify_jwt = false
+[functions.market-reconcile]
+verify_jwt = false

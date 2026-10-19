@@ -1,3 +1,4 @@
+import { setupMarketSelling } from "./market-sell.js";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
 import { escapeHtml, checkoutUrl } from "./catalog-core.js";
@@ -10,6 +11,7 @@ const signOut = document.querySelector("#collection-signout");
 const mintPanel = document.querySelector("#mint-panel");
 const target = new URLSearchParams(location.search).get("mint");
 let session;
+let sellerReturnChecked = false;
 let busy = false;
 let offset = 0;
 const next = document.querySelector("#collection-next"),
@@ -23,6 +25,7 @@ previous.onclick = () => {
   load();
 };
 const seen = new Set();
+const selling = setupMarketSelling({ getSession: () => session, showStatus });
 function showStatus(message) {
   status.textContent = message;
 }
@@ -41,7 +44,7 @@ async function load() {
         const url = item.imageUrl ? safeMintImage(item.imageUrl, SUPABASE_URL) : "";
         const fresh = item.state === "ready" && !seen.has(item.id);
         if (item.state === "ready") seen.add(item.id);
-        return `<article class="foil-card${fresh ? " revealed" : ""}" data-tier="${escapeHtml(item.tier || "Standard")}"><h2>${escapeHtml(item.title)}</h2><p>${item.tier ? `${escapeHtml(item.tier)} · #${item.mintNumber} of ${item.maxSupply}` : "Awaiting verified payment"}</p>${url ? `<img src="${escapeHtml(url)}" alt="Your ${escapeHtml(item.tier)} variant of ${escapeHtml(item.title)}" loading="lazy"><p>${item.width} × ${item.height} px</p><button class="button" data-download="${escapeHtml(item.id)}">Download variant</button> <button class="button" data-receipt="${escapeHtml(item.id)}">Save signed receipt</button>` : `<p>${item.state === "failed" ? "Processing needs studio attention; your number and tier are retained. Please contact us." : escapeHtml(item.state)}</p>`}</article>`;
+        return `<article class="foil-card${fresh ? " revealed" : ""}" data-tier="${escapeHtml(item.tier || "Standard")}"><h2>${escapeHtml(item.title)}</h2><p>${item.tier ? `${escapeHtml(item.tier)} · #${item.mintNumber} of ${item.maxSupply}` : "Awaiting verified payment"}</p>${url ? `<img src="${escapeHtml(url)}" alt="Your ${escapeHtml(item.tier)} variant of ${escapeHtml(item.title)}" loading="lazy"><p>${item.width} × ${item.height} px</p><button class="button" data-download="${escapeHtml(item.id)}">Download variant</button> <button class="button" data-receipt="${escapeHtml(item.id)}">Save signed receipt</button>${item.canList ? `<button class="button" data-sell="${escapeHtml(item.id)}">List on Market</button>` : ""}` : `<p>${item.state === "failed" ? "Processing needs studio attention; your number and tier are retained. Please contact us." : escapeHtml(item.state)}</p>`}</article>`;
       })
       .join("");
     next.hidden = !hasMore;
@@ -68,7 +71,13 @@ async function updateSession() {
     previous.hidden = true;
     grid.replaceChildren();
     showStatus("Sign in to mint and view your private editions.");
-  } else await load();
+  } else {
+    await load();
+    if (!sellerReturnChecked && new URLSearchParams(location.search).has("connect")) {
+      sellerReturnChecked = true;
+      await selling.refresh();
+    }
+  }
   if (target) await showMintOffer();
 }
 async function showMintOffer() {
@@ -122,6 +131,11 @@ signOut.onclick = async () => {
   await updateSession();
 };
 grid.onclick = async (event) => {
+  const sell = event.target.closest("[data-sell]");
+  if (sell) {
+    await selling.open(sell.dataset.sell);
+    return;
+  }
   const download = event.target.closest("[data-download]");
   const receipt = event.target.closest("[data-receipt]");
   if (!download && !receipt) return;

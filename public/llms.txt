@@ -46,3 +46,7 @@ Use the linked pages for current listings, purchase details and usage rights. Av
 - [Cookies](https://www.pixelshroomstudio.com/cookies.html): Cookie information.
 - [Sitemap](https://www.pixelshroomstudio.com/sitemap.xml): Public URL index.
 - [Robots](https://www.pixelshroomstudio.com/robots.txt): Crawler access directives.
+
+## Secondary editions
+
+- [Secondary marketplace](https://www.pixelshroomstudio.com/market.html): Member-listed numbered editions, when open. Transfers change the studio-recorded holder, not copyright or exclusive rights. Existing downloads cannot be recalled. Seller proceeds use Stripe Connect; the platform fee is 10%, with Stripe processing fees paid by the platform. No resale value or returns are promised.

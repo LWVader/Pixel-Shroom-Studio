@@ -139,6 +139,13 @@ async function call(body, token = "") {
   response = await call({ action: "download", mintId: "mint-a" }, "owner-a-token");
   assert.equal((await response.json()).items[0].imageUrl, null);
   assert.equal((await call({ action: "download" }, "owner-a-token")).status, 400);
+  minted[0].state = "ready";
+  minted[0].ownership_version = 1;
+  response = await call({ action: "status", orderId: "order-a", accessToken: "secret-a" });
+  assert.deepEqual((await response.json()).items, []);
+  minted[0].market_frozen = true;
+  response = await call({ action: "collection" }, "owner-a-token");
+  assert.equal((await response.json()).items[0].imageUrl, null);
   console.log(
     "PASS private ownership, order-token isolation, refund/queued blocking, minted-only storage",
   );

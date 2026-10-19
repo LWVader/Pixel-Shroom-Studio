@@ -1,7 +1,7 @@
 """Deploy from the project root: modal deploy modal_mint.py."""
 from pathlib import Path
 import modal
-from modal_runtime import run_batch, needs_work, build_wake_app
+from modal_runtime import run_batch, needs_work, market_needs_work, recover_market_payments, build_wake_app
 
 ROOT = Path(__file__).resolve().parent
 app = modal.App("pixel-shroom-mint")
@@ -12,6 +12,7 @@ control_secret = modal.Secret.from_name("pixel-shroom-mint-control")
 # never uploaded into the image. Secrets are injected only at runtime.
 worker_image = (
     modal.Image.from_registry("node:24-bookworm-slim", add_python="3.12")
+    .apt_install("fonts-dejavu-core")
     .add_local_file(ROOT / "package.json", "/opt/pixel/package.json", copy=True)
     .add_local_file(ROOT / "package-lock.json", "/opt/pixel/package-lock.json", copy=True)
     .run_commands("cd /opt/pixel && npm ci --omit=dev")
@@ -51,7 +52,8 @@ def process_queue():
     retries=0,
 )
 def recover_queue():
-    if needs_work():
+    recover_market_payments()
+    if needs_work() or market_needs_work():
         call = process_queue.spawn()
         return {"queued": True, "callId": call.object_id}
     return {"queued": False}
