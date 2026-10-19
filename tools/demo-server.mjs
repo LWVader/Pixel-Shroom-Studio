@@ -1,5 +1,6 @@
 // Local visual demo only. No credentials, upstream requests or real transactions.
 import http from "node:http";
+import sharp from "sharp";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,7 +12,32 @@ const port = Number(process.env.DEMO_PORT || 8030);
 const origin = `http://127.0.0.1:${port}`;
 const mintId = "11111111-1111-4111-8111-111111111111";
 const leaseId = "22222222-2222-4222-8222-222222222222";
-const bytes = await fs.readFile(path.join(root, "assets/art-fantasy.png"));
+async function loadDemoImage() {
+  const samplePath = process.env.DEMO_IMAGE || path.join(root, "assets/art-fantasy.png");
+  try {
+    return await fs.readFile(samplePath);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    console.log("Sample image not found; using the built-in local demo illustration.");
+    // A code-generated fixture keeps the demo independent of optional gallery assets.
+    return sharp(
+      Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+      <defs><linearGradient id="sky" x2="1" y2="1"><stop stop-color="#092f35"/><stop offset="1" stop-color="#102015"/></linearGradient><radialGradient id="glow"><stop stop-color="#8ae6e8"/><stop offset="1" stop-color="#126a76"/></radialGradient></defs>
+      <rect width="512" height="512" fill="url(#sky)"/>
+      <circle cx="256" cy="218" r="150" fill="url(#glow)" opacity=".65"/>
+      <path d="M0 405Q120 300 256 399T512 370V512H0Z" fill="#143d30"/>
+      <path d="M226 283Q240 365 214 400Q256 422 298 400Q272 365 286 283Z" fill="#f4e0aa"/>
+      <path d="M105 285Q125 100 256 114Q387 100 407 285Q256 325 105 285Z" fill="#d76540" stroke="#f4c07b" stroke-width="6"/>
+      <g fill="#fff4c4"><ellipse cx="187" cy="230" rx="24" ry="16"/><ellipse cx="280" cy="168" rx="25" ry="18"/><ellipse cx="342" cy="249" rx="22" ry="15"/><circle cx="77" cy="95" r="4"/><circle cx="435" cy="143" r="5"/><circle cx="95" cy="358" r="3"/></g>
+      <text x="24" y="462" font-family="sans-serif" font-size="21" fill="#fff4c4">PIXEL SHROOM · LOCAL DEMO</text>
+      <text x="24" y="490" font-family="sans-serif" font-size="14" fill="#b8c9c0">Sample fixture — not a purchasable studio edition</text>
+    </svg>`),
+    )
+      .png()
+      .toBuffer();
+  }
+}
+const bytes = await loadDemoImage();
 const key = await webcrypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
   "sign",
   "verify",
