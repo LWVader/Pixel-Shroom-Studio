@@ -2,7 +2,11 @@ import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 import { chromium } from "@playwright/test";
 const child = spawn(process.execPath, ["tools/demo-server.mjs"], {
-  env: { ...process.env, DEMO_PORT: "8039" },
+  env: {
+    ...process.env,
+    DEMO_PORT: "8039",
+    DEMO_IMAGE: process.env.DEMO_IMAGE || "",
+  },
   stdio: ["ignore", "pipe", "pipe"],
 });
 let browser;
@@ -47,9 +51,40 @@ try {
       await image.decode();
     });
     assert.equal(await demo.locator(".foil-card").getAttribute("data-tier"), tier);
+    await demo.locator('.foil-scene[data-animation="running"]').waitFor();
+    // Observe actual painted lightning pixels rather than mirroring its implementation.
+    await demo.locator("canvas.foil-lightning").evaluate(
+      (canvas) =>
+        new Promise((resolve, reject) => {
+          const start = performance.now();
+          function check() {
+            const context = canvas.getContext("2d");
+            const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+            if (pixels.some((value, index) => index % 4 === 3 && value > 0)) return resolve();
+            if (performance.now() - start > 5000) return reject(Error("Lightning was not painted"));
+            requestAnimationFrame(check);
+          }
+          check();
+        }),
+    );
+    if (tier === "Prismatic" && process.env.DEMO_SCREENSHOT)
+      await page.screenshot({ path: process.env.DEMO_SCREENSHOT, fullPage: true });
+    if (tier !== "Standard")
+      await demo.getByRole("button", { name: "Skip animation", exact: true }).click();
+    await demo.locator('.foil-scene[data-animation="complete"]').waitFor();
   }
-  if (process.env.DEMO_SCREENSHOT)
-    await page.screenshot({ path: process.env.DEMO_SCREENSHOT, fullPage: true });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await demo.getByRole("button", { name: "Replay reveal", exact: true }).click();
+  await demo.locator('.foil-scene[data-animation="complete"]').waitFor();
+  assert.match(await demo.locator(".foil-animation-status").textContent(), /Motion effects off/);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  assert.equal(
+    await demo.locator("body").evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    true,
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole("button", { name: "Simulate mint purchase" }).click();
   await demo.locator("#start-mint").click();
   await demo.getByRole("heading", { name: "Simulated checkout" }).waitFor();

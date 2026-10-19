@@ -1,3 +1,4 @@
+import { mountFoilReveal } from "./foil-reveal.js";
 import { safeMintImage } from "./mint-core.js";
 import { SUPABASE_URL } from "./config.js";
 // SECTION: Supabase function client and checkout-return parameters
@@ -81,7 +82,7 @@ async function revealMint(order) {
   heading.textContent = `${item.tier} edition revealed`;
   message.textContent = `#${item.mintNumber} of ${item.maxSupply} · ${item.width} × ${item.height} px. Your signed variant is ready.`;
   const panel = document.createElement("article");
-  panel.className = "foil-card revealed";
+  panel.className = "foil-card foil-purchase-reveal";
   panel.dataset.tier = item.tier;
   const image = document.createElement("img");
   image.src = safeMintImage(item.imageUrl, SUPABASE_URL);
@@ -118,6 +119,7 @@ async function revealMint(order) {
   };
   panel.append(download, receipt);
   message.after(panel);
+  mountFoilReveal(panel, image);
   return true;
 }
 
