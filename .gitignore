@@ -11,3 +11,7 @@ dist/
 private-mint-keys/
 mint-worker/.env
 *.private.pem
+
+.venv-modal/
+__pycache__/
+*.pyc

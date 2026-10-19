@@ -153,6 +153,26 @@ it("processes a private queued master into a signed lease-fenced artifact", asyn
         },
       ),
     ).toContain("PASS private worker pipeline");
+    const batch = execFileSync(
+      process.execPath,
+      ["--import", "./tests/mint-worker-fixture.mjs", "mint-worker/worker.mjs", "--batch"],
+      {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          SUPABASE_URL: "https://mint-fixture.invalid",
+          SUPABASE_SERVICE_ROLE_KEY: "fixture-private-service",
+          MINT_SIGNING_KEY_FILE: "missing.pem",
+          MINT_SIGNING_KEY_B64: Buffer.from(
+            privateKey.export({ format: "pem", type: "pkcs8" }),
+          ).toString("base64"),
+          MINT_TEST_PUBLIC_KEY: pub,
+          MINT_TEST_FIXTURE: file,
+          STRIPE_SECRET_KEY: "",
+        },
+      },
+    );
+    expect(batch).toContain("processed: 1");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

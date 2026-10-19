@@ -96,6 +96,35 @@ Deno.serve(async (request: Request): Promise<Response> => {
       throw error;
     }
 
+    // Best-effort wake-up after committing payment. Modal's minute recovery
+    // schedule covers a lost request; a renderer outage must not undo payment.
+    if (session.metadata?.kind === "foil" && data?.fulfilled) {
+      const wakeUrl = Deno.env.get("MODAL_MINT_WAKE_URL");
+      const wakeToken = Deno.env.get("MODAL_MINT_WAKE_TOKEN");
+      if (wakeUrl && wakeToken) {
+        try {
+          const endpoint = new URL(wakeUrl);
+          if (
+            endpoint.protocol !== "https:" ||
+            !endpoint.hostname.endsWith(".modal.run") ||
+            endpoint.username ||
+            endpoint.password
+          )
+            throw new Error("Invalid Modal wake endpoint");
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${wakeToken}` },
+            signal: AbortSignal.timeout(5000),
+            redirect: "error",
+          });
+          if (!response.ok)
+            console.warn("Modal wake request failed; scheduled recovery will retry");
+        } catch {
+          console.warn("Modal wake request unavailable; scheduled recovery will retry");
+        }
+      }
+    }
+
     return json({
       received: true,
       duplicate: data?.duplicate ?? false,

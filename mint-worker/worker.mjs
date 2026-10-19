@@ -6,7 +6,11 @@ const base = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!base?.startsWith("https://") || !secret)
   throw new Error("Worker Supabase configuration required");
-const privateKey = createPrivateKey(fs.readFileSync(process.env.MINT_SIGNING_KEY_FILE));
+const privateKey = createPrivateKey(
+  process.env.MINT_SIGNING_KEY_B64
+    ? Buffer.from(process.env.MINT_SIGNING_KEY_B64, "base64")
+    : fs.readFileSync(process.env.MINT_SIGNING_KEY_FILE),
+);
 if (privateKey.asymmetricKeyType !== "ed25519") throw new Error("Ed25519 signing key required");
 const publicKey = createPublicKey(privateKey);
 const jwk = publicKey.export({ format: "jwk" });
@@ -149,7 +153,14 @@ try {
   console.error("Payment reconciliation will retry", error.message);
 }
 if (process.argv.includes("--once")) await processOne();
-else {
+else if (process.argv.includes("--batch")) {
+  const limit = Math.min(100, Math.max(1, Number(process.env.MINT_BATCH_LIMIT) || 10));
+  const budget = Math.min(420000, Math.max(1000, Number(process.env.MINT_BATCH_TIME_MS) || 420000));
+  const started = Date.now();
+  let count = 0;
+  while (count < limit && Date.now() - started < budget && (await processOne())) count++;
+  console.log("Mint batch finished", { processed: count });
+} else {
   let lastReconcile = Date.now();
   for (;;) {
     try {

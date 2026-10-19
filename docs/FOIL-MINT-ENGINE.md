@@ -12,6 +12,8 @@ This update adds an opt-in numbered digital edition system. It is not a blockcha
 - Every derivative is hashed after metadata and rendering. An Ed25519-signed, detached JSON receipt binds its exact final bytes to its number, tier, master hash and rendering version. Original C2PA metadata is not copied onto modified bytes. The master signature remains a source/integrity statement, not proof of exclusive ownership or copyright.
 - Files use the private `minted` bucket, independently of private `originals`. Only an authenticated owner or valid order secret can request a 60-second private URL for a paid ready mint. No master is delivered for foil orders, including when that edition is paused. Existing pre-conversion digital orders retain their original delivery.
 
+For Modal hosting, follow `docs/MODAL-SETUP.md` instead of the always-on server instructions in steps 4–6 below. The database, Stripe and Supabase function prerequisites still apply.
+
 ## Deployment order
 
 1. Back up the database and test on a staging project with Stripe **test** keys. Apply existing migrations first, then `supabase/migrations/202610190001_foil_mint_engine.sql` once in Supabase SQL Editor or through your normal migration tooling. This migration is versioned and is not intended to be rerun manually.
