@@ -438,3 +438,21 @@
   inset: -16%;
   opacity: calc(0.08 + var(--impact));
 }
+
+/* Fade from payment into one persistent opening surface, without a page flash. */
+.foil-mystery-stage[open] {
+  animation: foil-stage-enter 220ms ease-out both;
+}
+@keyframes foil-stage-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .foil-mystery-stage[open] {
+    animation: none;
+  }
+}

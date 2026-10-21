@@ -191,7 +191,20 @@ test("only verified payment starts a concealed reveal; saving waits for completi
     "matrix3d(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)",
   );
   await expect(page.getByRole("button", { name: "Add to my collection" })).toHaveCount(0);
+  const waitingStage = await page.locator(".foil-mystery-stage[open]").elementHandle();
+  await page.evaluate(() => {
+    window.stageClosedDuringHandoff = false;
+    const stage = document.querySelector(".foil-mystery-stage[open]");
+    new MutationObserver(() => {
+      if (!stage.open && document.querySelector('.foil-scene[data-animation="running"]'))
+        window.stageClosedDuringHandoff = true;
+    }).observe(stage, { attributes: true, attributeFilter: ["open"] });
+  });
   ready = true;
+  await expect(page.locator('.foil-scene[data-animation="running"]')).toHaveCount(1);
+  expect(await waitingStage.evaluate((stage) => stage.isConnected && stage.open)).toBe(true);
+  expect(await page.locator(".foil-mystery-stage").count()).toBe(1);
+  expect(await page.evaluate(() => window.stageClosedDuringHandoff)).toBe(false);
   await expect(page.locator("h1")).toHaveText("Prismatic edition revealed", { timeout: 10000 });
   await expect(page.getByRole("button", { name: "Add to my collection" })).toBeVisible();
   expect(await page.evaluate(() => window.openingScenes.size)).toBe(1);

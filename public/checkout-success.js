@@ -1,4 +1,4 @@
-import { mountFoilReveal } from "./foil-reveal.js?v=20261021-single-opening";
+import { mountFoilReveal } from "./foil-reveal.js?v=20261021-smooth-handoff";
 import { safeMintImage } from "./mint-core.js";
 import { SUPABASE_URL } from "./config.js";
 // SECTION: Supabase function client and checkout-return parameters
@@ -13,6 +13,7 @@ function clearWaiting() {
   waitingEffect?.cleanup();
   waitingPanel?.remove();
   waitingPanel = null;
+  waitingEffect = null;
 }
 function showWaiting() {
   if (waitingPanel) return;
@@ -106,8 +107,8 @@ async function revealMint(order) {
       "Your edition number and rarity are reserved. Image delivery needs studio attention; contact us with your order number.";
     return true;
   }
+  showWaiting();
   if (order.mint?.state !== "ready") {
-    showWaiting();
     message.textContent =
       "Your paid edition is queued. Keep this confirmation link or open My collection later; closing this page does not cancel delivery.";
     return false;
@@ -116,7 +117,6 @@ async function revealMint(order) {
   const item = result.items?.[0];
   if (!item?.imageUrl)
     throw new Error("Edition is not currently downloadable. Contact the studio.");
-  clearWaiting();
   heading.textContent = "Revealing your paid edition";
   message.textContent = "Your server-assigned edition is ready. Opening the sealed card…";
   const panel = document.createElement("article");
@@ -191,6 +191,7 @@ async function revealMint(order) {
   message.after(panel);
   mountFoilReveal(panel, image, {
     mystery: true,
+    stage: waitingEffect?.stage,
     onStart: () => {
       heading.textContent = "Revealing your paid edition";
       message.textContent =
@@ -203,6 +204,7 @@ async function revealMint(order) {
       add.hidden = false;
     },
   });
+  clearWaiting();
   return true;
 }
 

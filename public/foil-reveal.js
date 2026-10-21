@@ -65,11 +65,11 @@ export function mountFoilReveal(panel, image, options = {}) {
   scene.append(rotor, canvas);
   const home = document.createComment("reveal scene home");
   scene.before(home);
-  const stage = options.mystery ? document.createElement("dialog") : null;
+  const stage = options.mystery ? options.stage || document.createElement("dialog") : null;
   if (stage) {
     stage.className = "foil-mystery-stage";
     stage.setAttribute("aria-label", "Opening your paid edition");
-    document.body.append(stage);
+    if (!stage.isConnected) document.body.append(stage);
   }
   function setMystery(active) {
     if (!stage) return;
@@ -77,7 +77,9 @@ export function mountFoilReveal(panel, image, options = {}) {
       stage.append(scene);
       if (!stage.open) stage.showModal();
     } else {
+      const ownsStage = stage.lastElementChild === scene;
       home.after(scene);
+      if (!ownsStage) return;
       if (stage.open) stage.close();
     }
     if (parent !== window) parent.postMessage({ type: "foil-mystery", active }, location.origin);
@@ -404,7 +406,7 @@ export function mountFoilReveal(panel, image, options = {}) {
     generation++;
     finish(false);
     setMystery(false);
-    stage?.remove();
+    if (stage && !stage.childElementCount) stage.remove();
     home.remove();
     observer.disconnect();
     motion.removeEventListener("change", changedMotion);
@@ -418,6 +420,7 @@ export function mountFoilReveal(panel, image, options = {}) {
   window.addEventListener("pagehide", cleanup, { once: true });
   play();
   return {
+    stage,
     play,
     stop: () => {
       generation++;
