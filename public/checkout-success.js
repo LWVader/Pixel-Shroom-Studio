@@ -1,4 +1,4 @@
-import { mountFoilReveal } from "./foil-reveal.js?v=20261021-card-back";
+import { mountFoilReveal } from "./foil-reveal.js?v=20261021-reveal-fix";
 import { safeMintImage } from "./mint-core.js";
 import { SUPABASE_URL } from "./config.js";
 // SECTION: Supabase function client and checkout-return parameters
@@ -148,6 +148,7 @@ async function revealMint(order) {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  let savedToCollection = Boolean(item.inCollection);
   const add = document.createElement("button");
   add.className = "buy-button";
   add.textContent = item.inCollection ? "Already in my collection" : "Add to my collection";
@@ -162,6 +163,7 @@ async function revealMint(order) {
       }
       const result = await mintAccess("add_to_collection", item.id);
       if (!result.added) throw new Error("Could not add this edition. Please retry.");
+      savedToCollection = true;
       add.textContent = "Added to my collection";
       message.textContent = "Your edition is saved to your account profile.";
     } catch (error) {
@@ -170,15 +172,21 @@ async function revealMint(order) {
     }
   };
   for (const button of [download, receipt, add]) button.hidden = true;
-  panel.append(download, receipt, add);
+  const actions = document.createElement("div");
+  actions.className = "foil-purchase-actions";
+  actions.append(download, receipt, add);
+  panel.append(actions);
   message.after(panel);
   mountFoilReveal(panel, image, {
     onStart: () => {
+      heading.textContent = "Revealing your paid edition";
+      message.textContent =
+        "Opening your prepared edition. Replaying does not change its tier or file.";
       for (const button of [download, receipt, add]) button.hidden = true;
     },
     onComplete: () => {
       heading.textContent = `${item.tier} edition revealed`;
-      message.textContent = `#${item.mintNumber} of ${item.maxSupply} · ${item.width} × ${item.height} px. Add this edition to your account profile below.`;
+      message.textContent = `#${item.mintNumber} of ${item.maxSupply} · ${item.width} × ${item.height} px. ${savedToCollection ? "Saved in your collection." : "Add this edition to your account profile below."}`;
       for (const button of [download, receipt, add]) button.hidden = false;
     },
   });

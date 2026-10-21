@@ -7,7 +7,7 @@ const PALETTES = {
   Sapphire: ["#5798ff", "#b8eeff"],
   Prismatic: ["#b991ff", "#72efff"],
 };
-const DURATION = 1800;
+const DURATION = 3200;
 const CARD_BACK_URL = new URL("./assets/foil-card-back.jpg?v=20261021-card-back", import.meta.url)
   .href;
 let cardBackReady;
@@ -30,7 +30,9 @@ export function mountFoilReveal(panel, image, options = {}) {
   const scene = document.createElement("div");
   scene.className = "foil-scene";
   scene.dataset.animation = "preparing";
+  scene.classList.toggle("is-concealed", Boolean(options.concealed));
   image.style.visibility = "hidden";
+  scene.style.setProperty("--foil-duration", `${duration}ms`);
   scene.style.setProperty("--foil-light", colors[0]);
   scene.style.setProperty("--foil-spark", colors[1]);
   const rotor = document.createElement("div");
@@ -67,7 +69,8 @@ export function mountFoilReveal(panel, image, options = {}) {
   skip.type = "button";
   skip.className = "buy-button";
   skip.textContent = "Skip animation";
-  skip.hidden = true;
+  skip.hidden = Boolean(options.concealed);
+  skip.disabled = true;
   const status = document.createElement("span");
   status.className = "foil-animation-status";
   status.setAttribute("role", "status");
@@ -111,8 +114,9 @@ export function mountFoilReveal(panel, image, options = {}) {
     rotor.style.transform = "";
     scene.style.setProperty("--impact", "0");
     context?.clearRect(0, 0, width, height);
-    skip.hidden = true;
+    skip.disabled = true;
     replay.disabled = false;
+    replay.textContent = "Replay reveal";
     if (announce) options.onComplete?.();
     if (announce)
       status.textContent = options.concealed
@@ -212,19 +216,19 @@ export function mountFoilReveal(panel, image, options = {}) {
     }
     const elapsed = now - started;
     const progress = Math.min(1, elapsed / duration);
-    // Charge, then a single spring-eased flip. The seal remains opaque until
-    // the whole sequence settles; the artwork never appears mid-flip.
-    if (progress < 0.3) {
-      const charge = progress / 0.3;
+    // Keep both faces sealed through two full turns, then settle before revealing.
+    if (progress < 0.18) {
+      const charge = progress / 0.18;
       scene.dataset.phase = "charge";
-      const pulse = Math.sin(charge * Math.PI);
-      rotor.style.transform = `rotateY(180deg) scale(${1 - 0.065 * pulse}) translateY(${8 * pulse}px)`;
+      rotor.style.transform = `rotateY(180deg) scale(${1 - 0.04 * Math.sin(charge * Math.PI)})`;
+    } else if (progress < 0.88) {
+      const spin = (progress - 0.18) / 0.7;
+      const eased = spin * spin * (3 - 2 * spin);
+      scene.dataset.phase = "spin";
+      rotor.style.transform = `rotateY(${180 + 900 * eased}deg) rotateX(${-6 * Math.sin(spin * Math.PI)}deg) scale(${1 + 0.025 * Math.sin(spin * Math.PI)})`;
     } else {
-      const flip = Math.min(1, (progress - 0.3) / 0.46);
-      const shifted = flip - 1;
-      const spring = 1 + 2.70158 * shifted ** 3 + 1.70158 * shifted ** 2;
-      scene.dataset.phase = flip < 1 ? "flip" : "settle";
-      rotor.style.transform = `rotateY(${180 + 180 * spring}deg) rotateX(${Math.sin(flip * Math.PI) * -5}deg) scale(${1 + 0.035 * Math.sin(flip * Math.PI)})`;
+      scene.dataset.phase = "settle";
+      rotor.style.transform = "rotateY(1080deg)";
     }
     if (!burstTriggered && progress >= 0.53) {
       burstTriggered = true;
@@ -263,8 +267,14 @@ export function mountFoilReveal(panel, image, options = {}) {
     rotor.style.transform = "rotateY(180deg)";
     status.textContent = "Preparing artwork…";
     replay.disabled = true;
+    replay.textContent = "Opening…";
     try {
       await Promise.all([image.decode(), loadCardBack()]);
+      if (!options.concealed && image.naturalWidth && image.naturalHeight)
+        scene.style.setProperty(
+          "--foil-art-ratio",
+          `${image.naturalWidth} / ${image.naturalHeight}`,
+        );
     } catch {
       if (token === generation) {
         finish(false);
@@ -291,6 +301,7 @@ export function mountFoilReveal(panel, image, options = {}) {
     scene.dataset.phase = "charge";
     status.textContent = "Revealing your edition…";
     skip.hidden = Boolean(options.concealed);
+    skip.disabled = false;
     started = performance.now();
     frame = requestAnimationFrame(tick);
   }

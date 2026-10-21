@@ -358,7 +358,7 @@ const server = http.createServer(async (req, res) => {
       if (url.pathname === "/checkout-success.html")
         content = content.replace(
           "</head>",
-          `<style>.checkout-result{margin:16px auto;padding:18px}.checkout-result h1{font-size:28px}.foil-scene{max-width:min(340px,37.55vh)}.foil-reveal-controls{margin:8px 0}.foil-purchase-reveal{padding:12px}</style></head>`,
+          `<style>.checkout-result{margin:16px auto;padding:18px}.checkout-result h1{font-size:28px}.foil-scene{max-width:min(420px,58vh)}.foil-reveal-controls{margin:8px 0}.foil-purchase-reveal{padding:12px}</style></head>`,
         );
     }
     send(content, mime[path.extname(file)]);

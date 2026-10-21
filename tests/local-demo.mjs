@@ -74,13 +74,25 @@ try {
       /foil-card-back\.jpg/,
     );
     assert.equal(await demo.locator(".foil-back-title").count(), 0);
+    if (tier === "Standard")
+      await demo.locator(".foil-scene").evaluate((scene) => {
+        scene.revealAudit = { angles: [], leaked: false };
+        const sample = () => {
+          if (scene.dataset.animation === "complete") return;
+          const rotor = scene.querySelector(".foil-rotor");
+          const angle = /rotateY\(([-.\d]+)deg\)/.exec(rotor.style.transform);
+          if (angle) scene.revealAudit.angles.push(Number(angle[1]));
+          if (getComputedStyle(rotor.querySelector("img")).visibility !== "hidden")
+            scene.revealAudit.leaked = true;
+          requestAnimationFrame(sample);
+        };
+        requestAnimationFrame(sample);
+      });
+
     const ratio = await demo
       .locator(".foil-rotor")
       .evaluate((card) => card.offsetWidth / card.offsetHeight);
-    assert.ok(
-      Math.abs(ratio - 1280 / 1909) < 0.01,
-      "Card back must retain its portrait proportions",
-    );
+    assert.ok(Math.abs(ratio - 1) < 0.01, "Square tier artwork must fill a square reveal stage");
 
     assert.equal(
       await demo
@@ -120,6 +132,22 @@ try {
     if (tier !== "Standard")
       await demo.getByRole("button", { name: "Skip animation", exact: true }).click();
     await demo.locator('.foil-scene[data-animation="complete"]').waitFor();
+    if (tier === "Standard") {
+      const audit = await demo.locator(".foil-scene").evaluate((scene) => scene.revealAudit);
+      assert.equal(audit.leaked, false);
+      assert.ok(
+        Math.max(...audit.angles) - Math.min(...audit.angles) > 720,
+        "Opening should visibly complete multiple turns",
+      );
+    }
+    const replayButton = demo.getByRole("button", { name: "Replay reveal", exact: true });
+    assert.ok(
+      await replayButton.evaluate(
+        (button) => button.offsetWidth < button.closest("article").clientWidth * 0.8,
+      ),
+      "Controls should not fill the entire card width",
+    );
+
     assert.equal(
       await demo
         .locator(".foil-rotor > img")
