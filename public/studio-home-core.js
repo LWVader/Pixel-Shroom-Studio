@@ -7,7 +7,6 @@ import {
   artworkDimensions,
 } from "./catalog-core.js";
 import { FEATURED_SERIALS } from "./studio-catalog.js";
-import { validateCatalog } from "./ebay-core.js";
 export function featuredArtworks(rows) {
   const digital = rows.filter((row) => row.category !== "NFT");
   const chosen = FEATURED_SERIALS.map((serial) =>
@@ -30,13 +29,13 @@ export function renderFeatured(rows) {
     .join("");
 }
 export function renderProductExamples(catalog) {
-  const items = catalog ? validateCatalog(catalog) : [];
+  const items = Array.isArray(catalog?.products) ? catalog.products : [];
   return ["canvas", "apparel"]
     .map((category) => {
-      const item = items.find((item) => item.category === category);
+      const item = items.find((item) => item.kind === category);
       const title = category === "canvas" ? "See it on your wall" : "Wear a little imagination";
       const page = category === "canvas" ? "/canvases.html" : "/apparel.html";
-      return `<article class="example-card">${item ? `<a href="${item.url}" rel="noopener noreferrer"><img src="${escapeHtml(item.imageUrl)}" width="600" height="600" loading="lazy" alt="${escapeHtml(item.title)}, eBay product listing preview"></a>` : '<div class="example-placeholder">Choose your artwork. Find your product.</div>'}<div><p class="eyebrow">${category === "canvas" ? "Canvas prints" : "Apparel & gifts"}</p><h3>${title}</h3><p>${item ? "Public eBay listing preview. Product photographs and mockups are supplied by the listing; check eBay for the exact item, options and availability." : "Browse current products or ask about putting your favorite artwork on a canvas or apparel."}</p><a class="text-link" href="${item ? item.url : page}" ${item ? 'rel="noopener noreferrer"' : ""}>${item ? "View this product on eBay" : "Explore products"} →</a></div></article>`;
+      return `<article class="example-card">${item ? `<a href="${page}" rel="noopener noreferrer"><img src="${escapeHtml(safePreviewUrl(item.preview_url))}" width="600" height="600" loading="lazy" alt="${escapeHtml(item.title)}, physical product preview"></a>` : '<div class="example-placeholder">Choose your artwork. Find your product.</div>'}<div><p class="eyebrow">${category === "canvas" ? "Canvas prints" : "Apparel & gifts"}</p><h3>${title}</h3><p>${item ? "Product preview. Choose a mapped variation and delivery option; Gelato fulfills the physical order after verified studio payment." : "Browse current products or ask about putting your favorite artwork on a canvas or apparel."}</p><a class="text-link" href="${item ? page : page}" ${item ? 'rel="noopener noreferrer"' : ""}>${item ? "Explore this printed product" : "Explore products"} →</a></div></article>`;
     })
     .join("");
 }

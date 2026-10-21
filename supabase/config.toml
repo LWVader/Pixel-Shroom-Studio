@@ -24,3 +24,6 @@ verify_jwt = false
 verify_jwt = false
 [functions.market-reconcile]
 verify_jwt = false
+
+[functions.print-api]
+verify_jwt = false

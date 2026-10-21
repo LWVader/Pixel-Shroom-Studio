@@ -1,3 +1,4 @@
+import { completePrintSession, handlePrintProblem } from "../_shared/gelato.ts";
 // SECTION: Stripe SDK and shared Supabase utilities
 import Stripe from "npm:stripe@18";
 import { json, service } from "../_shared/common.ts";
@@ -24,6 +25,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
   const connectSecret = Deno.env.get("STRIPE_CONNECT_WEBHOOK_SECRET");
+  const gelatoSecret = Deno.env.get("GELATO_STRIPE_WEBHOOK_SECRET");
 
   if (!signature || !stripeSecretKey || !webhookSecret) {
     return json({ error: "Stripe webhook is not configured." }, 500);
@@ -37,7 +39,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const rawBody = await request.text();
 
     let verified: Stripe.Event | undefined;
-    for (const secret of [webhookSecret, connectSecret].filter(Boolean)) {
+    for (const secret of [webhookSecret, connectSecret, gelatoSecret].filter(Boolean)) {
       try {
         verified = await stripe.webhooks.constructEventAsync(rawBody, signature, secret!);
         break;
@@ -92,10 +94,25 @@ Deno.serve(async (request: Request): Promise<Response> => {
         "charge.dispute.closed",
       ].includes(event.type)
     ) {
+      await handlePrintProblem(service(), event);
       await handleMarketProblem(service(), stripe, event);
       return json({ received: true });
     }
     const session = event.data.object as Stripe.Checkout.Session;
+
+    if (session.metadata?.kind === "gelato") {
+      if (event.type === "checkout.session.expired") {
+        const { error } = await service()
+          .from("gelato_orders")
+          .update({ fulfillment_state: "canceled" })
+          .eq("id", session.metadata.print_order_id)
+          .eq("stripe_session", session.id)
+          .eq("payment_state", "pending")
+          .eq("fulfillment_state", "awaiting_payment");
+        if (error) throw error;
+      } else await completePrintSession(service(), session, event.id);
+      return json({ received: true });
+    }
 
     if (session.metadata?.kind === "secondary") {
       if (event.type === "checkout.session.expired") {

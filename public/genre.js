@@ -27,7 +27,7 @@ if (slug && Object.hasOwn(GENRES, slug)) {
     for (const s of parsed.querySelectorAll('script[type="application/ld+json"]'))
       document.head.append(s.cloneNode(true));
     document.querySelector("#main").innerHTML = parsed.querySelector("#main").innerHTML;
-    await import("./app.js?v=20261021-edition-language");
+    await import("./app.js?v=20261021-gelato");
   } catch {
     document.querySelector("#static-genre-fallback").textContent =
       "This collection could not be loaded. Please try again shortly.";

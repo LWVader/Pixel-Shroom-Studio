@@ -58,7 +58,7 @@ test("NFT notification path records selected topics and explicit consent in exis
   expect(payload.message).not.toContain("studio artwork and product updates");
   await expect(page.locator("#updates-status")).toContainText("signup request has been saved");
 });
-test("buyer information precedes the same Stripe checkout and eBay links stay direct", async ({
+test("buyer information precedes the same digital Stripe checkout and physical links remain separate", async ({
   page,
 }) => {
   await page.route("https://checkout.stripe.com/c/pay/studio-fixture", (r) =>
@@ -66,7 +66,7 @@ test("buyer information precedes the same Stripe checkout and eBay links stay di
   );
   await page.goto("/genre.html?genre=fantasy");
   const card = page.locator(".art-card").first();
-  await card.locator("summary").click();
+  await card.locator(".artwork-information summary").click();
   await expect(card.locator(".artwork-information")).toContainText("Nonexclusive");
   await expect(card.locator(".artwork-information")).toContainText("Not recorded");
   const sent = page.waitForRequest((r) => r.url().endsWith("/create-checkout"));
@@ -74,9 +74,10 @@ test("buyer information precedes the same Stripe checkout and eBay links stay di
   expect((await sent).postDataJSON().provider).toBe("stripe");
   await expect(page).toHaveURL("https://checkout.stripe.com/c/pay/studio-fixture");
   await page.goto("/");
-  await expect(
-    page.locator('#product-examples a[href^="https://www.ebay.com/itm/"]').first(),
-  ).toHaveAttribute("href", /^https:\/\/www\.ebay\.com\/itm\/\d+$/);
+  await expect(page.locator('#product-examples a[href="/canvases.html"]').first()).toHaveAttribute(
+    "href",
+    "/canvases.html",
+  );
 });
 test("journal appears only with useful content and signup errors recover", async ({ page }) => {
   await page.route("**/rest/v1/articles?**", (r) =>

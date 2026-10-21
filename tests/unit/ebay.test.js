@@ -78,7 +78,7 @@ it("escapes listing titles and keeps all product links directly on eBay", () => 
     expect($(a).attr("href")).toBe("https://www.ebay.com/itm/198704183258");
   expect($("form,button,[download]")).toHaveLength(0);
 });
-it("renders crawlable pages without checkout scripts or fake offer data", () => {
+it("renders migrated physical pages without retired provider links or fake offer data", () => {
   const actualItems = validateCatalog(actualCatalog);
   for (const [slug, category] of [
     ["canvases", "canvas"],
@@ -88,9 +88,10 @@ it("renders crawlable pages without checkout scripts or fake offer data", () => 
     const $ = load(fs.readFileSync(`public/${slug}.html`, "utf8"));
     expect($("h1")).toHaveLength(1);
     expect($(".ebay-product")).toHaveLength(count);
-    expect($("form,button,[download]")).toHaveLength(0);
-    const schema = JSON.parse($("#ebay-schema").text());
-    expect(schema.mainEntity.numberOfItems).toBe(count);
+    expect($("[download],a[href*=ebay]")).toHaveLength(0);
+    expect($("#print-quote-form")).toHaveLength(1);
+    const schema = JSON.parse($("#print-schema").text());
+    expect(schema.mainEntity.itemListElement).toHaveLength(count);
     expect(schema).not.toHaveProperty("offers");
     expect($('link[rel="canonical"]').attr("href")).toBe(
       `https://www.pixelshroomstudio.com/${slug}.html`,

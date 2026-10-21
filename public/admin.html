@@ -10,7 +10,8 @@
     />
     <title>Pixel Shroom Studio Admin</title>
     <link rel="stylesheet" href="/styles.css?v=20261014-size" />
-    <link rel="stylesheet" href="/admin-dashboard.css?v=2" />
+    <link rel="stylesheet" href="/admin-dashboard.css?v=20261021-catalog-relaunch" />
+    <link rel="stylesheet" href="/print-store.css?v=20261021-gelato" />
   </head>
   <body class="admin-page">
     <!-- SECTION: Administrator sign-in gate -->
@@ -450,7 +451,86 @@
                   <h3>Current images</h3>
                 </div>
               </div>
+              <section class="catalog-relaunch">
+                <h3>Prepare a fresh edition catalog</h3>
+                <p>
+                  Remove all current artwork listings from public view before reloading your six
+                  finished tier images. This preserves stored files, orders, issued editions,
+                  receipts, member accounts, physical product mappings and secondary-market history.
+                </p>
+                <button type="button" id="archive-catalog" class="danger">
+                  Remove current artwork listings for reload
+                </button>
+                <p id="catalog-relaunch-status" role="status"></p>
+              </section>
               <div id="admin-catalog"></div>
+              <section class="gelato-management">
+                <h2>Gelato physical products</h2>
+                <p>
+                  Map one studio design and exact product variation per listing. Upload a dedicated
+                  print-ready copy; digital masters and minted files are not sent automatically.
+                  Server secrets and checkout launch settings are configured outside this page.
+                </p>
+                <button type="button" id="gelato-refresh">Load products / orders</button>
+                <button type="button" id="gelato-new">New product mapping</button>
+                <p id="gelato-admin-status" role="status"></p>
+                <div id="gelato-admin-list"></div>
+                <form id="gelato-product-form" class="print-form">
+                  <label>Product title<input name="title" maxlength="160" required="" /></label
+                  ><label
+                    >Category<select name="kind">
+                      <option value="canvas">Canvas</option>
+                      <option value="apparel">Apparel / gifts</option>
+                    </select></label
+                  ><label
+                    >Variation label (size, color, material)<input
+                      name="variant_label"
+                      maxlength="160"
+                      required="" /></label
+                  ><label
+                    >Exact Gelato product UID<input
+                      name="product_uid"
+                      maxlength="500"
+                      required="" /></label
+                  ><label
+                    >Retail product price (USD, before shipping/tax)<input
+                      name="price"
+                      type="number"
+                      min="1"
+                      max="10000"
+                      step="0.01"
+                      required="" /></label
+                  ><label
+                    >Stripe product tax code<input
+                      name="stripe_tax_code"
+                      pattern="txcd_[0-9]{8}"
+                      required /></label
+                  ><label
+                    >Public studio preview URL<input
+                      name="preview_url"
+                      type="url"
+                      required="" /></label
+                  ><label class="full"
+                    >Private print-ready PNG, JPEG or PDF<input
+                      name="printFile"
+                      type="file"
+                      accept="image/png,image/jpeg,application/pdf" /></label
+                  ><label class="full consent"
+                    ><input name="print_ready" type="checkbox" required="" /> I checked this file
+                    against the specific Gelato product’s dimensions, bleed, safe area, print
+                    placement and color requirements.</label
+                  ><label class="full consent"
+                    ><input name="active" type="checkbox" /> Publish this mapped product (server
+                    checkout settings still apply).</label
+                  ><button type="submit" class="button full">Save physical product mapping</button>
+                </form>
+                <h3>Physical orders</h3>
+                <p>
+                  Refresh/reconcile checks Gelato by the existing reference. Ambiguous submissions
+                  are never blindly repeated.
+                </p>
+                <div id="gelato-admin-orders"></div>
+              </section>
             </section>
             <details class="dashboard-card editorial-manager">
               <summary>Editorial article manager</summary>
@@ -546,6 +626,8 @@
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=20261019-copy-inventory"></script>
+    <script type="module" src="/admin.js?v=20261021-catalog-relaunch"></script>
+
+    <script type="module" src="/gelato-admin.js?v=20261021-gelato"></script>
   </body>
 </html>

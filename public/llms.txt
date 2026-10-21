@@ -4,7 +4,7 @@
 
 Purchases are nonexclusive unless a listing explicitly states otherwise. Signing verifies source and file integrity, not exclusive ownership.
 
-The canonical website is https://www.pixelshroomstudio.com/. Digital artwork and physical products are separate offerings. Physical-product links lead to eBay seller lwvader, where purchases, product options, shipping and order support are handled. Visitors can request any artwork listed on the studio website for apparel or canvas prints through the contact form; available options and pricing are discussed individually.
+The canonical website is https://www.pixelshroomstudio.com/. Digital artwork and physical products are separate offerings. Physical products are mapped to Gelato product UIDs. The studio collects delivery details, requests a quote, takes payment through Stripe and submits a dedicated print-ready file to Gelato for fulfillment. The initial integration supports US delivery in USD. Visitors can request any artwork listed on the studio website for apparel or canvas prints through the contact form; available options and pricing are discussed individually.
 
 Use the linked pages for current listings, purchase details and usage rights. Availability can change. Public gallery images are previews, not unrestricted original downloads. A serial or verification result does not by itself establish copyright ownership, NFT ownership or eligibility for commercial use. Consult the published usage rights and listing details.
 
@@ -26,11 +26,10 @@ Use the linked pages for current listings, purchase details and usage rights. Av
 
 ## Physical products and custom requests
 
-- [Canvases](https://www.pixelshroomstudio.com/canvases.html): Current canvas previews linking to eBay listings.
-- [Apparel and gifts](https://www.pixelshroomstudio.com/apparel.html): Current apparel and gift previews linking to eBay listings.
+- [Canvases](https://www.pixelshroomstudio.com/canvases.html): Current canvas previews linking to Gelato product variations.
+- [Apparel and gifts](https://www.pixelshroomstudio.com/apparel.html): Current apparel and gift previews linking to Gelato product variations.
 - [Studio updates](https://www.pixelshroomstudio.com/#studio-updates): Personally managed requests for studio news and NFT release notifications.
 - [Contact form](https://www.pixelshroomstudio.com/contact.html#contact-form): Artwork, apparel and canvas-print requests and studio inquiries.
-- [eBay seller listings](https://www.ebay.com/sch/i.html?_ssn=lwvader): Current products sold by lwvader; check each listing for price, options and availability.
 
 ## Help and verification
 
@@ -62,3 +61,5 @@ After reveal, Add to my collection saves the edition to the authenticated accoun
 - [My collection](https://www.pixelshroomstudio.com/collection.html): Account access, purchase recovery, saved editions and eligible seller setup. Private account content is not a public catalog.
 - [Verify an edition](https://www.pixelshroomstudio.com/verify-mint.html): Local image hash and signed-receipt verification; files are not uploaded for verification. A successful check does not establish current ownership or resale value.
 - [Verify a direct-file original](https://www.pixelshroomstudio.com/verify.html): Earlier original-file verification using an LWV serial.
+
+- [Physical orders](https://www.pixelshroomstudio.com/print-orders.html): Private account page for print-order payment and fulfillment status; physical purchases do not include digital downloads or numbered editions.

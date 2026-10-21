@@ -171,15 +171,15 @@ it("keeps credentials and account details out of the public endpoint", async () 
     new Request("https://www.pixelshroomstudio.com/api/ebay-listings"),
     env,
   );
-  expect(response.status).toBe(200);
+  expect(response.status).toBe(410);
   const data = await response.json();
-  expect(data.items).toHaveLength(1);
+  expect(data).not.toHaveProperty("items");
   expect(JSON.stringify(data)).not.toMatch(/secret|private-|Buyer|UserID/);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(
     (await worker.fetch(new Request("https://www.pixelshroomstudio.com/api/ebay-listings"), {}))
       .status,
-  ).toBe(503);
+  ).toBe(410);
   expect(
     (
       await worker.fetch(
@@ -193,7 +193,8 @@ it("keeps credentials and account details out of the public endpoint", async () 
   ).rejects.toThrow("not configured");
 });
 it("renders current cards and matching schema, removes stale metadata on fallback", async () => {
-  const html = fs.readFileSync("public/canvases.html", "utf8");
+  const html =
+    '<html><head><script id="ebay-schema" type="application/ld+json">{"@type":"CollectionPage","mainEntity":{}}</script></head><body><!-- EBAY-LISTINGS-START --><!-- EBAY-LISTINGS-END --></body></html>';
   const catalog = {
     seller: "lwvader",
     storeUrl: "https://www.ebay.com/sch/i.html?_ssn=lwvader",
@@ -206,17 +207,6 @@ it("renders current cards and matching schema, removes stale metadata on fallbac
   const fallback = renderEbayPage(html, "canvas", null);
   expect(fallback).not.toContain('class="ebay-product"');
   expect(fallback).toContain('"numberOfItems":0');
-  const response = await worker.fetch(
-    new Request("https://www.pixelshroomstudio.com/canvases.html"),
-    {
-      ASSETS: {
-        fetch: async () =>
-          new Response(html, { headers: { "content-type": "text/html", etag: '"stale"' } }),
-      },
-    },
-  );
-  expect(response.headers.get("etag")).toBeNull();
-  expect(await response.text()).toContain("temporarily unavailable");
 });
 
 it("renews HTTP-200 expired-token responses and rechecks the seller before publishing", async () => {
@@ -294,8 +284,29 @@ it("returns safe upstream diagnostics without tokens or raw account data", async
     env,
   );
   const data = await response.json();
-  expect(data.diagnostic.stage).toBe("GetUser");
-  expect(data.diagnostic.ebayCodes).toEqual(["931"]);
-  expect(data.diagnostic.authentication).toBe("auth-n-auth");
+  expect(response.status).toBe(410);
+  expect(data).not.toHaveProperty("diagnostic");
   expect(JSON.stringify(data)).not.toMatch(/private-do-not-expose|account@example/);
+});
+
+it("retrieves the active collection without the selectors that cause error 21915461", async () => {
+  const allowed = [];
+  const env = {
+    EBAY_AUTH_TOKEN: "private-token",
+    EBAY_FETCH: async (url, options) => {
+      if (options.headers["X-EBAY-API-CALL-NAME"] === "GetUser")
+        return xmlResponse("GetUser", { User: { UserID: "lwvader" } });
+      const selectors = [
+        ...options.body.matchAll(/<OutputSelector>([^<]+)<\/OutputSelector>/g),
+      ].map((match) => match[1]);
+      if (selectors.some((selector) => !allowed.includes(selector)))
+        return xmlResponse("GetMyeBaySelling", {
+          Ack: "Failure",
+          Errors: { ErrorCode: "21915461", SeverityCode: "Error" },
+        });
+      expect(selectors).toEqual(allowed);
+      return sellerPage([sellerItem(198704183258)]);
+    },
+  };
+  expect((await readEbayListings(env)).items).toHaveLength(1);
 });

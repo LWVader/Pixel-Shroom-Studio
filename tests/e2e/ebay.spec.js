@@ -1,117 +1,129 @@
+// Existing filename retained so incremental updates replace the retired provider tests.
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import fs from "node:fs";
-const items = JSON.parse(fs.readFileSync("public/ebay-listings.json", "utf8")).items.filter(
-  (item) => item.active === true,
-);
-for (const [slug, count] of [
-  ["canvases", items.filter((item) => item.category === "canvas").length],
-  ["apparel", items.filter((item) => item.category === "apparel").length],
-])
-  test(`${slug} uses only eBay links with no order or image uploads`, async ({ page }) => {
-    const errors = [],
-      requests = [];
-    page.on("pageerror", (e) => errors.push(e.message));
-    page.on("request", (r) => requests.push({ url: r.url(), method: r.method() }));
-    await page.route("https://i.ebayimg.com/**", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "image/svg+xml",
-        body: '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500"><rect width="500" height="500" fill="#132b20"/></svg>',
-      }),
-    );
-    await page.goto(`/${slug}.html`);
-    await expect(page.locator(".ebay-product")).toHaveCount(count);
-    await expect(page.locator("form,[download],button")).toHaveCount(0);
-    expect(requests.some((r) => r.method !== "GET")).toBe(false);
-    expect(
-      requests.some((r) => r.url.includes("supabase.co") || r.url.includes("/functions/v1/")),
-    ).toBe(false);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
-      true,
-    );
-    expect(errors).toEqual([]);
-    const axe = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-      .analyze();
-    expect(axe.violations).toEqual([]);
-  });
-test("canvas clicks go directly to the configured eBay listing", async ({ page }) => {
-  const canvas = items.find((item) => item.category === "canvas");
-  test.skip(!canvas, "No active canvas listing is configured.");
-  const destination = `https://www.ebay.com/itm/${canvas.itemId}`;
-  await page.route(destination, (route) =>
-    route.fulfill({ contentType: "text/html", body: "<h1>eBay listing destination fixture</h1>" }),
+const product = {
+  id: "11111111-1111-4111-8111-111111111111",
+  title: "Studio canvas",
+  kind: "canvas",
+  variant_label: "12 × 16 inch canvas",
+  preview_url: "http://127.0.0.1:8020/assets/art-fantasy.png",
+  retail_cents: 5000,
+};
+async function setup(page, category = "canvas") {
+  await page.route("https://esm.sh/@supabase/supabase-js@2.57.4", (route) =>
+    route.fulfill({
+      contentType: "text/javascript",
+      body: `export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:'owner'}}})}}}`,
+    }),
   );
-  await page.goto("/canvases.html");
-  await page.getByRole("link", { name: "View and buy on eBay" }).first().click();
-  await expect(page).toHaveURL(destination);
-});
-test("homepage navigation opens the two storefronts", async ({ page }) => {
-  await page.goto("/");
-  const mobile = page.viewportSize().width < 701;
-  const menu = page.locator(mobile ? ".mobile" : ".primary");
-  if (mobile) await menu.locator("summary").click();
-  await menu.getByRole("link", { name: "Canvases", exact: true }).click();
-  await expect(page).toHaveURL(/canvases\.html$/);
-  const next = page.locator(mobile ? ".mobile" : ".primary");
-  if (mobile) await next.locator("summary").click();
-  await next.getByRole("link", { name: "Apparel & gifts", exact: true }).click();
-  await expect(page).toHaveURL(/apparel\.html$/);
-});
-test("retired physical-order routes redirect and ordering API paths are unavailable", async ({
-  request,
-}) => {
-  for (const path of ["/physical-order.html", "/physical-order"]) {
-    const r = await request.get(path, { maxRedirects: 0 });
-    expect(r.status()).toBe(301);
-    expect(new URL(r.headers().location).pathname).toBe("/canvases.html");
-  }
-  for (const path of [
-    "/physical-store.js",
-    "/physical-order.js",
-    "/functions/v1/physical-checkout",
-  ])
-    expect((await request.get(path)).status()).toBe(404);
-});
-test("live feed replaces ended listings, discovers new items and handles failure", async ({
+  await page.route("**/functions/v1/print-api", (route) => {
+    const body = route.request().postDataJSON();
+    if (body.action === "catalog")
+      return route.fulfill({
+        json: { products: [{ ...product, kind: category }], enabled: true, testMode: true },
+      });
+    if (body.action === "quote")
+      return route.fulfill({
+        json: {
+          quoteId: product.id,
+          productCents: 5000,
+          shipping: [
+            { uid: "normal", name: "Standard delivery", cents: 700, minDays: 5, maxDays: 8 },
+          ],
+          testMode: true,
+        },
+      });
+    if (body.action === "checkout")
+      return route.fulfill({ json: { checkoutUrl: "https://checkout.stripe.com/print-test" } });
+    return route.fulfill({ json: { orders: [] } });
+  });
+}
+for (const [slug, kind] of [
+  ["canvases", "canvas"],
+  ["apparel", "apparel"],
+])
+  test(`${slug} uses Gelato physical products without an eBay request or image download`, async ({
+    page,
+  }) => {
+    await setup(page, kind);
+    const requests = [];
+    page.on("request", (request) => requests.push(request.url()));
+    await page.goto("/" + slug + ".html");
+    await expect(page.locator(".print-product")).toHaveCount(1);
+    await expect(page.locator("#print-status")).toContainText("Test shop");
+    await expect(page.locator('a[href*="ebay.com"],[download]')).toHaveCount(0);
+    expect(requests.some((url) => /ebay/i.test(url))).toBe(false);
+    expect(
+      (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze())
+        .violations,
+    ).toEqual([]);
+  });
+test("shipping quote and checkout send product IDs, never a private file URL or client price", async ({
   page,
 }) => {
-  let items = [
-    {
-      itemId: "198704183258",
-      seller: "lwvader",
-      category: "canvas",
-      title: "First canvas",
-      imageUrl: "https://i.ebayimg.com/images/test.jpg",
-      active: true,
-    },
-  ];
-  let failed = false;
-  await page.route("**/api/ebay-listings", (route) =>
-    failed
-      ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
-      : route.fulfill({
-          json: {
-            seller: "lwvader",
-            storeUrl: "https://www.ebay.com/sch/i.html?_ssn=lwvader",
-            items,
-          },
-        }),
+  await setup(page);
+  let quoteBody, checkoutBody;
+  page.on("request", (request) => {
+    if (!request.url().includes("/print-api")) return;
+    const body = request.postDataJSON();
+    if (body.action === "quote") quoteBody = body;
+    if (body.action === "checkout") checkoutBody = body;
+  });
+  await page.route("https://checkout.stripe.com/**", (r) =>
+    r.fulfill({ contentType: "text/html", body: "<h1>Print payment fixture</h1>" }),
   );
-  await page.clock.install();
   await page.goto("/canvases.html");
-  await expect(page.locator(".ebay-product h3")).toHaveText("First canvas");
-  items = [{ ...items[0], itemId: "198704183259", title: "New canvas" }];
-  await page.clock.fastForward(300000);
-  await expect(page.locator(".ebay-product h3")).toHaveText("New canvas");
-  await expect.poll(() => page.locator("#ebay-schema").textContent()).toContain("New canvas");
-  failed = true;
-  await page.clock.fastForward(300000);
-  await expect(page.locator(".ebay-product")).toHaveCount(0);
-  await expect(page.locator("#ebay-status")).toContainText("Could not refresh");
-  failed = false;
-  items = [];
-  await page.clock.fastForward(300000);
-  await expect(page.locator("#ebay-listings")).toContainText("No current canvas listings");
+  await page.getByRole("button", { name: "Choose delivery" }).click();
+  for (const [key, value] of Object.entries({
+    firstName: "Test",
+    lastName: "Buyer",
+    addressLine1: "1 Main Street",
+    city: "Louisville",
+    state: "KY",
+    postCode: "40202",
+  }))
+    await page.locator(`[name=${key}]`).fill(value);
+  await page.locator("[name=consent]").check();
+  await page.getByRole("button", { name: "Request delivery quote" }).click();
+  await expect(page.locator("#print-total")).toContainText("$57.00");
+  await page.getByRole("button", { name: "Continue to test checkout" }).click();
+  await expect(page).toHaveURL("https://checkout.stripe.com/print-test");
+  expect(quoteBody.productId).toBe(product.id);
+  expect(quoteBody.consent).toBe(true);
+  expect(JSON.stringify(quoteBody)).not.toMatch(/print_path|signedUrl|retail_cents/);
+  expect(checkoutBody).toEqual({
+    action: "checkout",
+    quoteId: product.id,
+    shippingMethod: "normal",
+  });
+});
+test("changing delivery information invalidates the earlier quote", async ({ page }) => {
+  await setup(page);
+  await page.goto("/canvases.html");
+  await page.getByRole("button", { name: "Choose delivery" }).click();
+  for (const [key, value] of Object.entries({
+    firstName: "Test",
+    lastName: "Buyer",
+    addressLine1: "1 Main St",
+    city: "Louisville",
+    state: "KY",
+    postCode: "40202",
+  }))
+    await page.locator(`[name=${key}]`).fill(value);
+  await page.locator("[name=consent]").check();
+  await page.getByRole("button", { name: "Request delivery quote" }).click();
+  await expect(page.locator("#print-pay")).toBeVisible();
+  await page.locator("[name=postCode]").fill("40203");
+  await expect(page.locator("#print-pay")).toHaveCount(0);
+});
+test("retired feed is gone and physical order pages remain account-only", async ({
+  page,
+  request,
+}) => {
+  expect((await request.get("/api/ebay-listings")).status()).toBe(410);
+  await setup(page);
+  await page.goto("/print-orders.html");
+  await expect(page.locator("meta[name=robots]")).toHaveAttribute("content", "noindex,nofollow");
+  await expect(page.locator("#print-order-status")).toContainText("no physical orders");
+  await expect(page.locator("[download]")).toHaveCount(0);
 });

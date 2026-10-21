@@ -5,11 +5,14 @@ import {
   renderProductExamples,
   renderProjectExample,
   renderFeedback,
-} from "./studio-home-core.js";
+} from "./studio-home-core.js?v=20261021-gelato";
 export function updateArtworkFeatures(rows) {
   const featured = document.querySelector("#featured-artwork"),
     project = document.querySelector("#creative-project-preview");
-  if (featured) featured.innerHTML = renderFeatured(rows);
+  if (featured) {
+    featured.innerHTML = renderFeatured(rows);
+    featured.closest("section").hidden = rows.length === 0;
+  }
   if (project) project.innerHTML = renderProjectExample(rows);
 }
 const bootstrap = document.querySelector("#catalog-bootstrap");
@@ -22,7 +25,7 @@ async function loadProducts() {
   const examples = document.querySelector("#product-examples");
   if (!examples) return;
   try {
-    const response = await fetch("/api/ebay-listings", {
+    const response = await fetch("/api/print-products", {
       cache: "no-store",
       signal: AbortSignal.timeout(20000),
     });

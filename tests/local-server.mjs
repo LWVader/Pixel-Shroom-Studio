@@ -44,6 +44,27 @@ const mime = {
 };
 const ebayFixture = JSON.parse(await fs.readFile(path.join(root, "ebay-listings.json"), "utf8"));
 const env = {
+  PRINT_CATALOG_FETCH: async () => {
+    if (process.env.OFFLINE === "1") throw new Error("Fixture offline");
+    return Response.json([
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        title: "Studio canvas",
+        kind: "canvas",
+        variant_label: "12 × 16 inch canvas",
+        preview_url: origin + "/assets/art-fantasy.png",
+        retail_cents: 5000,
+      },
+      {
+        id: "22222222-2222-4222-8222-222222222222",
+        title: "Studio tee",
+        kind: "apparel",
+        variant_label: "Unisex medium black",
+        preview_url: origin + "/assets/art-fantasy.png",
+        retail_cents: 2500,
+      },
+    ]);
+  },
   EBAY_CLIENT_ID: "local-fixture",
   EBAY_CLIENT_SECRET: "local-fixture",
   EBAY_REFRESH_TOKEN: "local-fixture",

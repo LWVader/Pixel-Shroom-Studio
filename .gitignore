@@ -15,3 +15,6 @@ mint-worker/.env
 .venv-modal/
 __pycache__/
 *.pyc
+
+# Local Gelato/physical Stripe secrets
+gelato.env.local

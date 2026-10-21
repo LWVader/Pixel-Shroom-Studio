@@ -38,7 +38,7 @@ describe("customer information matches edition delivery", () => {
       "does not include the private master",
       "redistribution and resale",
       "no new rarity roll",
-      "eBay",
+      "Gelato",
     ])
       expect(body).toContain(term);
     expect($(".faq details").length).toBeGreaterThanOrEqual(20);

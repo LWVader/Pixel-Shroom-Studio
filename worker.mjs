@@ -1,9 +1,9 @@
+import { readPrintProducts } from "./gelato-catalog.mjs";
 import {
   renderFeatured,
   renderProductExamples,
   renderProjectExample,
 } from "./public/studio-home-core.js";
-import { readEbayListings, renderEbayPage, feedDiagnostic } from "./ebay-feed.mjs";
 import {
   GENRES,
   genreUrl,
@@ -29,6 +29,7 @@ const pages = new Set([
   "all-artwork",
   "canvases",
   "apparel",
+  "print-orders",
   "contact",
   "how-it-works",
   "usage-rights",
@@ -65,11 +66,14 @@ function headersFor(response, path) {
       "Cache-Control",
       response.status >= 400 ||
         path.startsWith("/checkout-") ||
-        ["/admin.html", "/collection.html"].includes(path)
+        ["/admin.html", "/collection.html", "/print-orders.html"].includes(path)
         ? "no-store"
         : "public,max-age=0,must-revalidate",
     );
-  if (path.startsWith("/checkout-") || ["/admin.html", "/collection.html"].includes(path))
+  if (
+    path.startsWith("/checkout-") ||
+    ["/admin.html", "/collection.html", "/print-orders.html"].includes(path)
+  )
     result.headers.set("X-Robots-Tag", "noindex,nofollow");
   return result;
 }
@@ -93,25 +97,29 @@ export default {
         new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } }),
         path,
       );
-    if (path === "/api/ebay-listings") {
-      let payload,
-        status = 200;
+    if (path === "/api/ebay-listings")
+      return headersFor(
+        Response.json(
+          { error: "This catalog endpoint is retired." },
+          { status: 410, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } },
+        ),
+        path,
+      );
+    if (path === "/api/print-products") {
       try {
-        payload = await readEbayListings(env);
-      } catch (error) {
-        status = 503;
-        const diagnostic = feedDiagnostic(error, env);
-        console.warn("eBay feed failure", diagnostic);
-        payload = {
-          error: "Live eBay listings are unavailable. Please visit our eBay store.",
-          diagnostic,
-        };
+        return headersFor(
+          Response.json(await readPrintProducts(env), { headers: { "Cache-Control": "no-store" } }),
+          path,
+        );
+      } catch {
+        return headersFor(
+          Response.json(
+            { error: "Printed products are temporarily unavailable." },
+            { status: 503, headers: { "Cache-Control": "no-store" } },
+          ),
+          path,
+        );
       }
-      const result = Response.json(payload, {
-        status,
-        headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" },
-      });
-      return headersFor(new Response(request.method === "HEAD" ? null : result.body, result), path);
     }
     if (path === "/index.html" || path === "/index") {
       url.pathname = "/";
@@ -172,23 +180,6 @@ export default {
       new Request(assetUrl, { method: request.method, headers: assetHeaders }),
     );
     if (response.status === 404) return this.notFound(request, env);
-    if (["/canvases.html", "/apparel.html"].includes(path) && response.ok) {
-      const category = path === "/canvases.html" ? "canvas" : "apparel";
-      let catalog = null;
-      try {
-        catalog = await readEbayListings(env);
-      } catch {
-        /* Store link remains available. */
-      }
-      const html = renderEbayPage(await response.text(), category, catalog);
-      const headers = new Headers(response.headers);
-      for (const name of ["content-length", "etag", "last-modified"]) headers.delete(name);
-      headers.set("Content-Type", "text/html; charset=utf-8");
-      return headersFor(
-        new Response(request.method === "HEAD" ? null : html, { status: 200, headers }),
-        path,
-      );
-    }
 
     if ((path === "/" || path === "/all-artwork.html" || path === "/genre.html") && response.ok) {
       let content = await response.text();
@@ -281,7 +272,7 @@ export default {
           timer;
         try {
           products = await Promise.race([
-            readEbayListings(env),
+            readPrintProducts(env),
             new Promise((resolve) => {
               timer = setTimeout(() => resolve(null), 1500);
             }),

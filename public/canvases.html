@@ -6,14 +6,14 @@
     <title>Art on Canvas | Pixel Shroom Studio</title>
     <meta
       name="description"
-      content="Browse Pixel Shroom Studio canvas listings from eBay seller lwvader. Click a product to view current pricing, sizes and purchase directly on eBay."
+      content="Explore Pixel Shroom Studio canvas prints fulfilled by Gelato. Choose a mapped product variation, request delivery pricing and pay securely through the studio."
     />
     <link rel="canonical" href="https://www.pixelshroomstudio.com/canvases.html" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <meta property="og:title" content="Art on Canvas | Pixel Shroom Studio" />
     <meta
       property="og:description"
-      content="Browse Pixel Shroom Studio canvas listings from eBay seller lwvader. Click a product to view current pricing, sizes and purchase directly on eBay."
+      content="Explore Pixel Shroom Studio canvas prints fulfilled by Gelato. Choose a mapped product variation, request delivery pricing and pay securely through the studio."
     />
     <meta property="og:url" content="https://www.pixelshroomstudio.com/canvases.html" />
     <meta property="og:type" content="website" />
@@ -23,21 +23,24 @@
     />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/assets/pixel-shroom-logo-128.webp" />
-    <link rel="stylesheet" href="/storefront.css?v=20261021-edition-language" />
-    <link rel="stylesheet" href="/ebay-store.css?v=20261010" />
-    <script id="ebay-schema" type="application/ld+json">
+    <link rel="stylesheet" href="/storefront.css?v=20261021-edition-cards" />
+    <link rel="stylesheet" href="/print-store.css?v=20261021-gelato" />
+    <script id="print-schema" type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "CollectionPage",
         "name": "Art on Canvas",
-        "description": "Browse Pixel Shroom Studio canvas listings from eBay seller lwvader. Click a product to view current pricing, sizes and purchase directly on eBay.",
+        "description": "Explore Pixel Shroom Studio canvas prints fulfilled by Gelato. Choose a mapped product variation, request delivery pricing and pay securely through the studio.",
         "url": "https://www.pixelshroomstudio.com/canvases.html",
-        "mainEntity": { "@type": "ItemList", "numberOfItems": 0, "itemListElement": [] }
+        "mainEntity": {
+          "@type": "ItemList",
+          "itemListElement": []
+        }
       }
     </script>
     <link rel="stylesheet" href="/print-nav.css?v=20261009" />
   </head>
-  <body data-ebay-category="canvas">
+  <body data-print-category="canvas">
     <a class="skip" href="#main">Skip to content</a>
     <header>
       <div class="shell header">
@@ -85,18 +88,14 @@
     <main id="main" class="shell print-main">
       <section class="print-hero">
         <div>
-          <p class="eyebrow">Pixel Shroom Studio · lwvader on eBay</p>
+          <p class="eyebrow">Pixel Shroom Studio · Made to order</p>
           <h1>Art on Canvas</h1>
           <p>
-            Browse Pixel Shroom Studio canvas listings from eBay seller lwvader. Click a product to
-            view current pricing, sizes and purchase directly on eBay.
+            Explore Pixel Shroom Studio canvas prints fulfilled by Gelato. Choose a mapped product
+            variation, request delivery pricing and pay securely through the studio.
           </p>
-          <a
-            class="button"
-            href="https://www.ebay.com/sch/i.html?_ssn=lwvader"
-            rel="noopener noreferrer"
-            >Visit our eBay listings ↗</a
-          >
+          <a class="button" href="#products">Explore products ↗</a>
+          <a class="text-link" href="/print-orders.html">My print orders →</a>
         </div>
         <img
           src="/assets/sir-shroomalot-hero.webp"
@@ -106,63 +105,104 @@
           fetchpriority="high"
         />
       </section>
-      <section class="print-faq" aria-labelledby="custom-print-heading">
-        <h2 id="custom-print-heading">Your favorite artwork, your way</h2>
+      <section id="products">
+        <h2>Choose your product variation</h2>
         <p>
-          Any artwork listed on Pixel Shroom Studio can be requested for apparel or canvas prints.
-          Found a design you love? Use our contact form to tell us the artwork title or LWV serial
-          number and the product you would like. We’ll discuss available options and pricing with
-          you.
+          Each listing identifies its print design and exact product variation. Delivery is quoted
+          for your US address; applicable tax is shown at checkout.
+        </p>
+        <p id="print-status" role="status">Loading printed products…</p>
+        <div id="print-products" class="print-grid"></div>
+      </section>
+      <section class="print-faq">
+        <h2>Your favorite artwork, your way</h2>
+        <p>
+          Request any artwork listed on the studio website for canvas or apparel. Send the title or
+          LWV serial and the product you want. We will confirm print suitability, available options
+          and pricing before a product is offered.
         </p>
         <a class="button" href="/contact.html#contact-form">Request artwork on apparel or canvas</a>
-      </section>
-      <section id="products" aria-labelledby="products-heading">
-        <h2 id="products-heading">Our eBay listings</h2>
+        <h2>A physical product, a separate purchase</h2>
         <p>
-          All items below are listed by <strong>lwvader</strong>. Check eBay for current price,
-          availability, sizes, delivery and return details.
+          Your order is printed and shipped by Gelato after verified studio payment and successful
+          fulfillment submission. It does not issue a digital download, numbered edition, NFT or
+          random tier reveal. Product availability and delivery estimates depend on the selected
+          variation and destination.
         </p>
-        <p id="ebay-status" role="status">Checking current eBay listings…</p>
-        <div id="ebay-listings">
-          <!-- EBAY-LISTINGS-START -->
-          <p>
-            Browse our
-            <a href="https://www.ebay.com/sch/i.html?_ssn=lwvader">current eBay listings</a>.
-          </p>
-          <!-- EBAY-LISTINGS-END -->
-        </div>
+        <a href="/faq.html">Buyer FAQ</a> · <a href="/print-orders.html">Order status</a>
       </section>
-      <section class="print-faq" aria-labelledby="print-faq-heading">
-        <h2 id="print-faq-heading">Shopping with Pixel Shroom Studio</h2>
-        <details>
-          <summary>Where do I buy these products?</summary>
-          <p>
-            Click a listing to go directly to eBay. Product options, payment, shipping and order
-            support are handled there.
-          </p>
-        </details>
-        <details>
-          <summary>Does this page send an image to a printer?</summary>
-          <p>
-            No. This page displays existing eBay listing previews and links to the listing. It does
-            not upload artwork, send printable files or create an order.
-          </p>
-        </details>
-        <details>
-          <summary>Does a product click give me a digital download?</summary>
-          <p>No. Product clicks open eBay listings. These pages do not issue artwork downloads.</p>
-        </details>
-      </section>
-      <section class="shell section">
-        <h2>Physical products are a separate purchase</h2>
+      <dialog id="print-dialog" class="print-dialog" aria-labelledby="print-selected">
+        <button type="button" class="button small" id="print-close">Close</button>
+        <h2 id="print-selected">Choose delivery</h2>
         <p>
-          These listings open on eBay. They do not use the studio’s tier roll, reveal animation or
-          numbered-edition collection. Want this design digitally? Browse the artwork listing for
-          its available digital purchase type and usage details.
+          Sign in to your <a href="/collection.html">studio account</a> before requesting a quote.
+          Your account email is used for order updates. The delivery address below is fixed for this
+          quote; change it by requesting a new quote before payment.
         </p>
-        <a href="/all-artwork.html">Browse digital artwork →</a> ·
-        <a href="/faq.html">Read the buyer FAQ</a>
-      </section>
+        <p id="print-form-status" role="status"></p>
+        <form id="print-quote-form" class="print-form">
+          <label
+            >First name<input
+              name="firstName"
+              maxlength="25"
+              autocomplete="given-name"
+              required="" /></label
+          ><label
+            >Last name<input
+              name="lastName"
+              maxlength="25"
+              autocomplete="family-name"
+              required="" /></label
+          ><label
+            >Street address<input
+              name="addressLine1"
+              maxlength="35"
+              autocomplete="address-line1"
+              required="" /></label
+          ><label
+            >Apartment / suite (optional)<input
+              name="addressLine2"
+              maxlength="35"
+              autocomplete="address-line2" /></label
+          ><label
+            >City<input
+              name="city"
+              maxlength="30"
+              autocomplete="address-level2"
+              required="" /></label
+          ><label
+            >State<input
+              name="state"
+              maxlength="35"
+              autocomplete="address-level1"
+              required="" /></label
+          ><label
+            >ZIP code<input
+              name="postCode"
+              maxlength="15"
+              autocomplete="postal-code"
+              required="" /></label
+          ><label>Phone (optional)<input name="phone" maxlength="25" autocomplete="tel" /></label>
+          <p class="full">
+            Delivery country: United States. Other destinations can be requested through the studio.
+          </p>
+          <label
+            >Quantity<input
+              name="quantity"
+              type="number"
+              min="1"
+              max="10"
+              value="1"
+              required="" /></label
+          ><label class="full consent"
+            ><input name="consent" type="checkbox" required="" /> I agree to share my delivery
+            details with Gelato to calculate delivery options and fulfill an order if I complete
+            payment. Print files are supplied to Gelato for printing; I do not receive a digital
+            file.</label
+          ><button class="button full" type="submit">Request delivery quote</button>
+        </form>
+        <div id="print-quote-result"></div>
+      </dialog>
     </main>
     <footer class="shell">
       <p>
@@ -170,6 +210,6 @@
         <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a>
       </p>
     </footer>
-    <script type="module" src="/ebay-store.js"></script>
+    <script type="module" src="/print-store.js?v=20261021-gelato"></script>
   </body>
 </html>

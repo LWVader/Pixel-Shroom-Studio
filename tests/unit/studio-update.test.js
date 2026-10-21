@@ -69,27 +69,25 @@ it("supports the old schema and joins only public original MIME metadata", async
   expect(rows[0]).not.toHaveProperty("original_path");
   expect(rows[0].category).toBe("Dark Fantasy");
 });
-it("uses protected featured previews and direct eBay product destinations", () => {
+it("uses protected featured previews and studio physical-product destinations", () => {
   const $ = load(renderFeatured(validRows([row])));
   expect($(".featured-card")).toHaveLength(1);
   expect($("img").attr("src")).toBe(row.preview_url);
   expect($("a").attr("href")).toContain("genre=dark-fantasy#genre-gallery");
   const catalog = {
-    seller: "lwvader",
-    storeUrl: "https://www.ebay.com/sch/i.html?_ssn=lwvader",
-    items: [
+    products: [
       {
-        itemId: "198704466185",
-        seller: "lwvader",
-        category: "canvas",
+        id: "11111111-1111-4111-8111-111111111111",
+        kind: "canvas",
         title: "Canvas",
-        imageUrl: "https://i.ebayimg.com/images/g/test/s-l140.jpg",
-        active: true,
+        preview_url: "https://fixture.supabase.co/storage/v1/object/public/previews/canvas.webp",
+        retail_cents: 5000,
       },
     ],
   };
-  expect(renderProductExamples(catalog)).toContain("https://www.ebay.com/itm/198704466185");
-  expect(renderProductExamples(catalog)).toContain("s-l1200");
+  expect(renderProductExamples(catalog)).toContain("/canvases.html");
+  expect(renderProductExamples(catalog)).toContain("canvas.webp");
+  expect(renderProductExamples(catalog)).not.toContain("ebay.com");
 });
 it("requires purchase verification and publication consent for customer quotes", () => {
   expect(renderFeedback([])).toBe("");
