@@ -1,4 +1,4 @@
-import { mountFoilReveal } from "./foil-reveal.js?v=20261021-smooth-handoff";
+import { mountFoilReveal } from "./foil-reveal.js?v=20261021-immediate-opening";
 import { safeMintImage } from "./mint-core.js";
 import { SUPABASE_URL } from "./config.js";
 // SECTION: Supabase function client and checkout-return parameters
@@ -119,13 +119,9 @@ async function revealMint(order) {
     throw new Error("Edition is not currently downloadable. Contact the studio.");
   heading.textContent = "Revealing your paid edition";
   message.textContent = "Your server-assigned edition is ready. Opening the sealed card…";
-  const panel = document.createElement("article");
+  const panel = waitingPanel;
   panel.className = "foil-card foil-purchase-reveal";
   panel.dataset.tier = item.tier;
-  const image = document.createElement("img");
-  image.src = safeMintImage(item.imageUrl, SUPABASE_URL);
-  image.alt = `Your ${item.tier} foil edition`;
-  panel.append(image);
   function saveFile(blob, filename) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -189,9 +185,9 @@ async function revealMint(order) {
   actions.append(add);
   panel.append(actions);
   message.after(panel);
-  mountFoilReveal(panel, image, {
-    mystery: true,
-    stage: waitingEffect?.stage,
+  await waitingEffect.resolveEdition({
+    src: safeMintImage(item.imageUrl, SUPABASE_URL),
+    alt: `Your ${item.tier} foil edition`,
     onStart: () => {
       heading.textContent = "Revealing your paid edition";
       message.textContent =
@@ -204,7 +200,8 @@ async function revealMint(order) {
       add.hidden = false;
     },
   });
-  clearWaiting();
+  waitingPanel = null;
+  waitingEffect = null;
   return true;
 }
 

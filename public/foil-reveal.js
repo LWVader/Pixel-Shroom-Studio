@@ -103,6 +103,11 @@ export function mountFoilReveal(panel, image, options = {}) {
   scene.after(controls);
   if (options.concealed) replay.hidden = true;
   const context = canvas.getContext("2d");
+  let openingReady;
+  let angle = 180,
+    settleFrom = 180,
+    settleTurns = 1620,
+    settleDuration = duration;
   let frame = 0,
     started = 0,
     running = false,
@@ -142,7 +147,14 @@ export function mountFoilReveal(panel, image, options = {}) {
     skip.disabled = true;
     replay.disabled = false;
     replay.textContent = "Replay reveal";
-    if (announce && !options.concealed) setMystery(false);
+    if (announce && !options.concealed) {
+      if (image.naturalWidth && image.naturalHeight)
+        scene.style.setProperty(
+          "--foil-art-ratio",
+          `${image.naturalWidth} / ${image.naturalHeight}`,
+        );
+      setMystery(false);
+    }
     if (announce) options.onComplete?.();
     if (announce)
       status.textContent = options.concealed
@@ -241,12 +253,13 @@ export function mountFoilReveal(panel, image, options = {}) {
       return;
     }
     const elapsed = now - started;
-    const progress = Math.min(1, elapsed / duration);
+    const progress = Math.min(1, elapsed / settleDuration);
     // Cubic ease-out: immediate momentum, continuously decreasing angular speed.
     // Both faces stay concealed until the final resting angle is reached.
     const eased = 1 - Math.pow(1 - progress, 3);
-    scene.dataset.phase = progress < 0.86 ? "spin" : "settle";
-    rotor.style.transform = `rotateY(${180 + 1620 * eased}deg) rotateX(${-5 * Math.sin(progress * Math.PI)}deg)`;
+    scene.dataset.phase = options.waiting ? "preparing" : progress < 0.86 ? "spin" : "settle";
+    angle = options.waiting ? 180 + elapsed * 0.9 : settleFrom + settleTurns * eased;
+    rotor.style.transform = `rotateY(${angle}deg) rotateX(${-5 * Math.sin(progress * Math.PI)}deg)`;
     if (!burstTriggered && progress >= 0.53) {
       burstTriggered = true;
       for (let i = 0; i < 40; i++) {
@@ -270,13 +283,16 @@ export function mountFoilReveal(panel, image, options = {}) {
       nextStrike++;
     }
     draw(elapsed);
-    if (progress < 1) frame = requestAnimationFrame(tick);
+    if (options.waiting || progress < 1) frame = requestAnimationFrame(tick);
     else finish();
   }
   async function play() {
     options.onStart?.();
     setMystery(true);
     const token = ++generation;
+    settleFrom = 180;
+    settleTurns = 1620;
+    settleDuration = duration;
     finish(false);
     scene.dataset.animation = "preparing";
     image.style.visibility = "hidden";
@@ -305,13 +321,6 @@ export function mountFoilReveal(panel, image, options = {}) {
       return;
     }
     if (token !== generation || disposed) return;
-    if (options.waiting) {
-      scene.dataset.animation = "waiting";
-      scene.dataset.phase = "waiting";
-      rotor.style.transform = "rotateY(180deg)";
-      status.textContent = options.waitingMessage || "Preparing your paid edition…";
-      return;
-    }
     if (motion.matches || document.hidden) {
       finish();
       return;
@@ -338,6 +347,34 @@ export function mountFoilReveal(panel, image, options = {}) {
       finish();
     }
   });
+  async function resolveEdition({ src, alt, onStart, onComplete }) {
+    await openingReady;
+    if (scene.dataset.animation === "error")
+      throw new Error("Opening assets could not load. Refresh to retry your reserved edition.");
+    const token = generation;
+    image.src = src;
+    image.alt = alt;
+    await image.decode();
+    if (disposed || token !== generation) return;
+    options.onStart = onStart;
+    options.onComplete = onComplete;
+    options.concealed = false;
+    options.waiting = false;
+    scene.classList.remove("is-concealed");
+    rotor.tabIndex = 0;
+    rotor.setAttribute("role", "button");
+    rotor.setAttribute("aria-label", "Replay artwork reveal");
+    replay.hidden = false;
+    // Preserve the current angle and angular velocity; decelerate to a whole turn.
+    settleFrom = angle;
+    settleTurns = Math.ceil((angle + 1080) / 360) * 360 - angle;
+    settleDuration = (3 * settleTurns) / 0.9;
+    started = performance.now();
+    nextStrike = 0;
+    burstTriggered = false;
+    onStart?.();
+    if (!running || motion.matches || document.hidden) finish();
+  }
   replay.onclick = () => play();
   skip.onclick = () => {
     generation++;
@@ -418,9 +455,10 @@ export function mountFoilReveal(panel, image, options = {}) {
     window.removeEventListener("pagehide", cleanup);
   }
   window.addEventListener("pagehide", cleanup, { once: true });
-  play();
+  openingReady = play();
   return {
     stage,
+    resolveEdition,
     play,
     stop: () => {
       generation++;

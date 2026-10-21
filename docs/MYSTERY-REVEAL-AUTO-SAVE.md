@@ -2,7 +2,7 @@
 
 Replace only the files contained in this update, preserving their folders. Restart the local demo with `npm.cmd run demo`. Production deployments must include the updated checkout HTML, JavaScript and CSS together; their cache versions are synchronized.
 
-After verified payment and server preparation, the opening runs on a separate full-screen surface. It shows no interface text, tier-colored lighting or tier artwork. The opening uses the supplied portrait card backing, including its original printed lettering, against the supplied forest backdrop. Both faces remain covered until the animation completes. The demo also hides its surrounding controls during opening. Escape skips the ready-edition animation; reduced-motion preferences are respected. Queued editions remain concealed until ready.
+After verified payment, the opening runs on a separate full-screen surface. It shows no interface text, tier-colored lighting or tier artwork. The opening uses the supplied portrait card backing, including its original printed lettering, against the supplied forest backdrop. Both faces remain covered until the animation completes. The demo also hides its surrounding controls during opening. Escape skips the ready-edition animation; reduced-motion preferences are respected. Queued editions keep spinning, with their artwork concealed until ready.
 
 After reveal, Add to my collection saves the edition to the authenticated account and requests two downloads: the exact minted image and its signed JSON receipt. The confirmation page remains open. Collection saving is idempotent; a download failure leaves the saved edition intact and offers a retry for the same edition. Already-saved editions offer file downloads without another collection write. Browsers control local file saving and may ask users to allow multiple downloads.
 
@@ -10,8 +10,6 @@ The server remains authoritative for payment, ownership, inventory, tier selecti
 
 Validation: `npm.cmd run demo:test` and `npx.cmd playwright test tests/e2e/foil.spec.js`.
 
-The opening now starts at full rotational speed and slows continuously across 4.2 seconds, without a charge-up pause. The forest stage has no clipped rectangular boundary or automatic focus outline; a light edge mask softens the backing into the scene while preserving its lettering. Lightning and glow can extend outside the card bounds. The actual artwork remains concealed until the animation finishes.
+The opening starts as soon as verified payment is received and the preloaded card backing can render. One continuous fast rotation covers server preparation and private image decoding. When the actual edition is decoded, the same rotor slows from its current angle and speed to a whole turn, then reveals the artwork. There is no stationary waiting-card stage, replacement scene, or second animation. Slow preparation extends the moving concealed phase. Reduced-motion preferences still disable spinning.
 
-While a verified paid edition is queued, the sealed card remains stationary. Only the ready edition starts the opening animation, once. The waiting screen does not run a preliminary spin. Manual replay remains available after reveal and never changes the assigned edition.
-
-Payment-to-reveal handoff keeps the same full-screen forest dialog mounted and open while the stationary waiting card is replaced by the ready opening. The underlying confirmation page is never exposed between those stages. A brief arrival fade respects reduced-motion settings.
+The same forest dialog stays mounted and open from payment confirmation through reveal. Its arrival fade is brief and does not restart at readiness. Card backing and forest assets preload on the confirmation page. Existing download, signed-receipt, collection and payment authorization behavior remains intact.

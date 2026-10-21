@@ -182,14 +182,12 @@ test("only verified payment starts a concealed reveal; saving waits for completi
   await expect(page.locator(".foil-scene")).toHaveCount(0);
   paid = true;
   await expect(page.locator(".foil-scene")).toHaveCount(1);
-  await expect(page.locator('.foil-scene[data-animation="waiting"]')).toHaveCount(1);
+  await expect(page.locator('.foil-scene[data-animation="running"]')).toHaveCount(1);
+  const firstAngle = await page.locator(".foil-rotor").getAttribute("style");
   await expect(page.locator(".foil-scene img")).toBeHidden();
   await page.waitForTimeout(700);
-  expect(await page.evaluate(() => window.openingScenes.size)).toBe(0);
-  await expect(page.locator(".foil-rotor")).toHaveCSS(
-    "transform",
-    "matrix3d(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)",
-  );
+  expect(await page.evaluate(() => window.openingScenes.size)).toBe(1);
+  expect(await page.locator(".foil-rotor").getAttribute("style")).not.toBe(firstAngle);
   await expect(page.getByRole("button", { name: "Add to my collection" })).toHaveCount(0);
   const waitingStage = await page.locator(".foil-mystery-stage[open]").elementHandle();
   await page.evaluate(() => {
