@@ -303,6 +303,13 @@ export function mountFoilReveal(panel, image, options = {}) {
       return;
     }
     if (token !== generation || disposed) return;
+    if (options.waiting) {
+      scene.dataset.animation = "waiting";
+      scene.dataset.phase = "waiting";
+      rotor.style.transform = "rotateY(180deg)";
+      status.textContent = options.waitingMessage || "Preparing your paid edition…";
+      return;
+    }
     if (motion.matches || document.hidden) {
       finish();
       return;

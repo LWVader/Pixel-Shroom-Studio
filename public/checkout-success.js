@@ -1,4 +1,4 @@
-import { mountFoilReveal } from "./foil-reveal.js?v=20261021-floating-spin";
+import { mountFoilReveal } from "./foil-reveal.js?v=20261021-single-opening";
 import { safeMintImage } from "./mint-core.js";
 import { SUPABASE_URL } from "./config.js";
 // SECTION: Supabase function client and checkout-return parameters
@@ -29,6 +29,7 @@ function showWaiting() {
   message.after(waitingPanel);
   waitingEffect = mountFoilReveal(waitingPanel, image, {
     concealed: true,
+    waiting: true,
     mystery: true,
     waitingMessage:
       "Payment verified. Secure allocation and private image preparation in progress…",

@@ -154,6 +154,19 @@ test("only verified payment starts a concealed reveal; saving waits for completi
   page,
 }) => {
   await routes(page);
+  await page.addInitScript(() => {
+    window.openingScenes = new Set();
+    new MutationObserver(() => {
+      document
+        .querySelectorAll('.foil-scene[data-animation="running"]')
+        .forEach((scene) => window.openingScenes.add(scene));
+    }).observe(document, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["data-animation"],
+    });
+  });
   let paid = false,
     ready = false;
   await page.route("**/functions/v1/order-status", (route) =>
@@ -169,11 +182,19 @@ test("only verified payment starts a concealed reveal; saving waits for completi
   await expect(page.locator(".foil-scene")).toHaveCount(0);
   paid = true;
   await expect(page.locator(".foil-scene")).toHaveCount(1);
-  await expect(page.locator(".foil-purchase-reveal img")).toBeHidden();
+  await expect(page.locator('.foil-scene[data-animation="waiting"]')).toHaveCount(1);
+  await expect(page.locator(".foil-scene img")).toBeHidden();
+  await page.waitForTimeout(700);
+  expect(await page.evaluate(() => window.openingScenes.size)).toBe(0);
+  await expect(page.locator(".foil-rotor")).toHaveCSS(
+    "transform",
+    "matrix3d(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)",
+  );
   await expect(page.getByRole("button", { name: "Add to my collection" })).toHaveCount(0);
   ready = true;
   await expect(page.locator("h1")).toHaveText("Prismatic edition revealed", { timeout: 10000 });
   await expect(page.getByRole("button", { name: "Add to my collection" })).toBeVisible();
+  expect(await page.evaluate(() => window.openingScenes.size)).toBe(1);
 });
 
 test("collection save survives a file failure and retries the same edition", async ({ page }) => {

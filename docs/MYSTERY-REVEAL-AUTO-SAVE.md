@@ -11,3 +11,5 @@ The server remains authoritative for payment, ownership, inventory, tier selecti
 Validation: `npm.cmd run demo:test` and `npx.cmd playwright test tests/e2e/foil.spec.js`.
 
 The opening now starts at full rotational speed and slows continuously across 4.2 seconds, without a charge-up pause. The forest stage has no clipped rectangular boundary or automatic focus outline; a light edge mask softens the backing into the scene while preserving its lettering. Lightning and glow can extend outside the card bounds. The actual artwork remains concealed until the animation finishes.
+
+While a verified paid edition is queued, the sealed card remains stationary. Only the ready edition starts the opening animation, once. The waiting screen does not run a preliminary spin. Manual replay remains available after reveal and never changes the assigned edition.
