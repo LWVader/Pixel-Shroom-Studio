@@ -63,8 +63,8 @@ try {
 
     await page.locator("#tier").selectOption(tier);
     await page.getByRole("button", { name: "Replay reveal" }).click();
-    await demo.getByRole("heading", { name: "Revealing your paid edition" }).waitFor();
-    await demo.locator(".foil-card img").evaluate(async (image) => {
+    await demo.locator(".foil-mystery-stage[open]").waitFor();
+    await demo.locator(".foil-rotor img").evaluate(async (image) => {
       await image.decode();
     });
     assert.equal(await demo.locator(".foil-card").getAttribute("data-tier"), tier);
@@ -72,6 +72,14 @@ try {
     assert.match(
       await demo.locator(".foil-seal").evaluate((face) => getComputedStyle(face).backgroundImage),
       /foil-card-back\.jpg/,
+    );
+    assert.equal(await demo.locator(".foil-mystery-stage").innerText(), "");
+    assert.equal(await page.locator("header").isVisible(), false);
+    assert.equal(
+      await demo
+        .locator(".foil-mystery-stage .foil-scene")
+        .evaluate((el) => el.style.getPropertyValue("--foil-light")),
+      "#d8e5ed",
     );
     assert.equal(await demo.locator(".foil-back-title").count(), 0);
     if (tier === "Standard")
@@ -92,7 +100,10 @@ try {
     const ratio = await demo
       .locator(".foil-rotor")
       .evaluate((card) => card.offsetWidth / card.offsetHeight);
-    assert.ok(Math.abs(ratio - 1) < 0.01, "Square tier artwork must fill a square reveal stage");
+    assert.ok(
+      Math.abs(ratio - 1280 / 1909) < 0.01,
+      "Opening card must preserve the supplied portrait proportions",
+    );
 
     assert.equal(
       await demo
@@ -129,8 +140,7 @@ try {
     );
     if (tier === "Prismatic" && process.env.DEMO_SCREENSHOT)
       await page.screenshot({ path: process.env.DEMO_SCREENSHOT, fullPage: true });
-    if (tier !== "Standard")
-      await demo.getByRole("button", { name: "Skip animation", exact: true }).click();
+    if (tier !== "Standard") await page.keyboard.press("Escape");
     await demo.locator('.foil-scene[data-animation="complete"]').waitFor();
     if (tier === "Standard") {
       const audit = await demo.locator(".foil-scene").evaluate((scene) => scene.revealAudit);
@@ -193,8 +203,28 @@ try {
   await demo.getByRole("heading", { name: "Simulated checkout" }).waitFor();
   await demo.getByRole("link", { name: "Simulate successful payment" }).click();
   await demo.getByRole("heading", { name: "Prismatic edition revealed" }).waitFor();
+  const downloads = [];
+  page.on("download", (download) => downloads.push(download));
+  const confirmationUrl = await demo.locator("body").evaluate(() => location.href);
   await demo.getByRole("button", { name: "Add to my collection", exact: true }).click();
-  await demo.getByRole("button", { name: "Added to my collection", exact: true }).waitFor();
+  await demo
+    .getByRole("button", { name: "Download my edition files again", exact: true })
+    .waitFor();
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(downloads.length, 2, "One collection action downloads image and receipt");
+  const receiptDownload = downloads.find((download) =>
+    download.suggestedFilename().endsWith(".json"),
+  );
+  const receipt = JSON.parse(await readFile(await receiptDownload.path(), "utf8"));
+  const imageDownload = downloads.find(
+    (download) => !download.suggestedFilename().endsWith(".json"),
+  );
+  const downloadedHash = createHash("sha256")
+    .update(await readFile(await imageDownload.path()))
+    .digest("hex");
+  assert.equal(downloadedHash, receipt.payload.sha256);
+  assert.equal(await demo.locator("body").evaluate(() => location.href), confirmationUrl);
+
   await page.getByRole("button", { name: "My collection / sell" }).click();
   await demo.getByRole("button", { name: "List on Market" }).click();
   await demo.locator("dialog[open]").waitFor();

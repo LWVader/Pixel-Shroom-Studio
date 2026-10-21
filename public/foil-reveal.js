@@ -8,8 +8,10 @@ const PALETTES = {
   Prismatic: ["#b991ff", "#72efff"],
 };
 const DURATION = 3200;
-const CARD_BACK_URL = new URL("./assets/foil-card-back.jpg?v=20261021-card-back", import.meta.url)
-  .href;
+const CARD_BACK_URL = new URL(
+  "./assets/foil-card-back.jpg?v=20261021-supplied-back",
+  import.meta.url,
+).href;
 let cardBackReady;
 function loadCardBack() {
   if (!cardBackReady) {
@@ -24,7 +26,9 @@ function loadCardBack() {
 }
 export function mountFoilReveal(panel, image, options = {}) {
   const duration = options.duration || DURATION;
-  const colors = PALETTES[panel.dataset.tier] || PALETTES.Standard;
+  const colors = options.mystery
+    ? ["#d8e5ed", "#ffffff"]
+    : PALETTES[panel.dataset.tier] || PALETTES.Standard;
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   const hover = matchMedia("(hover: hover) and (pointer: fine)");
   const scene = document.createElement("div");
@@ -59,6 +63,25 @@ export function mountFoilReveal(panel, image, options = {}) {
   image.before(scene);
   rotor.append(image, seal, shine, back);
   scene.append(rotor, canvas);
+  const home = document.createComment("reveal scene home");
+  scene.before(home);
+  const stage = options.mystery ? document.createElement("dialog") : null;
+  if (stage) {
+    stage.className = "foil-mystery-stage";
+    stage.setAttribute("aria-label", "Opening your paid edition");
+    document.body.append(stage);
+  }
+  function setMystery(active) {
+    if (!stage) return;
+    if (active) {
+      stage.append(scene);
+      if (!stage.open) stage.showModal();
+    } else {
+      home.after(scene);
+      if (stage.open) stage.close();
+    }
+    if (parent !== window) parent.postMessage({ type: "foil-mystery", active }, location.origin);
+  }
   const controls = document.createElement("div");
   controls.className = "foil-reveal-controls";
   const replay = document.createElement("button");
@@ -117,6 +140,7 @@ export function mountFoilReveal(panel, image, options = {}) {
     skip.disabled = true;
     replay.disabled = false;
     replay.textContent = "Replay reveal";
+    if (announce && !options.concealed) setMystery(false);
     if (announce) options.onComplete?.();
     if (announce)
       status.textContent = options.concealed
@@ -258,6 +282,7 @@ export function mountFoilReveal(panel, image, options = {}) {
   }
   async function play() {
     options.onStart?.();
+    setMystery(true);
     const token = ++generation;
     finish(false);
     scene.dataset.animation = "preparing";
@@ -281,6 +306,7 @@ export function mountFoilReveal(panel, image, options = {}) {
         scene.dataset.animation = "error";
         image.style.visibility = "hidden";
         seal.hidden = false;
+        setMystery(false);
         status.textContent = "Image could not load. Replay to retry.";
       }
       return;
@@ -305,6 +331,13 @@ export function mountFoilReveal(panel, image, options = {}) {
     started = performance.now();
     frame = requestAnimationFrame(tick);
   }
+  stage?.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    if (!options.concealed) {
+      generation++;
+      finish();
+    }
+  });
   replay.onclick = () => play();
   skip.onclick = () => {
     generation++;
@@ -372,6 +405,9 @@ export function mountFoilReveal(panel, image, options = {}) {
     disposed = true;
     generation++;
     finish(false);
+    setMystery(false);
+    stage?.remove();
+    home.remove();
     observer.disconnect();
     motion.removeEventListener("change", changedMotion);
     document.removeEventListener("visibilitychange", visibility);

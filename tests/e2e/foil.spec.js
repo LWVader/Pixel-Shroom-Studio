@@ -44,7 +44,11 @@ async function routes(page, items = [item]) {
     });
   });
   await page.route("**/storage/v1/object/sign/minted/**", (route) =>
-    route.fulfill({ path: "public/assets/art-fantasy.png" }),
+    route.fulfill({
+      path: "public/assets/art-fantasy.png",
+      contentType: "image/png",
+      headers: { "Access-Control-Allow-Origin": "*" },
+    }),
   );
 }
 test("foil mode replaces master checkout and discloses changing odds", async ({ page }) => {
@@ -87,9 +91,9 @@ test("collection shows only private variants and confirmation reveals the mint",
   await page.goto("/checkout-success.html?order=fixture&access=fixture");
   await expect(page.locator("h1")).toHaveText("Prismatic edition revealed");
   await expect(page.locator("#download-link")).toBeHidden();
-  await expect(page.getByRole("button", { name: "Download minted variant" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Download minted variant" })).toHaveCount(0);
   await page.getByRole("button", { name: "Add to my collection" }).click();
-  await expect(page.getByRole("button", { name: "Added to my collection" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Download my edition files again" })).toBeEnabled();
 });
 test("pending or failed rendering never exposes the original download", async ({ page }) => {
   await routes(page, []);
@@ -170,4 +174,37 @@ test("only verified payment starts a concealed reveal; saving waits for completi
   ready = true;
   await expect(page.locator("h1")).toHaveText("Prismatic edition revealed", { timeout: 10000 });
   await expect(page.getByRole("button", { name: "Add to my collection" })).toBeVisible();
+});
+
+test("collection save survives a file failure and retries the same edition", async ({ page }) => {
+  await routes(page);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  let adds = 0,
+    deliveries = 0;
+  await page.route("**/functions/v1/mint-access", (route) => {
+    const action = route.request().postDataJSON().action;
+    if (action === "add_to_collection") {
+      adds++;
+      return route.fulfill({ json: { added: true } });
+    }
+    if (action === "download" && ++deliveries === 1)
+      return route.fulfill({ status: 503, json: { error: "Temporary delivery failure" } });
+    return route.fulfill({ json: { items: [item] } });
+  });
+  await page.route("**/functions/v1/order-status", (route) =>
+    route.fulfill({
+      json: { status: "paid", kind: "foil", mint: { id: item.id, state: "ready" } },
+    }),
+  );
+  await page.goto("/checkout-success.html?order=fixture&access=fixture");
+  await page.getByRole("button", { name: "Add to my collection" }).click();
+  await expect(page.locator("#checkout-message")).toContainText("saved in your collection");
+  const downloads = [];
+  page.on("download", (file) => downloads.push(file));
+  await page.getByRole("button", { name: "Retry downloading my files" }).click();
+  await expect(page.getByRole("button", { name: "Download my edition files again" })).toBeEnabled();
+  await expect.poll(() => downloads.length).toBe(2);
+  expect(adds).toBe(1);
+  expect(deliveries).toBe(2);
+  await expect(page).toHaveURL(/checkout-success.html/);
 });

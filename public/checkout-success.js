@@ -1,4 +1,4 @@
-import { mountFoilReveal } from "./foil-reveal.js?v=20261021-reveal-fix";
+import { mountFoilReveal } from "./foil-reveal.js?v=20261021-forest-reveal";
 import { safeMintImage } from "./mint-core.js";
 import { SUPABASE_URL } from "./config.js";
 // SECTION: Supabase function client and checkout-return parameters
@@ -29,6 +29,7 @@ function showWaiting() {
   message.after(waitingPanel);
   waitingEffect = mountFoilReveal(waitingPanel, image, {
     concealed: true,
+    mystery: true,
     waitingMessage:
       "Payment verified. Secure allocation and private image preparation in progress…",
   });
@@ -124,35 +125,20 @@ async function revealMint(order) {
   image.src = safeMintImage(item.imageUrl, SUPABASE_URL);
   image.alt = `Your ${item.tier} foil edition`;
   panel.append(image);
-  const download = document.createElement("button");
-  download.className = "buy-button";
-  download.textContent = "Download minted variant";
-  download.onclick = async () => {
-    try {
-      const result = await mintAccess("download", item.id);
-      location.assign(safeMintImage(result.items?.[0]?.imageUrl, SUPABASE_URL));
-    } catch (error) {
-      message.textContent = error.message;
-    }
-  };
-  const receipt = document.createElement("button");
-  receipt.className = "buy-button";
-  receipt.textContent = "Save signed receipt";
-  receipt.onclick = () => {
-    const url = URL.createObjectURL(
-      new Blob([JSON.stringify(item.manifest, null, 2)], { type: "application/json" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `mint-${item.id}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
+  function saveFile(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
   let savedToCollection = Boolean(item.inCollection);
   const add = document.createElement("button");
   add.className = "buy-button";
-  add.textContent = item.inCollection ? "Already in my collection" : "Add to my collection";
-  add.disabled = Boolean(item.inCollection);
+  add.textContent = item.inCollection ? "Download my edition files" : "Add to my collection";
   add.onclick = async () => {
     add.disabled = true;
     try {
@@ -161,33 +147,59 @@ async function revealMint(order) {
         location.assign("/collection.html?reveal=" + encodeURIComponent(item.id));
         return;
       }
-      const result = await mintAccess("add_to_collection", item.id);
-      if (!result.added) throw new Error("Could not add this edition. Please retry.");
-      savedToCollection = true;
-      add.textContent = "Added to my collection";
-      message.textContent = "Your edition is saved to your account profile.";
+      if (!savedToCollection) {
+        const result = await mintAccess("add_to_collection", item.id);
+        if (!result.added) throw new Error("Could not add this edition. Please retry.");
+        savedToCollection = true;
+      }
+      add.textContent = "Preparing your files…";
+      const delivery = await mintAccess("download", item.id);
+      const response = await fetch(safeMintImage(delivery.items?.[0]?.imageUrl, SUPABASE_URL), {
+        credentials: "omit",
+        cache: "no-store",
+      });
+      if (!response.ok)
+        throw new Error("Image download unavailable. Retry downloading your files.");
+      const blob = await response.blob();
+      const extensions = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+      const extension = extensions[blob.type.split(";")[0]];
+      if (!extension)
+        throw new Error("Unexpected image format. Please retry or contact the studio.");
+      if (!item.manifest) throw new Error("Signed receipt unavailable. Please contact the studio.");
+      saveFile(blob, `mint-${item.id}.${extension}`);
+      saveFile(
+        new Blob([JSON.stringify(item.manifest, null, 2)], { type: "application/json" }),
+        `mint-${item.id}.json`,
+      );
+      add.textContent = "Download my edition files again";
+      message.textContent =
+        "Saved in your collection. Image and signed receipt downloads requested. Allow multiple downloads if your browser asks.";
     } catch (error) {
-      message.textContent = error.message;
+      message.textContent =
+        (savedToCollection ? "Your edition is saved in your collection. " : "") + error.message;
+      add.textContent = savedToCollection ? "Retry downloading my files" : "Add to my collection";
+    } finally {
       add.disabled = false;
     }
   };
-  for (const button of [download, receipt, add]) button.hidden = true;
+  add.hidden = true;
   const actions = document.createElement("div");
   actions.className = "foil-purchase-actions";
-  actions.append(download, receipt, add);
+  actions.append(add);
   panel.append(actions);
   message.after(panel);
   mountFoilReveal(panel, image, {
+    mystery: true,
     onStart: () => {
       heading.textContent = "Revealing your paid edition";
       message.textContent =
         "Opening your prepared edition. Replaying does not change its tier or file.";
-      for (const button of [download, receipt, add]) button.hidden = true;
+      add.hidden = true;
     },
     onComplete: () => {
       heading.textContent = `${item.tier} edition revealed`;
       message.textContent = `#${item.mintNumber} of ${item.maxSupply} · ${item.width} × ${item.height} px. ${savedToCollection ? "Saved in your collection." : "Add this edition to your account profile below."}`;
-      for (const button of [download, receipt, add]) button.hidden = false;
+      add.hidden = false;
     },
   });
   return true;
