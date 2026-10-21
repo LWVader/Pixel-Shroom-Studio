@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Secondary Marketplace | Pixel Shroom Studio</title>
+    <meta
+      name="description"
+      content="Browse member-listed numbered foil editions, filter by rarity and transfer the studio-recorded holder securely through Stripe."
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://www.pixelshroomstudio.com/market.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Pixel Shroom Studio" />
+    <meta property="og:title" content="Secondary Marketplace | Pixel Shroom Studio" />
+    <meta
+      property="og:description"
+      content="Browse member-listed numbered foil editions, filter by rarity and transfer the studio-recorded holder securely through Stripe."
+    />
+    <meta property="og:url" content="https://www.pixelshroomstudio.com/market.html" />
+    <meta property="og:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Secondary Marketplace | Pixel Shroom Studio" />
+    <meta
+      name="twitter:description"
+      content="Browse member-listed numbered foil editions, filter by rarity and transfer the studio-recorded holder securely through Stripe."
+    />
+    <meta name="twitter:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
+    <link rel="icon" href="/assets/pixel-shroom-logo-128.webp" />
+    <link rel="stylesheet" href="/storefront.css?v=20261021-edition-language" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://www.pixelshroomstudio.com/#studio",
+            "name": "Pixel Shroom Studio",
+            "alternateName": "LWVader",
+            "url": "https://www.pixelshroomstudio.com/",
+            "logo": "https://www.pixelshroomstudio.com/assets/pixel-shroom-logo-128.webp",
+            "email": "lwvader@pixelshroomstudio.com"
+          },
+          {
+            "@type": "WebPage",
+            "url": "https://www.pixelshroomstudio.com/market.html",
+            "name": "Secondary Marketplace | Pixel Shroom Studio",
+            "description": "Browse member-listed numbered foil editions, filter by rarity and transfer the studio-recorded holder securely through Stripe.",
+            "publisher": { "@id": "https://www.pixelshroomstudio.com/#studio" }
+          }
+        ]
+      }
+    </script>
+    <link rel="stylesheet" href="/print-nav.css?v=20261009" />
+    <link rel="stylesheet" href="/foil.css?v=20261019-paid-profile" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header>
+      <div class="shell header">
+        <a class="brand" href="/"
+          ><img
+            src="/assets/pixel-shroom-logo-128.webp"
+            width="48"
+            height="48"
+            alt="Pixel Shroom Studio mushroom logo"
+          /><span>Pixel Shroom <b>Studio</b></span></a
+        >
+        <nav class="primary" aria-label="Main navigation">
+          <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
+          ><a href="/apparel.html">Apparel &amp; gifts</a
+          ><a href="/how-it-works.html">How it works</a><a href="/usage-rights.html">Usage rights</a
+          ><a href="/verify-mint.html">Verify</a><a href="/contact.html">Contact</a>
+          <a href="/collection.html">My collection</a><a href="/market.html">Marketplace</a>
+        </nav>
+        <a class="button small" href="/all-artwork.html">View collection ↗</a>
+        <details class="mobile">
+          <summary>Menu</summary>
+          <nav aria-label="Mobile navigation">
+            <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
+            ><a href="/apparel.html">Apparel &amp; gifts</a
+            ><a href="/how-it-works.html">How it works</a
+            ><a href="/usage-rights.html">Usage rights</a><a href="/verify-mint.html">Verify</a
+            ><a href="/contact.html">Contact</a> <a href="/collection.html">My collection</a
+            ><a href="/market.html">Marketplace</a>
+          </nav>
+        </details>
+      </div>
+      <nav class="category-nav shell" aria-label="Art genres and FAQ">
+        <a href="/all-artwork.html">All artwork</a><a href="/genre.html?genre=portrait">Portrait</a
+        ><a href="/genre.html?genre=fantasy">Fantasy</a
+        ><a href="/genre.html?genre=landscape">Landscape</a
+        ><a href="/genre.html?genre=sci-fi">Sci-Fi</a
+        ><a href="/genre.html?genre=abstract">Abstract</a
+        ><a href="/genre.html?genre=dreamscape">Dreamscape</a
+        ><a href="/genre.html?genre=dark-fantasy">Dark Fantasy</a
+        ><a href="/genre.html?genre=horror">Horror</a><a href="/genre.html?genre=nft">NFT</a
+        ><a href="/faq.html">FAQ</a>
+      </nav>
+    </header>
+    <main id="main" class="shell section">
+      <p class="eyebrow">
+        Choose an available numbered edition listed by another member, including its
+        already-revealed tier. After verified payment, its recorded holder and site download access
+        transfer to you. There is no new rarity roll. The underlying artwork remains nonexclusive;
+        these editions are not blockchain tokens.
+      </p>
+      <h1>Secondary marketplace</h1>
+      <p>
+        Find an available numbered variant listed by another member. Purchases transfer its recorded
+        holder in the studio ledger; underlying artwork remains nonexclusive. No blockchain token or
+        financial return is promised.
+      </p>
+      <p>
+        <a class="text-link" href="/collection.html">My collection &amp; seller setup →</a> ·
+        <a href="/usage-rights.html">Usage rights</a>
+      </p>
+      <p id="market-purchase" role="status" hidden=""></p>
+      <form id="market-filters" class="market-filters">
+        <label
+          >Artwork or serial<input
+            name="search"
+            type="search"
+            maxlength="120"
+            placeholder="Find an edition" /></label
+        ><label
+          >Tier<select name="tier">
+            <option value="">All tiers</option>
+            <option>Standard</option>
+            <option>Silver</option>
+            <option>Gold</option>
+            <option>Emerald</option>
+            <option>Sapphire</option>
+            <option>Prismatic</option>
+          </select></label
+        ><button class="button">Filter listings</button>
+      </form>
+      <p id="market-status" role="status">Loading marketplace…</p>
+      <div class="art-grid" id="market-feed"></div>
+      <p>
+        <button class="button" id="market-previous" hidden="">Previous</button>
+        <button class="button" id="market-next" hidden="">More editions</button>
+      </p>
+      <section>
+        <h2>What transfers?</h2>
+        <p>
+          The existing numbered edition changes registered holder after payment verification. Its
+          image and studio-signed receipt stay the same. The former holder loses access to new
+          downloads through this site; already downloaded copies cannot be erased. Existing personal
+          and commercial permissions are unchanged.
+        </p>
+        <p>
+          Seller listings show their price. The platform takes 10% of the sale price and pays Stripe
+          processing fees from its share; seller payouts follow Stripe availability and account
+          requirements. Resales have no promised future value.
+        </p>
+      </section>
+    </main>
+    <footer>
+      <div class="shell footer-grid">
+        <div>
+          <a class="brand" href="/">Pixel Shroom <b>Studio</b></a>
+          <p>Serialized AI artwork by LWVader.<br />Find a world that stays with you.</p>
+          <a href="/verify-mint.html">Verify a numbered edition →</a>
+        </div>
+        <div>
+          <h2>Explore</h2>
+          <a href="/all-artwork.html">All artwork</a><a href="/faq.html">Buyer FAQ</a
+          ><a href="/usage-rights.html">Usage rights</a><a href="/canvases.html">Canvases</a
+          ><a href="/apparel.html">Apparel &amp; gifts</a
+          ><a href="/how-it-works.html">How it works</a> <a href="/collection.html">My collection</a
+          ><a href="/market.html">Marketplace</a>
+        </div>
+        <div>
+          <h2>Genres</h2>
+          <div class="footer-genres">
+            <a href="/all-artwork.html">All artwork</a
+            ><a href="/genre.html?genre=portrait">Portrait</a
+            ><a href="/genre.html?genre=fantasy">Fantasy</a
+            ><a href="/genre.html?genre=landscape">Landscape</a
+            ><a href="/genre.html?genre=sci-fi">Sci-Fi</a
+            ><a href="/genre.html?genre=abstract">Abstract</a
+            ><a href="/genre.html?genre=dreamscape">Dreamscape</a
+            ><a href="/genre.html?genre=dark-fantasy">Dark Fantasy</a
+            ><a href="/genre.html?genre=horror">Horror</a><a href="/genre.html?genre=nft">NFT</a
+            ><a href="/faq.html">FAQ</a>
+          </div>
+        </div>
+        <div>
+          <h2>Let’s create something.</h2>
+          <a href="/contact.html">Request custom artwork ↗</a
+          ><a href="mailto:lwvader@pixelshroomstudio.com">lwvader@pixelshroomstudio.com</a>
+        </div>
+      </div>
+      <div class="shell footer-bottom">
+        <span>© 2026 Pixel Shroom Studio · LWVader</span>
+        <div>
+          <a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a
+          ><a href="/cookies.html">Cookies</a
+          ><a class="owner-access" href="/admin.html" aria-label="Open owner access"
+            >Owner access</a
+          >
+        </div>
+      </div>
+    </footer>
+    <script type="module" src="/app.js?v=20261021-edition-language"></script>
+    <script type="module" src="/market.js?v=20261019-paid-profile"></script>
+  </body>
+</html>

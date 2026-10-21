@@ -14,3 +14,13 @@ verify_jwt = false
 
 [functions.physical-checkout]
 verify_jwt = false
+
+[functions.mint-checkout]
+verify_jwt = false
+[functions.mint-access]
+verify_jwt = false
+
+[functions.market-api]
+verify_jwt = false
+[functions.market-reconcile]
+verify_jwt = false

@@ -39,11 +39,16 @@
     <main class="shell verify-page">
       <section class="verify-intro">
         <span class="eyebrow">PUBLIC AUTHENTICITY CHECK</span>
-        <h1>Verify an artwork</h1>
+        <h1>Verify a direct-file original</h1>
         <p>
           Select the purchased original and enter its LWV serial. The file stays on your device;
           only its SHA-256 fingerprint is compared with Pixel Shroom Studio’s public signature
           record.
+        </p>
+        <p>
+          Have a numbered tier edition? Use <a href="/verify-mint.html">Verify an edition</a> with
+          its image and signed JSON receipt instead. This page checks the earlier original-file
+          record by LWV serial.
         </p>
       </section>
 
@@ -55,7 +60,7 @@
             name="serialNumber"
             placeholder="LWV-6331074398"
             pattern="[A-Za-z0-9-]{4,40}"
-            required
+            required=""
           />
         </label>
         <label
@@ -65,7 +70,7 @@
             name="artworkFile"
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            required
+            required=""
           />
         </label>
         <button id="verify-button" type="submit">Verify authenticity</button>
@@ -74,7 +79,7 @@
         </p>
       </form>
 
-      <section id="verify-result" class="verify-result" hidden aria-live="polite">
+      <section id="verify-result" class="verify-result" hidden="" aria-live="polite">
         <div id="verify-verdict" class="verify-verdict"></div>
         <dl class="verify-details">
           <div>

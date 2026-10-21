@@ -1,0 +1,458 @@
+.foil-counter {
+  font-size: 14px;
+}
+.payment-actions:has(.foil-counter) {
+  display: grid;
+  gap: 12px;
+}
+.payment-actions progress {
+  width: 100%;
+  accent-color: var(--gold);
+}
+.collection-auth {
+  display: grid;
+  gap: 15px;
+  max-width: 480px;
+}
+.collection-auth label {
+  display: grid;
+  gap: 8px;
+}
+.collection-auth input {
+  padding: 12px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font: inherit;
+}
+.collection-auth .buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.foil-card {
+  padding: 20px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.foil-card img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+.foil-card[data-tier="Silver"] {
+  border-color: #c6cedc;
+}
+.foil-card[data-tier="Gold"] {
+  border-color: #eac15a;
+}
+.foil-card[data-tier="Prismatic"] {
+  border-color: #d879ff;
+  box-shadow: 0 0 24px #af53d744;
+}
+.foil-card.revealed {
+  animation: foil-reveal 0.9s ease-out;
+}
+.foil-card .button {
+  margin: 5px 0;
+}
+@keyframes foil-reveal {
+  from {
+    transform: perspective(900px) rotateY(-65deg) scale(0.9);
+  }
+  to {
+    transform: perspective(900px) rotateY(0) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .foil-card.revealed {
+    animation: none;
+  }
+}
+.foil-card h2 {
+  font-size: 30px;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+.foil-card .button {
+  overflow-wrap: normal;
+  word-break: normal;
+  max-width: 100%;
+}
+@media (max-width: 700px) {
+  #mint-collection {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.market-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+  margin-block: 30px;
+}
+.market-filters label {
+  display: grid;
+  gap: 8px;
+}
+.market-filters input,
+.market-filters select {
+  background: var(--surface);
+  color: var(--ink);
+  padding: 12px;
+  border: 1px solid var(--line);
+  font: inherit;
+  max-width: 100%;
+}
+#market-selling {
+  margin-block: 40px;
+}
+#market-selling .button {
+  margin: 6px 0;
+}
+#sell-dialog {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--gold);
+  padding: 24px;
+  max-width: min(600px, 90vw);
+}
+#sell-dialog::backdrop {
+  background: #000a;
+}
+@media (max-width: 700px) {
+  #market-feed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .market-filters {
+    display: grid;
+  }
+}
+
+/* Purchase reveal: stage remains stable while the artwork rotates inside it. */
+.foil-purchase-reveal {
+  --foil-light: #f4c07b;
+  max-width: 100%;
+  padding: clamp(12px, 3vw, 24px);
+}
+.foil-scene {
+  --impact: 0;
+  position: relative;
+  isolation: isolate;
+  perspective: 1200px;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: var(--foil-art-ratio, 1);
+  margin: 0 auto 18px;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 12px;
+  background: transparent;
+}
+.foil-scene::before {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, var(--foil-light), transparent 70%);
+  opacity: calc(0.09 + var(--impact));
+  pointer-events: none;
+}
+.foil-rotor {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  border-radius: 10px;
+}
+.is-spinning .foil-rotor {
+  will-change: transform;
+}
+.foil-scene .foil-rotor > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: 10px;
+  object-fit: contain;
+  backface-visibility: hidden;
+  transform: translateZ(1px);
+  background: #07110c;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--foil-light) 35%, transparent);
+}
+.foil-back {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  backface-visibility: hidden;
+  transform: rotateY(180deg) translateZ(1px);
+  box-sizing: border-box;
+}
+.foil-rotor[role="button"] {
+  cursor: pointer;
+}
+.foil-scene.is-tilting .foil-rotor {
+  transition: transform 0.2s ease-out;
+}
+.foil-rotor:focus-visible {
+  outline: 2px solid var(--foil-spark);
+  outline-offset: 5px;
+}
+.foil-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 10px;
+  backface-visibility: hidden;
+  transform: translateZ(2px);
+  opacity: 0;
+  background: linear-gradient(115deg, transparent 25%, #ffffff50 47%, transparent 67%);
+  background-size: 300% 100%;
+  mix-blend-mode: color-dodge;
+}
+.is-spinning .foil-shine {
+  opacity: 0.65;
+  animation: foil-sweep var(--foil-duration, 3200ms) ease-out both;
+}
+.foil-lightning {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+.foil-reveal-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 14px 0;
+}
+.foil-reveal-controls button {
+  font: inherit;
+}
+.foil-animation-status {
+  flex-basis: 100%;
+  font-size: 14px;
+  color: var(--muted, #b8c9c0);
+}
+@keyframes foil-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .foil-rotor {
+    transform: none !important;
+  }
+  .foil-lightning,
+  .foil-shine {
+    display: none;
+  }
+  .is-spinning .foil-shine {
+    animation: none;
+  }
+}
+
+/* A studio seal covers the front throughout preparation and the full spin. */
+.foil-seal {
+  transform: translateZ(1.5px);
+}
+.foil-seal[hidden] {
+  display: none;
+}
+.foil-scene:not([data-animation="complete"]) .foil-rotor > img {
+  visibility: hidden;
+}
+
+.foil-opening-dialog {
+  width: min(540px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: clamp(16px, 4vw, 28px);
+  border: 1px solid var(--gold, #f4c07b);
+  border-radius: 18px;
+  color: var(--ink, #fff4c4);
+  background: var(--surface, #0f2118);
+}
+.foil-opening-dialog::backdrop {
+  background: #020805dc;
+  backdrop-filter: blur(5px);
+}
+.foil-opening-dialog h2 {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 5vw, 34px);
+}
+.foil-opening-dialog .foil-scene {
+  max-width: min(300px, 44vh);
+}
+.foil-opening-dialog .foil-purchase-reveal {
+  border: 0;
+  padding: 0;
+}
+
+.foil-card[data-tier="Emerald"] {
+  border-color: #28d996;
+  box-shadow: 0 0 20px #28d99622;
+}
+.foil-card[data-tier="Sapphire"] {
+  border-color: #5798ff;
+  box-shadow: 0 0 20px #5798ff22;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foil-scene.is-tilting .foil-rotor {
+    transition: none;
+  }
+}
+
+/* Reveal actions keep a stable layout and the storefront's gold palette. */
+.checkout-result .foil-purchase-reveal .buy-button {
+  display: inline-flex;
+  width: auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  background: var(--gold);
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: center;
+}
+.checkout-result .foil-reveal-controls .buy-button {
+  flex: 0 1 128px;
+}
+.checkout-result .foil-purchase-reveal .buy-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.foil-reveal-controls {
+  justify-content: center;
+}
+.foil-animation-status {
+  min-height: 1.5em;
+  text-align: center;
+}
+.foil-purchase-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.foil-scene[data-animation="complete"]:not(.is-concealed) .foil-rotor > img {
+  animation: foil-art-arrive 0.45s ease-out both;
+}
+@keyframes foil-art-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .foil-scene[data-animation="complete"]:not(.is-concealed) .foil-rotor > img {
+    animation: none;
+  }
+}
+
+/* Isolated opening surface: supplied artwork, no interface labels or rarity hints. */
+.foil-mystery-stage[open] {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 24px;
+  border: 0;
+  box-sizing: border-box;
+  background:
+    linear-gradient(#061b1938, #061b1966),
+    url("./assets/foil-reveal-backdrop.webp?v=20261021-forest") center / cover no-repeat,
+    #061b19;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.foil-mystery-stage::backdrop {
+  background: #061b19;
+}
+.foil-mystery-stage .foil-scene {
+  width: min(80vw, 48dvh, 380px);
+  aspect-ratio: 1280 / 1909;
+  margin: 0;
+  filter: drop-shadow(0 18px 30px #0009);
+}
+.foil-mystery-stage .foil-back {
+  background-size: contain;
+  border: 0;
+}
+
+/* Let the opening float into the forest instead of clipping it to a stage box. */
+.foil-mystery-stage .foil-scene {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  background: transparent;
+}
+.foil-mystery-stage .foil-rotor:focus-visible {
+  outline: none;
+}
+.foil-mystery-stage .foil-back {
+  mask-image:
+    linear-gradient(to right, transparent, #000 3%, #000 97%, transparent),
+    linear-gradient(to bottom, transparent, #000 2%, #000 98%, transparent);
+  mask-composite: intersect;
+}
+.foil-mystery-stage .foil-shine {
+  border-radius: 18px;
+  mask-image: radial-gradient(ellipse, #000 45%, transparent 72%);
+}
+.foil-mystery-stage .foil-scene::before {
+  inset: -16%;
+  opacity: calc(0.08 + var(--impact));
+}
+
+/* Fade from payment into one persistent opening surface, without a page flash. */
+.foil-mystery-stage[open] {
+  animation: foil-stage-enter 220ms ease-out both;
+}
+@keyframes foil-stage-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .foil-mystery-stage[open] {
+    animation: none;
+  }
+}

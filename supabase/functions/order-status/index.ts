@@ -30,6 +30,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         `
         id,
         status,
+        sale_kind,
         fulfillment_status,
         access_token_hash,
         artworks(title, category, serial_number),
@@ -42,6 +43,27 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const suppliedHash = await sha256(accessToken);
     if (error || !order || suppliedHash !== order.access_token_hash) {
       return respond({ error: "Invalid order access token." }, 403);
+    }
+
+    if (order.sale_kind === "foil") {
+      const { data: mint } = await database
+        .from("mints")
+        .select("id,state,tier,mint_number")
+        .eq("order_id", order.id)
+        .single();
+      return respond({
+        orderId: order.id,
+        status: order.status,
+        kind: "foil",
+        mint: mint
+          ? {
+              id: mint.id,
+              state: mint.state,
+              tier: order.status === "paid" ? mint.tier : null,
+              mintNumber: order.status === "paid" ? mint.mint_number : null,
+            }
+          : null,
+      });
     }
 
     const artwork = Array.isArray(order.artworks) ? order.artworks[0] : order.artworks;

@@ -32,14 +32,14 @@
               type="email"
               value="phantasmocazdor@gmail.com"
               autocomplete="username"
-              required
+              required=""
           /></label>
           <label
             >Password<input
               name="password"
               type="password"
               autocomplete="current-password"
-              required
+              required=""
           /></label>
           <button type="submit">Sign in</button>
           <p class="message" id="login-message"></p>
@@ -48,7 +48,7 @@
     </main>
 
     <!-- SECTION: Five-view administrator application -->
-    <div class="admin-shell" id="dashboard" hidden>
+    <div class="admin-shell" id="dashboard" hidden="">
       <aside class="admin-sidebar">
         <a class="admin-sidebar-brand" href="/"
           ><img src="/assets/pixel-shroom-logo.jpg" alt="Pixel Shroom Studio" /><span
@@ -63,7 +63,7 @@
           <button type="button" data-admin-view="images-view"><span>▣</span>Images</button>
           <button type="button" data-admin-view="analytics-view"><span>⌁</span>Analytics</button>
           <button type="button" data-admin-view="messages-view">
-            <span>✉</span>Messages <b class="nav-badge" id="message-badge" hidden>0</b>
+            <span>✉</span>Messages <b class="nav-badge" id="message-badge" hidden="">0</b>
           </button>
         </nav>
         <a class="admin-store-link" href="/">View storefront ↗</a>
@@ -157,7 +157,7 @@
                       name="email"
                       type="email"
                       placeholder="new-admin@example.com"
-                      required /></label
+                      required="" /></label
                   ><button type="submit">Send admin invitation</button>
                   <p class="message" id="add-admin-message"></p>
                 </form>
@@ -178,7 +178,7 @@
           </section>
 
           <!-- SECTION: Customers and purchased images -->
-          <section class="admin-view" id="customers-view" data-title="Customers" hidden>
+          <section class="admin-view" id="customers-view" data-title="Customers" hidden="">
             <div class="page-heading">
               <div>
                 <span class="eyebrow">CUSTOMERS</span>
@@ -192,7 +192,7 @@
           </section>
 
           <!-- SECTION: Image upload and site catalog -->
-          <section class="admin-view" id="images-view" data-title="Images" hidden>
+          <section class="admin-view" id="images-view" data-title="Images" hidden="">
             <div class="page-heading">
               <div>
                 <span class="eyebrow">IMAGES</span>
@@ -211,14 +211,14 @@
                 privately.
               </p>
               <form id="art-form" class="form-grid">
-                <label>Title<input name="title" required /></label
-                ><label>Artist<input name="artist" required /></label>
+                <label>Title<input name="title" required="" /></label
+                ><label>Artist<input name="artist" required="" /></label>
                 <label
                   >Artwork serial number<input
                     name="serialNumber"
                     placeholder="LWV-3249949452"
                     pattern="[A-Za-z0-9-]{4,40}"
-                    required
+                    required=""
                   /><small
                     >Enter the identifier already embedded in the finished artwork.</small
                   ></label
@@ -237,15 +237,156 @@
                   </select></label
                 >
                 <label
-                  >Price ($)<input name="price" type="number" min="1" step="0.01" required /></label
-                ><label
+                  >Price ($)<input name="price" type="number" min="1" step="0.01" required=""
+                /></label>
+                <fieldset>
+                  <legend>Artwork tier images and numbered editions</legend>
+                  <label
+                    ><input type="checkbox" name="foilEnabled" /> Enable numbered foil
+                    minting</label
+                  >
+                  <label
+                    >Maximum supply<input
+                      name="foilSupply"
+                      type="number"
+                      min="1"
+                      max="100000"
+                      value="500"
+                      required=""
+                  /></label>
+                  <label
+                    >Silver cap<input
+                      name="foilSilver"
+                      type="number"
+                      min="0"
+                      max="100000"
+                      value="100"
+                      required=""
+                  /></label>
+                  <label
+                    >Gold cap<input
+                      name="foilGold"
+                      type="number"
+                      min="0"
+                      max="100000"
+                      value="50"
+                      required=""
+                  /></label>
+                  <label
+                    >Emerald cap<input
+                      name="foilEmerald"
+                      type="number"
+                      min="0"
+                      max="100000"
+                      value="30"
+                      required=""
+                  /></label>
+                  <label
+                    >Sapphire cap<input
+                      name="foilSapphire"
+                      type="number"
+                      min="0"
+                      max="100000"
+                      value="15"
+                      required=""
+                  /></label>
+                  <label
+                    >Prismatic cap<input
+                      name="foilPrismatic"
+                      type="number"
+                      min="0"
+                      max="100000"
+                      value="5"
+                      required=""
+                  /></label>
+                  <div id="tier-image-uploads">
+                    <h3>Finished images for each tier</h3>
+                    <p>
+                      Upload the complete design for each tier, including Standard. Buyers receive a
+                      numbered copy of the image selected by the secure tier roll. No borders or
+                      effects are added. PNG, JPEG or WebP; up to 100 MB and 100 million pixels per
+                      image. All six are required before publishing. Each authorized copy receives
+                      identity metadata and its own file hash before checkout opens.
+                    </p>
+                    <label
+                      >Standard image<input
+                        type="file"
+                        name="tierImageStandard"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Standard"
+                    /></label>
+                    <p id="tier-status-Standard">No finished image uploaded</p>
+                    <label
+                      >Silver image<input
+                        type="file"
+                        name="tierImageSilver"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Silver"
+                    /></label>
+                    <p id="tier-status-Silver">No finished image uploaded</p>
+                    <label
+                      >Gold image<input
+                        type="file"
+                        name="tierImageGold"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Gold"
+                    /></label>
+                    <p id="tier-status-Gold">No finished image uploaded</p>
+                    <label
+                      >Emerald image<input
+                        type="file"
+                        name="tierImageEmerald"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Emerald"
+                    /></label>
+                    <p id="tier-status-Emerald">No finished image uploaded</p>
+                    <label
+                      >Sapphire image<input
+                        type="file"
+                        name="tierImageSapphire"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Sapphire"
+                    /></label>
+                    <p id="tier-status-Sapphire">No finished image uploaded</p>
+                    <label
+                      >Prismatic image<input
+                        type="file"
+                        name="tierImagePrismatic"
+                        accept="image/png,image/jpeg,image/webp"
+                        aria-describedby="tier-status-Prismatic"
+                    /></label>
+                    <p id="tier-status-Prismatic">No finished image uploaded</p>
+                    <p>
+                      Tier images lock after the first reservation. Use Save private draft for
+                      incomplete uploads. Publishing requires all six images.
+                    </p>
+                  </div>
+                  <p>
+                    Standard prepares up to maximum supply for downgrade capacity. Rare tiers
+                    prepare their authorized caps. Total sold editions still cannot exceed maximum
+                    supply.
+                  </p>
+                  <p id="copy-inventory-status" role="status">
+                    Copy hashes are prepared after the finished images are saved.
+                  </p>
+                  <p id="foil-odds-description">
+                    Initial rolls: Standard 60%, Silver 20%, Gold 10%, Emerald 6%, Sapphire 3%,
+                    Prismatic 1%.
+                  </p>
+                  <p>
+                    Caps must fit within supply; Standard fills the rest. Odds, caps, master and
+                    mint price lock after the first reservation. Existing locked drops keep their
+                    original rules. Enable checkout only after the processor is deployed.
+                  </p>
+                </fieldset>
+                <label
                   >Display width (px)<input
                     name="displayWidth"
                     type="number"
                     min="160"
                     max="1600"
                     value="600"
-                    required /></label
+                    required="" /></label
                 ><label
                   >Display height (px)<input
                     name="displayHeight"
@@ -253,7 +394,7 @@
                     min="120"
                     max="1600"
                     value="600"
-                    required
+                    required=""
                 /></label>
                 <label class="wide"
                   >Finished source artwork<input
@@ -295,7 +436,8 @@
                   >
                 </fieldset>
                 <button id="save-button" type="submit">Publish image</button
-                ><button id="cancel-edit" type="button" class="secondary" hidden>
+                ><button type="submit" class="secondary" value="draft">Save private draft</button
+                ><button id="cancel-edit" type="button" class="secondary" hidden="">
                   Cancel edit
                 </button>
                 <p class="message" id="form-message"></p>
@@ -313,10 +455,10 @@
             <details class="dashboard-card editorial-manager">
               <summary>Editorial article manager</summary>
               <form id="article-form" class="form-grid">
-                <label>Title<input name="title" required /></label
-                ><label>Summary<textarea name="excerpt" required></textarea></label
+                <label>Title<input name="title" required="" /></label
+                ><label>Summary<textarea name="excerpt" required=""></textarea></label
                 ><label class="wide"
-                  >Article body<textarea name="body" rows="6" required></textarea></label
+                  >Article body<textarea name="body" rows="6" required=""></textarea></label
                 ><button type="submit">Publish article</button>
                 <p class="message" id="article-message"></p>
               </form>
@@ -325,7 +467,7 @@
           </section>
 
           <!-- SECTION: Sales analytics and complete order status -->
-          <section class="admin-view" id="analytics-view" data-title="Analytics" hidden>
+          <section class="admin-view" id="analytics-view" data-title="Analytics" hidden="">
             <div class="page-heading">
               <div>
                 <span class="eyebrow">ANALYTICS</span>
@@ -372,7 +514,7 @@
           </section>
 
           <!-- SECTION: Customer message inbox -->
-          <section class="admin-view" id="messages-view" data-title="Messages" hidden>
+          <section class="admin-view" id="messages-view" data-title="Messages" hidden="">
             <div class="page-heading">
               <div>
                 <span class="eyebrow">MESSAGES</span>
@@ -398,12 +540,12 @@
             type="password"
             autocomplete="new-password"
             minlength="12"
-            required /></label
+            required="" /></label
         ><button type="submit">Save new password</button
         ><button type="button" id="close-password" class="secondary">Cancel</button>
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=11"></script>
+    <script type="module" src="/admin.js?v=20261019-copy-inventory"></script>
   </body>
 </html>

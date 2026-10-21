@@ -1,3 +1,4 @@
+import { applyFoilListings } from "./foil-store.js?v=20261021-edition-language";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import {
   GENRES,
@@ -10,7 +11,7 @@ import {
   validRows,
   escapeHtml,
   checkoutUrl,
-} from "./catalog-core.js?v=20261014-identity";
+} from "./catalog-core.js?v=20261021-edition-language";
 import { updateArtworkFeatures } from "./studio-home.js?v=20261014-size";
 const catalog = document.querySelector("#catalog"),
   status = document.querySelector("#catalog-status");
@@ -45,6 +46,7 @@ function render() {
         : renderGenre(rows, slug, { term });
   updateArtworkFeatures(rows);
   enableActions();
+  applyFoilListings();
   catalog.setAttribute("aria-busy", "false");
   const relevant =
     mode === "genre"

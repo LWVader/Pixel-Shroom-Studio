@@ -24,7 +24,7 @@
     />
     <meta name="twitter:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
     <link rel="icon" href="/assets/pixel-shroom-logo-128.webp" />
-    <link rel="stylesheet" href="/storefront.css?v=20261014-size" />
+    <link rel="stylesheet" href="/storefront.css?v=20261021-edition-language" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -66,7 +66,8 @@
           <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
           ><a href="/apparel.html">Apparel &amp; gifts</a
           ><a href="/how-it-works.html">How it works</a><a href="/usage-rights.html">Usage rights</a
-          ><a href="/verify.html">Verify</a><a href="/contact.html">Contact</a>
+          ><a href="/verify-mint.html">Verify</a><a href="/contact.html">Contact</a>
+          <a href="/collection.html">My collection</a><a href="/market.html">Marketplace</a>
         </nav>
         <a class="button small" href="/all-artwork.html">View collection ↗</a>
         <details class="mobile">
@@ -75,8 +76,9 @@
             <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
             ><a href="/apparel.html">Apparel &amp; gifts</a
             ><a href="/how-it-works.html">How it works</a
-            ><a href="/usage-rights.html">Usage rights</a><a href="/verify.html">Verify</a
-            ><a href="/contact.html">Contact</a>
+            ><a href="/usage-rights.html">Usage rights</a><a href="/verify-mint.html">Verify</a
+            ><a href="/contact.html">Contact</a> <a href="/collection.html">My collection</a
+            ><a href="/market.html">Marketplace</a>
           </nav>
         </details>
       </div>
@@ -108,9 +110,19 @@
         </p>
         <h2>Purchases</h2>
         <p>
-          Artwork purchases and delivery are handled through the studio’s existing secure checkout
-          and delivery application. Payment-card information is handled by the payment provider, not
-          collected through this website.
+          Stripe handles payment-card details. Studio accounts, orders, edition allocations, signed
+          receipts, collection visibility and marketplace transfers are recorded to provide
+          purchases and check access. Private delivery links are issued only after applicable
+          payment and access checks. Seller onboarding and payouts use Stripe Connect.
+          Physical-product checkout, shipping and buyer details are handled on eBay when you follow
+          an eBay listing.
+        </p>
+        <h2>Edition verification</h2>
+        <p>
+          The edition verifier hashes the selected image locally in your browser and checks its
+          signed receipt against the studio’s public signing key. The selected image and receipt are
+          not uploaded for this verification. Your browser retrieves the trusted public key from the
+          studio service.
         </p>
         <h2>Cookies and technical information</h2>
         <p>
@@ -138,14 +150,15 @@
         <div>
           <a class="brand" href="/">Pixel Shroom <b>Studio</b></a>
           <p>Serialized AI artwork by LWVader.<br />Find a world that stays with you.</p>
-          <a href="/verify.html">Verify artwork authenticity →</a>
+          <a href="/verify-mint.html">Verify a numbered edition →</a>
         </div>
         <div>
           <h2>Explore</h2>
           <a href="/all-artwork.html">All artwork</a><a href="/faq.html">Buyer FAQ</a
           ><a href="/usage-rights.html">Usage rights</a><a href="/canvases.html">Canvases</a
           ><a href="/apparel.html">Apparel &amp; gifts</a
-          ><a href="/how-it-works.html">How it works</a>
+          ><a href="/how-it-works.html">How it works</a> <a href="/collection.html">My collection</a
+          ><a href="/market.html">Marketplace</a>
         </div>
         <div>
           <h2>Genres</h2>

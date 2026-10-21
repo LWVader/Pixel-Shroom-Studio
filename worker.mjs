@@ -22,6 +22,9 @@ const aliases = new Set([
 ]);
 const pages = new Set([
   "about",
+  "collection",
+  "market",
+  "verify-mint",
   "faq",
   "all-artwork",
   "canvases",
@@ -60,11 +63,13 @@ function headersFor(response, path) {
   if (response.headers.get("content-type")?.includes("text/html"))
     result.headers.set(
       "Cache-Control",
-      response.status >= 400 || path.startsWith("/checkout-") || path === "/admin.html"
+      response.status >= 400 ||
+        path.startsWith("/checkout-") ||
+        ["/admin.html", "/collection.html"].includes(path)
         ? "no-store"
         : "public,max-age=0,must-revalidate",
     );
-  if (path.startsWith("/checkout-") || path === "/admin.html")
+  if (path.startsWith("/checkout-") || ["/admin.html", "/collection.html"].includes(path))
     result.headers.set("X-Robots-Tag", "noindex,nofollow");
   return result;
 }

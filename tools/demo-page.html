@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Pixel Shroom Studio — local buying demo</title>
+    <link rel="stylesheet" href="/storefront.css" />
+    <style>
+      body {
+        margin: 0;
+      }
+      header {
+        padding: 18px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+      }
+      h1 {
+        font-size: 28px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 8px 0;
+      }
+      nav {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      button,
+      select {
+        padding: 10px;
+        font: inherit;
+        background: var(--gold);
+        color: var(--navy);
+        border: 1px solid var(--line);
+        cursor: pointer;
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        height: 78vh;
+        border: 0;
+      }
+      body.mystery-active > header {
+        display: none;
+      }
+      body.mystery-active iframe {
+        position: fixed;
+        inset: 0;
+        height: 100dvh;
+        z-index: 100;
+      }
+      label {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Pixel Shroom Studio · local buying demo</h1>
+      <p>
+        Actual collection, marketplace and reveal pages with local sample data. No login, API keys
+        or real payment. Tier selection is a demo control, not a customer option.
+      </p>
+      <nav aria-label="Demo controls">
+        <label
+          >Tier
+          <select id="tier">
+            <option selected>Standard</option>
+            <option>Silver</option>
+            <option>Gold</option>
+            <option>Emerald</option>
+            <option>Sapphire</option>
+            <option>Prismatic</option>
+          </select></label
+        ><button data-screen="buy">Simulate mint purchase</button
+        ><button data-screen="reveal">Replay reveal</button
+        ><button data-screen="collection">My collection / sell</button
+        ><button data-screen="market">Marketplace / buy</button>
+      </nav>
+      <p id="help" role="status">
+        Choose a screen. Replay reveal shows the charge-up, spring-flip and sparkling reveal.
+      </p>
+    </header>
+    <iframe title="Local studio demo" id="screen" src="/collection.html?tier=Standard"></iframe>
+    <script>
+      const frame = document.querySelector("#screen"),
+        tier = document.querySelector("#tier");
+      window.addEventListener("message", (event) => {
+        if (
+          event.origin !== location.origin ||
+          event.source !== frame.contentWindow ||
+          event.data?.type !== "foil-mystery"
+        )
+          return;
+        document.body.classList.toggle("mystery-active", event.data.active === true);
+      });
+      frame.addEventListener("load", () => document.body.classList.remove("mystery-active"));
+      let active = "collection";
+      function show(screen) {
+        active = screen;
+        const paths = {
+          buy: "/collection.html?mint=1",
+          reveal: "/checkout-success.html?order=demo&access=demo",
+          collection: "/collection.html?",
+          market: "/market.html?",
+        };
+        const url = new URL(paths[screen], location.origin);
+        url.searchParams.set("tier", tier.value);
+        url.searchParams.set("replay", Date.now());
+        frame.src = url.href;
+      }
+      document
+        .querySelectorAll("[data-screen]")
+        .forEach((button) => (button.onclick = () => show(button.dataset.screen)));
+      tier.onchange = () => show(active);
+    </script>
+  </body>
+</html>

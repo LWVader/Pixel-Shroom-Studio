@@ -152,8 +152,10 @@ export function cardMarkup(row, { interactive = true } = {}) {
   ${img}
 </button>`
     : `<div class="art-image">${img}</div>`;
-  const actions =
-    row.category === "NFT"
+  const foil = row.foilEdition || null;
+  const actions = foil
+    ? `<div class="payment-actions"><p class="foil-counter">${Number(foil.totalMinted)}/${Number(foil.maxSupply)} allocated · ${Number(foil.prismaticsRemaining)} Prismatics remaining</p><a class="button" href="/collection.html?mint=${encodeURIComponent(row.id)}">Explore foil edition ↗</a><p>One numbered copy of an uploaded tier image; master file not included. Review odds, sizes and delivery before checkout.</p></div>`
+    : row.category === "NFT"
       ? '<p class="muted">NFT release coming soon.</p><a class="text-link" href="/?updates=nft#studio-updates">Request release notifications →</a>'
       : `<div class="payment-actions" hidden>
   <button class="button" type="button" data-buy="${escapeHtml(row.id)}" data-provider="stripe">
@@ -166,15 +168,15 @@ export function cardMarkup(row, { interactive = true } = {}) {
     <p>${escapeHtml(row.category)} · ${escapeHtml(row.serial_number)}</p>
     <div>
       <h3>${escapeHtml(row.title)}</h3>
-      ${row.category === "NFT" ? "" : `<span class="price">${formatPrice(row.price)}</span>`}
+      ${row.category === "NFT" ? "" : `<span class="price">${formatPrice(foil ? foil.price : row.price)}</span>`}
     </div>
     <p class="artist">by ${escapeHtml(row.artist || "LWVader")}</p>
     <p class="artwork-size">Original image: ${escapeHtml(artworkDimensions(row))}</p>
-    ${row.category === "NFT" ? "" : artworkInformation(row)}
+    ${row.category === "NFT" || foil ? "" : artworkInformation(row)}
     ${actions}
     <p class="card-status muted" role="status"></p>
-    <p class="artwork-provenance"><strong>Individually Serialized. Cryptographically Fingerprinted.</strong><br>Each registered LWVADER creation carries a unique serial and digital fingerprint to document its identity and connection to the artist. Verification confirms source and file integrity, not exclusivity.</p>
-    <a class="verify-link" href="/verify.html?serial=${encodeURIComponent(row.serial_number)}">Verify an original →</a>
+    <p class="artwork-provenance"><strong>Individually Serialized. Cryptographically Fingerprinted.</strong><br>The source artwork has a registered LWV identity. Numbered editions also have an individual file fingerprint and signed receipt. Verification checks source and file integrity, not exclusivity.</p>
+    <a class="verify-link" href="/verify.html?serial=${encodeURIComponent(row.serial_number)}">Verify source artwork →</a>
   </div>
 </article>`;
 }
@@ -320,6 +322,27 @@ export async function readPublishedArtworks(base, key, { fetcher = fetch, signal
             row.original_format = specs.get(String(row.id));
       } catch {
         /* Missing metadata must never break listings or existing checkout paths. */
+      }
+      try {
+        const editions = await fetcher(`${base.replace(/\/$/, "")}/rest/v1/rpc/foil_catalog`, {
+          method: "POST",
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
+          },
+          body: "{}",
+          signal,
+          cache: "no-store",
+        });
+        if (editions.ok) {
+          const data = await editions.json();
+          if (Array.isArray(data))
+            for (const row of rows)
+              row.foilEdition = data.find((item) => String(item.artworkId) === String(row.id));
+        }
+      } catch {
+        /* The legacy catalog remains available when foil editions are offline. */
       }
       return validRows(rows);
     }
