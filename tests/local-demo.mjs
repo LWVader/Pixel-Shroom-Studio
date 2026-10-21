@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 import { chromium } from "@playwright/test";
@@ -44,6 +46,21 @@ try {
   const demo = page.frameLocator("#screen");
   await demo.getByRole("button", { name: "Download variant", exact: true }).waitFor();
   for (const tier of ["Standard", "Silver", "Gold", "Emerald", "Sapphire", "Prismatic"]) {
+    const response = await page.request.post(
+      `http://127.0.0.1:8039/demo/api/mint-access?tier=${tier}`,
+      { data: { action: "status" } },
+    );
+    const fixture = (await response.json()).items[0];
+    if (!process.env.DEMO_TIER_DIR) {
+      const source = await readFile(
+        new URL(`../tools/demo-assets/tiers/${tier.toLowerCase()}.jpg`, import.meta.url),
+      );
+      assert.equal(
+        fixture.manifest.payload.tierSourceSha256,
+        createHash("sha256").update(source).digest("hex"),
+      );
+    }
+
     await page.locator("#tier").selectOption(tier);
     await page.getByRole("button", { name: "Replay reveal" }).click();
     await demo.getByRole("heading", { name: "Revealing your paid edition" }).waitFor();
@@ -52,6 +69,19 @@ try {
     });
     assert.equal(await demo.locator(".foil-card").getAttribute("data-tier"), tier);
     await demo.locator('.foil-scene[data-animation="running"]').waitFor();
+    assert.match(
+      await demo.locator(".foil-seal").evaluate((face) => getComputedStyle(face).backgroundImage),
+      /foil-card-back\.jpg/,
+    );
+    assert.equal(await demo.locator(".foil-back-title").count(), 0);
+    const ratio = await demo
+      .locator(".foil-rotor")
+      .evaluate((card) => card.offsetWidth / card.offsetHeight);
+    assert.ok(
+      Math.abs(ratio - 1280 / 1909) < 0.01,
+      "Card back must retain its portrait proportions",
+    );
+
     assert.equal(
       await demo
         .locator(".foil-rotor > img")
@@ -102,6 +132,7 @@ try {
     );
   }
   // The supplied template's post-reveal pointer tilt and sheen work without rerolling.
+  await demo.locator(".foil-scene").scrollIntoViewIfNeeded();
   const box = await demo.locator(".foil-scene").boundingBox();
   await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.3);
   assert.equal(

@@ -146,9 +146,9 @@
   perspective: 1200px;
   width: 100%;
   max-width: 380px;
-  aspect-ratio: 320 / 380;
+  aspect-ratio: 1280 / 1909;
   margin: 0 auto 18px;
-  padding: 7%;
+  padding: 0;
   box-sizing: border-box;
   overflow: hidden;
   border-radius: 12px;
@@ -190,43 +190,16 @@
 .foil-back {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-around;
-  padding: 12%;
-  border: 2px solid var(--foil-light);
+  padding: 0;
+  border: 0;
   border-radius: 10px;
-  background: radial-gradient(ellipse at center, #163b2c, #07110c 80%);
-  color: #fff4c4;
-  text-align: center;
-  font-size: clamp(12px, 3vw, 20px);
-  letter-spacing: 0.16em;
+  background-color: #07110c;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
   backface-visibility: hidden;
   transform: rotateY(180deg) translateZ(1px);
   box-sizing: border-box;
-}
-.foil-back-title {
-  font-size: clamp(15px, 4vw, 23px);
-  font-weight: 600;
-  letter-spacing: 0.18em;
-}
-.foil-back-footer {
-  font-size: clamp(10px, 2vw, 13px);
-  color: var(--muted, #b8c9c0);
-  line-height: 1.5;
-}
-.foil-back-emblem {
-  display: block;
-  width: clamp(26px, 6vw, 42px);
-  aspect-ratio: 1;
-  background: var(--foil-light);
-  transform: rotate(45deg);
-  border-radius: 2px;
-  box-shadow: 0 0 24px var(--foil-light);
-}
-.is-spinning .foil-back-emblem {
-  animation: foil-diamond-pulse 1.6s ease-in-out alternate infinite;
 }
 .foil-rotor[role="button"] {
   cursor: pointer;
@@ -238,17 +211,6 @@
   outline: 2px solid var(--foil-spark);
   outline-offset: 5px;
 }
-@keyframes foil-diamond-pulse {
-  from {
-    transform: rotate(45deg) scale(0.9);
-    box-shadow: 0 0 12px var(--foil-light);
-  }
-  to {
-    transform: rotate(45deg) scale(1.12);
-    box-shadow: 0 0 32px var(--foil-light);
-  }
-}
-
 .foil-shine {
   position: absolute;
   inset: 0;
@@ -356,9 +318,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .is-spinning .foil-back-emblem {
-    animation: none;
-  }
   .foil-scene.is-tilting .foil-rotor {
     transition: none;
   }

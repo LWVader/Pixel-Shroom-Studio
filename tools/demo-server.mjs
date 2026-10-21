@@ -16,7 +16,7 @@ const leaseId = "22222222-2222-4222-8222-222222222222";
 async function loadDemoImage() {
   const samplePath =
     process.env.DEMO_IMAGE ||
-    fileURLToPath(new URL("./demo-assets/joyful-banana.webp", import.meta.url));
+    fileURLToPath(new URL("./demo-assets/tiers/standard.jpg", import.meta.url));
   try {
     return await fs.readFile(samplePath);
   } catch (error) {
@@ -72,23 +72,26 @@ const listing = {
 };
 const { privateKey } = generateKeyPairSync("ed25519");
 const variants = new Map();
+const tierDirectory =
+  process.env.DEMO_TIER_DIR || fileURLToPath(new URL("./demo-assets/tiers/", import.meta.url));
 console.log("Preparing local uploaded-image copies. Please wait for the Open URL message…");
 for (const tier of tiers) {
   let tierBytes = bytes;
-  if (process.env.DEMO_TIER_DIR) {
+  {
     let found = false;
     for (const ext of ["webp", "png", "jpg", "jpeg"]) {
       try {
-        tierBytes = await fs.readFile(
-          path.join(process.env.DEMO_TIER_DIR, `${tier.toLowerCase()}.${ext}`),
-        );
+        tierBytes = await fs.readFile(path.join(tierDirectory, `${tier.toLowerCase()}.${ext}`));
         found = true;
         break;
       } catch (error) {
         if (error.code !== "ENOENT") throw error;
       }
     }
-    if (!found) throw new Error(`Missing finished ${tier} image in DEMO_TIER_DIR`);
+    if (!found)
+      throw new Error(
+        `Missing finished ${tier} image in ${tierDirectory}. Copy all six bundled demo tier images, or set DEMO_TIER_DIR to a complete set.`,
+      );
   }
   const metadata = await sharp(tierBytes).metadata();
   const swapped = [5, 6, 7, 8].includes(metadata.orientation);
@@ -156,7 +159,7 @@ const edition = {
   prismaticCap: 5,
   price: 15,
 };
-const banner = `<div style="position:relative;z-index:1000;background:#f4c07b;color:#040907;padding:10px;text-align:center;font:16px system-ui">LOCAL DEMO · Simulated account and payment · No real orders · Uploaded tier images: set DEMO_TIER_DIR; otherwise all tiers use the same sample · <a style="color:inherit" href="/" target="_top">Demo controls</a></div>`;
+const banner = `<div style="position:relative;z-index:1000;background:#f4c07b;color:#040907;padding:10px;text-align:center;font:16px system-ui">LOCAL DEMO · Simulated account and payment · No real orders · Six supplied tier designs · DEMO_TIER_DIR overrides the bundled images · <a style="color:inherit" href="/" target="_top">Demo controls</a></div>`;
 const mime = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript",
@@ -355,7 +358,7 @@ const server = http.createServer(async (req, res) => {
       if (url.pathname === "/checkout-success.html")
         content = content.replace(
           "</head>",
-          `<style>.checkout-result{margin:16px auto;padding:18px}.checkout-result h1{font-size:28px}.foil-scene{max-width:min(340px,56vh)}.foil-reveal-controls{margin:8px 0}.foil-purchase-reveal{padding:12px}</style></head>`,
+          `<style>.checkout-result{margin:16px auto;padding:18px}.checkout-result h1{font-size:28px}.foil-scene{max-width:min(340px,37.55vh)}.foil-reveal-controls{margin:8px 0}.foil-purchase-reveal{padding:12px}</style></head>`,
         );
     }
     send(content, mime[path.extname(file)]);

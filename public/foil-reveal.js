@@ -8,6 +8,20 @@ const PALETTES = {
   Prismatic: ["#b991ff", "#72efff"],
 };
 const DURATION = 1800;
+const CARD_BACK_URL = new URL("./assets/foil-card-back.jpg?v=20261021-card-back", import.meta.url)
+  .href;
+let cardBackReady;
+function loadCardBack() {
+  if (!cardBackReady) {
+    const image = new Image();
+    image.src = CARD_BACK_URL;
+    cardBackReady = image.decode().catch((error) => {
+      cardBackReady = null;
+      throw error;
+    });
+  }
+  return cardBackReady;
+}
 export function mountFoilReveal(panel, image, options = {}) {
   const duration = options.duration || DURATION;
   const colors = PALETTES[panel.dataset.tier] || PALETTES.Standard;
@@ -30,8 +44,8 @@ export function mountFoilReveal(panel, image, options = {}) {
   const back = document.createElement("div");
   back.className = "foil-back";
   back.setAttribute("aria-hidden", "true");
-  back.innerHTML =
-    "<span class='foil-back-title'>PIXEL<br>SHROOM<br>STUDIO</span><span class='foil-back-emblem'></span><span class='foil-back-footer'>LWVADER<br>VERIFIABLE ART</span>";
+  // Both concealed faces use the complete supplied portrait.
+  back.style.backgroundImage = `url(${JSON.stringify(CARD_BACK_URL)})`;
   const seal = back.cloneNode(true);
   seal.className = "foil-back foil-seal";
   const shine = document.createElement("div");
@@ -250,7 +264,7 @@ export function mountFoilReveal(panel, image, options = {}) {
     status.textContent = "Preparing artwork…";
     replay.disabled = true;
     try {
-      await image.decode();
+      await Promise.all([image.decode(), loadCardBack()]);
     } catch {
       if (token === generation) {
         finish(false);

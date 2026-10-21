@@ -41,7 +41,7 @@ No new signing key, secret or Edge Function is needed for this patch. The existi
 
 ## Local demo
 
-Restart `npm.cmd run demo`. Without extra files, each tier copies the same sample image so the UI can be reviewed; no foil effects are generated.
+Restart `npm.cmd run demo`. The six supplied finished designs in `tools/demo-assets/tiers/` are the defaults: unframed Standard, Silver, Gold, Emerald, Sapphire and Prismatic. Each reveal uses its matching uploaded image; no foil effects are generated.
 
 To preview your actual finished variations, create a local folder containing `standard`, `silver`, `gold`, `emerald`, `sapphire`, `prismatic` with `.webp`, `.png`, `.jpg` or `.jpeg` extensions:
 
