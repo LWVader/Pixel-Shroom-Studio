@@ -7,7 +7,7 @@ const PALETTES = {
   Sapphire: ["#5798ff", "#b8eeff"],
   Prismatic: ["#b991ff", "#72efff"],
 };
-const DURATION = 3200;
+const DURATION = 4200;
 const CARD_BACK_URL = new URL(
   "./assets/foil-card-back.jpg?v=20261021-supplied-back",
   import.meta.url,
@@ -240,20 +240,11 @@ export function mountFoilReveal(panel, image, options = {}) {
     }
     const elapsed = now - started;
     const progress = Math.min(1, elapsed / duration);
-    // Keep both faces sealed through two full turns, then settle before revealing.
-    if (progress < 0.18) {
-      const charge = progress / 0.18;
-      scene.dataset.phase = "charge";
-      rotor.style.transform = `rotateY(180deg) scale(${1 - 0.04 * Math.sin(charge * Math.PI)})`;
-    } else if (progress < 0.88) {
-      const spin = (progress - 0.18) / 0.7;
-      const eased = spin * spin * (3 - 2 * spin);
-      scene.dataset.phase = "spin";
-      rotor.style.transform = `rotateY(${180 + 900 * eased}deg) rotateX(${-6 * Math.sin(spin * Math.PI)}deg) scale(${1 + 0.025 * Math.sin(spin * Math.PI)})`;
-    } else {
-      scene.dataset.phase = "settle";
-      rotor.style.transform = "rotateY(1080deg)";
-    }
+    // Cubic ease-out: immediate momentum, continuously decreasing angular speed.
+    // Both faces stay concealed until the final resting angle is reached.
+    const eased = 1 - Math.pow(1 - progress, 3);
+    scene.dataset.phase = progress < 0.86 ? "spin" : "settle";
+    rotor.style.transform = `rotateY(${180 + 1620 * eased}deg) rotateX(${-5 * Math.sin(progress * Math.PI)}deg)`;
     if (!burstTriggered && progress >= 0.53) {
       burstTriggered = true;
       for (let i = 0; i < 40; i++) {

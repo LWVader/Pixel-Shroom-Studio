@@ -411,3 +411,30 @@
   background-size: contain;
   border: 0;
 }
+
+/* Let the opening float into the forest instead of clipping it to a stage box. */
+.foil-mystery-stage .foil-scene {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  background: transparent;
+}
+.foil-mystery-stage .foil-rotor:focus-visible {
+  outline: none;
+}
+.foil-mystery-stage .foil-back {
+  mask-image:
+    linear-gradient(to right, transparent, #000 3%, #000 97%, transparent),
+    linear-gradient(to bottom, transparent, #000 2%, #000 98%, transparent);
+  mask-composite: intersect;
+}
+.foil-mystery-stage .foil-shine {
+  border-radius: 18px;
+  mask-image: radial-gradient(ellipse, #000 45%, transparent 72%);
+}
+.foil-mystery-stage .foil-scene::before {
+  inset: -16%;
+  opacity: calc(0.08 + var(--impact));
+}

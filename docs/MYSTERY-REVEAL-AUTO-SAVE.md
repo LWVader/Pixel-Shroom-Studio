@@ -9,3 +9,5 @@ After reveal, Add to my collection saves the edition to the authenticated accoun
 The server remains authoritative for payment, ownership, inventory, tier selection and file identity. Replays and delivery retries never reroll or allocate another copy. Existing ordinary digital checkout and collection/marketplace payment paths are unchanged.
 
 Validation: `npm.cmd run demo:test` and `npx.cmd playwright test tests/e2e/foil.spec.js`.
+
+The opening now starts at full rotational speed and slows continuously across 4.2 seconds, without a charge-up pause. The forest stage has no clipped rectangular boundary or automatic focus outline; a light edge mask softens the backing into the scene while preserving its lettering. Lightning and glow can extend outside the card bounds. The actual artwork remains concealed until the animation finishes.

@@ -74,6 +74,16 @@ try {
       /foil-card-back\.jpg/,
     );
     assert.equal(await demo.locator(".foil-mystery-stage").innerText(), "");
+    assert.equal(
+      await demo
+        .locator(".foil-mystery-stage .foil-scene")
+        .evaluate((el) => getComputedStyle(el).overflow),
+      "visible",
+    );
+    assert.equal(
+      await demo.locator(".foil-rotor").evaluate((el) => getComputedStyle(el).outlineStyle),
+      "none",
+    );
     assert.equal(await page.locator("header").isVisible(), false);
     assert.equal(
       await demo
@@ -84,12 +94,15 @@ try {
     assert.equal(await demo.locator(".foil-back-title").count(), 0);
     if (tier === "Standard")
       await demo.locator(".foil-scene").evaluate((scene) => {
-        scene.revealAudit = { angles: [], leaked: false };
+        scene.revealAudit = { angles: [], samples: [], leaked: false };
         const sample = () => {
           if (scene.dataset.animation === "complete") return;
           const rotor = scene.querySelector(".foil-rotor");
           const angle = /rotateY\(([-.\d]+)deg\)/.exec(rotor.style.transform);
-          if (angle) scene.revealAudit.angles.push(Number(angle[1]));
+          if (angle) {
+            scene.revealAudit.angles.push(Number(angle[1]));
+            scene.revealAudit.samples.push({ angle: Number(angle[1]), time: performance.now() });
+          }
           if (getComputedStyle(rotor.querySelector("img")).visibility !== "hidden")
             scene.revealAudit.leaked = true;
           requestAnimationFrame(sample);
@@ -145,6 +158,23 @@ try {
     if (tier === "Standard") {
       const audit = await demo.locator(".foil-scene").evaluate((scene) => scene.revealAudit);
       assert.equal(audit.leaked, false);
+      const samples = audit.samples;
+      const start = samples[0].time;
+      const rate = (from, to) => {
+        const slice = samples.filter(
+          (sample) => sample.time - start >= from && sample.time - start <= to,
+        );
+        return (slice.at(-1).angle - slice[0].angle) / (slice.at(-1).time - slice[0].time);
+      };
+      assert.ok(
+        rate(0, 700) > rate(1400, 2100) * 1.5,
+        "Spin starts fast and slows through its middle",
+      );
+      assert.ok(rate(1400, 2100) > rate(3000, 3800) * 2, "Spin gradually settles before reveal");
+      assert.equal(
+        await demo.locator(".foil-scene").evaluate((el) => getComputedStyle(el).overflow),
+        "hidden",
+      );
       assert.ok(
         Math.max(...audit.angles) - Math.min(...audit.angles) > 720,
         "Opening should visibly complete multiple turns",
