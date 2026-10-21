@@ -1,5 +1,5 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { editionDisclosure } from "./mint-core.js?v=20261019-uploaded-tiers";
+import { editionDisclosure } from "./mint-core.js?v=20261021-edition-language";
 let editions = [];
 export function applyFoilListings() {
   for (const card of document.querySelectorAll(".art-card[data-artwork-id]")) {
@@ -19,7 +19,7 @@ export function applyFoilListings() {
     const text = document.createElement("p");
     text.textContent =
       editionDisclosure(edition) +
-      " Delivered as a numbered private copy of the studio-uploaded tier image (PNG, JPEG or WebP), with a preassigned unique file hash and individual signed receipt. Copy-identification metadata is added; visible pixels are preserved. The master file is not included. Existing usage permissions apply.";
+      " Delivered as a numbered private copy of the studio-uploaded tier image (PNG, JPEG or WebP), with a preassigned unique file hash and individual signed receipt. Copy-identification metadata is added; visible pixels are preserved. The master file is not included. After verified payment, one continuous opening reveals the server-assigned tier. Add to my collection saves the edition and starts both image and signed-receipt downloads. Existing usage permissions apply.";
     if (edition.tierImages?.length) {
       text.textContent +=
         " Tier image sizes: " +

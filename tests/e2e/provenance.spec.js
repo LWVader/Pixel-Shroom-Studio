@@ -24,16 +24,17 @@ test("identity section, artist story and verification FAQ stay connected", async
   ).toEqual([]);
   expect((await request.get("/about", { maxRedirects: 0 })).status()).toBe(301);
   await page.goto("/faq.html");
-  await page
-    .getByText("How does Pixel Shroom Studio verify its AI-generated artwork?", { exact: true })
-    .click();
+  await page.getByText("How do I verify my numbered edition?", { exact: true }).click();
   await expect(page.locator("details[open]")).toContainText("SHA-256");
-  await expect(page.locator("details[open]")).toContainText("exclusive ownership");
+  await expect(page.locator("details[open]")).toContainText("exclusivity");
   const schema = await page
     .locator('script[type="application/ld+json"]')
     .evaluate((node) => JSON.parse(node.textContent));
   expect(
-    schema["@graph"].find((node) => node["@type"] === "FAQPage").mainEntity[0].acceptedAnswer.text,
+    schema["@graph"]
+      .find((node) => node["@type"] === "FAQPage")
+      .mainEntity.find((question) => question.name === "How do I verify my numbered edition?")
+      .acceptedAnswer.text,
   ).toContain("SHA-256");
   await page.goto("/genre.html?genre=fantasy");
   await expect(page.locator(".artwork-provenance")).toHaveCount(6);

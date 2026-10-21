@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>My Foil Collection | Pixel Shroom Studio</title>
+    <title>My Collection | Pixel Shroom Studio</title>
     <meta
       name="description"
       content="Numbered digital foil editions and signed receipts for uploaded tier images from Pixel Shroom Studio."
@@ -12,7 +12,7 @@
     <link rel="canonical" href="https://www.pixelshroomstudio.com/collection.html" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Pixel Shroom Studio" />
-    <meta property="og:title" content="My Foil Collection | Pixel Shroom Studio" />
+    <meta property="og:title" content="My Collection | Pixel Shroom Studio" />
     <meta
       property="og:description"
       content="Numbered digital foil editions and signed receipts for uploaded tier images from Pixel Shroom Studio."
@@ -20,14 +20,14 @@
     <meta property="og:url" content="https://www.pixelshroomstudio.com/collection.html" />
     <meta property="og:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="My Foil Collection | Pixel Shroom Studio" />
+    <meta name="twitter:title" content="My Collection | Pixel Shroom Studio" />
     <meta
       name="twitter:description"
       content="Numbered digital foil editions and signed receipts for uploaded tier images from Pixel Shroom Studio."
     />
     <meta name="twitter:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
     <link rel="icon" href="/assets/pixel-shroom-logo-128.webp" />
-    <link rel="stylesheet" href="/storefront.css?v=20261014-size" />
+    <link rel="stylesheet" href="/storefront.css?v=20261021-edition-language" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -44,9 +44,11 @@
           {
             "@type": "WebPage",
             "url": "https://www.pixelshroomstudio.com/collection.html",
-            "name": "My Foil Collection | Pixel Shroom Studio",
+            "name": "My Collection | Pixel Shroom Studio",
             "description": "Numbered digital foil editions and signed receipts for uploaded tier images from Pixel Shroom Studio.",
-            "publisher": { "@id": "https://www.pixelshroomstudio.com/#studio" }
+            "publisher": {
+              "@id": "https://www.pixelshroomstudio.com/#studio"
+            }
           }
         ]
       }
@@ -69,8 +71,8 @@
         <nav class="primary" aria-label="Main navigation">
           <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
           ><a href="/apparel.html">Apparel &amp; gifts</a><a href="/collection.html">How it works</a
-          ><a href="/usage-rights.html">Usage rights</a><a href="/verify.html">Verify</a
-          ><a href="/contact.html">Contact</a>
+          ><a href="/usage-rights.html">Usage rights</a><a href="/verify-mint.html">Verify</a
+          ><a href="/contact.html">Contact</a> <a href="/market.html">Marketplace</a>
         </nav>
         <a class="button small" href="/all-artwork.html">View collection ↗</a>
         <details class="mobile">
@@ -79,7 +81,8 @@
             <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
             ><a href="/apparel.html">Apparel &amp; gifts</a
             ><a href="/collection.html">How it works</a><a href="/usage-rights.html">Usage rights</a
-            ><a href="/verify.html">Verify</a><a href="/contact.html">Contact</a>
+            ><a href="/verify-mint.html">Verify</a><a href="/contact.html">Contact</a>
+            <a href="/market.html">Marketplace</a>
           </nav>
         </details>
       </div>
@@ -96,25 +99,29 @@
       </nav>
     </header>
     <main id="main" class="shell section">
-      <h1>My foil collection</h1>
-      <p>Numbered digital editions by LWVader. No blockchain transaction is involved.</p>
+      <h1>My collection</h1>
+      <p>
+        Your revealed numbered editions by LWVader. After purchase, Add to my collection saves an
+        edition and starts its image and signed-receipt downloads. These editions use the studio
+        ledger, not a blockchain.
+      </p>
       <p>
         <a href="/all-artwork.html">Explore artwork</a> ·
-        <a href="/verify-mint.html">Verify a minted file</a> ·
+        <a href="/verify-mint.html">Verify an edition</a> ·
         <a href="/contact.html">Contact the studio</a>
       </p>
-      <section id="mint-panel" hidden></section>
+      <section id="mint-panel" hidden=""></section>
       <section id="collection-login">
         <h2>Sign in or create an account</h2>
         <form id="collection-auth" class="collection-auth">
-          <label>Email<input name="email" type="email" autocomplete="email" required /></label
+          <label>Email<input name="email" type="email" autocomplete="email" required="" /></label
           ><label
             >Password<input
               name="password"
               type="password"
               minlength="12"
               autocomplete="current-password"
-              required
+              required=""
           /></label>
           <div class="buttons">
             <button class="button" value="signin">Sign in</button
@@ -126,7 +133,7 @@
           <a href="/contact.html">contact the studio</a>.
         </p>
       </section>
-      <button class="button" id="collection-signout" hidden>Sign out</button>
+      <button class="button" id="collection-signout" hidden="">Sign out</button>
       <p id="collection-status" role="status">Loading your collection…</p>
       <section id="market-selling">
         <h2>Sell an edition</h2>
@@ -154,11 +161,11 @@
               max="999999.99"
               step="0.01"
               value="50"
-              required
+              required=""
           /></label>
           <p id="sell-summary" role="status"></p>
           <label
-            ><input type="checkbox" required /> I understand this transfers the studio-recorded
+            ><input type="checkbox" required="" /> I understand this transfers the studio-recorded
             edition holder. Published nonexclusive usage rights remain in place, and previously
             downloaded files cannot be recalled.</label
           ><button class="button" type="submit">List on Market</button
@@ -167,8 +174,8 @@
       </dialog>
       <div class="art-grid" id="mint-collection"></div>
       <p>
-        <button class="button" id="collection-previous" hidden>Previous editions</button>
-        <button class="button" id="collection-next" hidden>More editions</button>
+        <button class="button" id="collection-previous" hidden="">Previous editions</button>
+        <button class="button" id="collection-next" hidden="">More editions</button>
       </p>
     </main>
     <footer>
@@ -176,14 +183,15 @@
         <div>
           <a class="brand" href="/">Pixel Shroom <b>Studio</b></a>
           <p>Serialized AI artwork by LWVader.<br />Find a world that stays with you.</p>
-          <a href="/verify.html">Verify artwork authenticity →</a>
+          <a href="/verify-mint.html">Verify a numbered edition →</a>
         </div>
         <div>
           <h2>Explore</h2>
           <a href="/all-artwork.html">All artwork</a><a href="/faq.html">Buyer FAQ</a
           ><a href="/usage-rights.html">Usage rights</a><a href="/canvases.html">Canvases</a
           ><a href="/apparel.html">Apparel &amp; gifts</a
-          ><a href="/collection.html">How it works</a>
+          ><a href="/how-it-works.html">How it works</a> <a href="/collection.html">My collection</a
+          ><a href="/market.html">Marketplace</a>
         </div>
         <div>
           <h2>Genres</h2>
@@ -217,7 +225,7 @@
         </div>
       </div>
     </footer>
-    <script type="module" src="/app.js?v=20261019-copy-inventory"></script>
-    <script type="module" src="/collection.js?v=20261019-copy-inventory"></script>
+    <script type="module" src="/app.js?v=20261021-edition-language"></script>
+    <script type="module" src="/collection.js?v=20261021-edition-language"></script>
   </body>
 </html>

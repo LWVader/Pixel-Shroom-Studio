@@ -11,7 +11,7 @@ form.onsubmit = async (event) => {
     const file = values.get("mintFile"),
       receiptFile = values.get("receiptFile");
     if (!file?.size || !receiptFile?.size || receiptFile.size > 65536)
-      throw new Error("Select a mint image and its signed JSON receipt.");
+      throw new Error("Select your issued edition image and its signed JSON receipt.");
     const receipt = JSON.parse(await receiptFile.text());
     if (receipt.algorithm !== "Ed25519" || receipt.payload?.version !== 1)
       throw new Error("Unsupported receipt.");

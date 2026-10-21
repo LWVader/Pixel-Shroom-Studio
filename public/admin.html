@@ -32,14 +32,14 @@
               type="email"
               value="phantasmocazdor@gmail.com"
               autocomplete="username"
-              required
+              required=""
           /></label>
           <label
             >Password<input
               name="password"
               type="password"
               autocomplete="current-password"
-              required
+              required=""
           /></label>
           <button type="submit">Sign in</button>
           <p class="message" id="login-message"></p>
@@ -48,7 +48,7 @@
     </main>
 
     <!-- SECTION: Five-view administrator application -->
-    <div class="admin-shell" id="dashboard" hidden>
+    <div class="admin-shell" id="dashboard" hidden="">
       <aside class="admin-sidebar">
         <a class="admin-sidebar-brand" href="/"
           ><img src="/assets/pixel-shroom-logo.jpg" alt="Pixel Shroom Studio" /><span
@@ -63,7 +63,7 @@
           <button type="button" data-admin-view="images-view"><span>▣</span>Images</button>
           <button type="button" data-admin-view="analytics-view"><span>⌁</span>Analytics</button>
           <button type="button" data-admin-view="messages-view">
-            <span>✉</span>Messages <b class="nav-badge" id="message-badge" hidden>0</b>
+            <span>✉</span>Messages <b class="nav-badge" id="message-badge" hidden="">0</b>
           </button>
         </nav>
         <a class="admin-store-link" href="/">View storefront ↗</a>
@@ -157,7 +157,7 @@
                       name="email"
                       type="email"
                       placeholder="new-admin@example.com"
-                      required /></label
+                      required="" /></label
                   ><button type="submit">Send admin invitation</button>
                   <p class="message" id="add-admin-message"></p>
                 </form>
@@ -178,7 +178,7 @@
           </section>
 
           <!-- SECTION: Customers and purchased images -->
-          <section class="admin-view" id="customers-view" data-title="Customers" hidden>
+          <section class="admin-view" id="customers-view" data-title="Customers" hidden="">
             <div class="page-heading">
               <div>
                 <span class="eyebrow">CUSTOMERS</span>
@@ -192,7 +192,7 @@
           </section>
 
           <!-- SECTION: Image upload and site catalog -->
-          <section class="admin-view" id="images-view" data-title="Images" hidden>
+          <section class="admin-view" id="images-view" data-title="Images" hidden="">
             <div class="page-heading">
               <div>
                 <span class="eyebrow">IMAGES</span>
@@ -211,14 +211,14 @@
                 privately.
               </p>
               <form id="art-form" class="form-grid">
-                <label>Title<input name="title" required /></label
-                ><label>Artist<input name="artist" required /></label>
+                <label>Title<input name="title" required="" /></label
+                ><label>Artist<input name="artist" required="" /></label>
                 <label
                   >Artwork serial number<input
                     name="serialNumber"
                     placeholder="LWV-3249949452"
                     pattern="[A-Za-z0-9-]{4,40}"
-                    required
+                    required=""
                   /><small
                     >Enter the identifier already embedded in the finished artwork.</small
                   ></label
@@ -237,7 +237,7 @@
                   </select></label
                 >
                 <label
-                  >Price ($)<input name="price" type="number" min="1" step="0.01" required
+                  >Price ($)<input name="price" type="number" min="1" step="0.01" required=""
                 /></label>
                 <fieldset>
                   <legend>Artwork tier images and numbered editions</legend>
@@ -252,7 +252,7 @@
                       min="1"
                       max="100000"
                       value="500"
-                      required
+                      required=""
                   /></label>
                   <label
                     >Silver cap<input
@@ -261,7 +261,7 @@
                       min="0"
                       max="100000"
                       value="100"
-                      required
+                      required=""
                   /></label>
                   <label
                     >Gold cap<input
@@ -270,7 +270,7 @@
                       min="0"
                       max="100000"
                       value="50"
-                      required
+                      required=""
                   /></label>
                   <label
                     >Emerald cap<input
@@ -279,7 +279,7 @@
                       min="0"
                       max="100000"
                       value="30"
-                      required
+                      required=""
                   /></label>
                   <label
                     >Sapphire cap<input
@@ -288,7 +288,7 @@
                       min="0"
                       max="100000"
                       value="15"
-                      required
+                      required=""
                   /></label>
                   <label
                     >Prismatic cap<input
@@ -297,7 +297,7 @@
                       min="0"
                       max="100000"
                       value="5"
-                      required
+                      required=""
                   /></label>
                   <div id="tier-image-uploads">
                     <h3>Finished images for each tier</h3>
@@ -386,7 +386,7 @@
                     min="160"
                     max="1600"
                     value="600"
-                    required /></label
+                    required="" /></label
                 ><label
                   >Display height (px)<input
                     name="displayHeight"
@@ -394,7 +394,7 @@
                     min="120"
                     max="1600"
                     value="600"
-                    required
+                    required=""
                 /></label>
                 <label class="wide"
                   >Finished source artwork<input
@@ -437,7 +437,7 @@
                 </fieldset>
                 <button id="save-button" type="submit">Publish image</button
                 ><button type="submit" class="secondary" value="draft">Save private draft</button
-                ><button id="cancel-edit" type="button" class="secondary" hidden>
+                ><button id="cancel-edit" type="button" class="secondary" hidden="">
                   Cancel edit
                 </button>
                 <p class="message" id="form-message"></p>
@@ -455,10 +455,10 @@
             <details class="dashboard-card editorial-manager">
               <summary>Editorial article manager</summary>
               <form id="article-form" class="form-grid">
-                <label>Title<input name="title" required /></label
-                ><label>Summary<textarea name="excerpt" required></textarea></label
+                <label>Title<input name="title" required="" /></label
+                ><label>Summary<textarea name="excerpt" required=""></textarea></label
                 ><label class="wide"
-                  >Article body<textarea name="body" rows="6" required></textarea></label
+                  >Article body<textarea name="body" rows="6" required=""></textarea></label
                 ><button type="submit">Publish article</button>
                 <p class="message" id="article-message"></p>
               </form>
@@ -467,7 +467,7 @@
           </section>
 
           <!-- SECTION: Sales analytics and complete order status -->
-          <section class="admin-view" id="analytics-view" data-title="Analytics" hidden>
+          <section class="admin-view" id="analytics-view" data-title="Analytics" hidden="">
             <div class="page-heading">
               <div>
                 <span class="eyebrow">ANALYTICS</span>
@@ -514,7 +514,7 @@
           </section>
 
           <!-- SECTION: Customer message inbox -->
-          <section class="admin-view" id="messages-view" data-title="Messages" hidden>
+          <section class="admin-view" id="messages-view" data-title="Messages" hidden="">
             <div class="page-heading">
               <div>
                 <span class="eyebrow">MESSAGES</span>
@@ -540,7 +540,7 @@
             type="password"
             autocomplete="new-password"
             minlength="12"
-            required /></label
+            required="" /></label
         ><button type="submit">Save new password</button
         ><button type="button" id="close-password" class="secondary">Cancel</button>
         <p class="message" id="password-message"></p>

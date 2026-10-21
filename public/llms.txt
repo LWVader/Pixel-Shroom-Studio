@@ -1,6 +1,6 @@
 # Pixel Shroom Studio
 
-> Pixel Shroom Studio is the online art studio and gallery of LWVader (LWVADER), featuring watermark-free digital artwork for personal and commercial projects, with verifiable studio-issued master files, and selected designs on canvas, apparel and gifts.
+> Pixel Shroom Studio is the online art studio and gallery of LWVader (LWVADER), featuring numbered digital tier editions with individually identified files and signed receipts, direct-file artwork where listed, and selected designs on canvas, apparel and gifts.
 
 Purchases are nonexclusive unless a listing explicitly states otherwise. Signing verifies source and file integrity, not exclusive ownership.
 
@@ -22,7 +22,7 @@ Use the linked pages for current listings, purchase details and usage rights. Av
 - [Dreamscape](https://www.pixelshroomstudio.com/genre.html?genre=dreamscape): Dreamscape artwork.
 - [Dark Fantasy](https://www.pixelshroomstudio.com/genre.html?genre=dark-fantasy): Dark-fantasy artwork.
 - [Horror](https://www.pixelshroomstudio.com/genre.html?genre=horror): Horror artwork.
-- [NFT](https://www.pixelshroomstudio.com/genre.html?genre=nft): The studio's NFT category; consult individual listings for current offerings.
+- [NFT](https://www.pixelshroomstudio.com/genre.html?genre=nft): Separate NFT release information and notification requests; numbered editions are not NFTs.
 
 ## Physical products and custom requests
 
@@ -34,7 +34,7 @@ Use the linked pages for current listings, purchase details and usage rights. Av
 
 ## Help and verification
 
-- [FAQ](https://www.pixelshroomstudio.com/faq.html): Questions about artwork, purchases, downloads, editing and serials.
+- [FAQ](https://www.pixelshroomstudio.com/faq.html): Six-tier odds, payment-confirmed reveals, collection saving, signed receipts, verification, usage and resale.
 - [How it works](https://www.pixelshroomstudio.com/how-it-works.html): Digital-art purchase and delivery process.
 - [Usage rights](https://www.pixelshroomstudio.com/usage-rights.html): Published artwork licensing and use information.
 - [Verify](https://www.pixelshroomstudio.com/verify.html): Artwork verification tools and instructions.
@@ -50,3 +50,15 @@ Use the linked pages for current listings, purchase details and usage rights. Av
 ## Secondary editions
 
 - [Secondary marketplace](https://www.pixelshroomstudio.com/market.html): Member-listed numbered editions, when open. Transfers change the studio-recorded holder, not copyright or exclusive rights. Existing downloads cannot be recalled. Seller proceeds use Stripe Connect; the platform fee is 10%, with Stripe processing fees paid by the platform. No resale value or returns are promised.
+
+## Numbered digital editions
+
+New collections have six finished studio-uploaded tier images: Standard, Silver, Gold, Emerald, Sapphire and Prismatic. Listed initial odds, supply and tier caps apply; effective probabilities change when tiers are exhausted. A buyer chooses an artwork, signs in and pays through Stripe. The server verifies payment, securely assigns a tier and atomically reserves a prepared copy. The concealed reveal starts after verified payment, keeps moving through preparation and private image loading, then slows into the result. It presents the server result and never chooses or rerolls the tier.
+
+The issued PNG, JPEG or WebP copy has its own precomputed file fingerprint and signed receipt. Identity metadata makes authorized copies byte-distinct while preserving the uploaded tier image's visible pixels. The private master is not delivered. A limited edition is not exclusive ownership of the design and is not a blockchain token. Direct-file listings retain their stated delivery and verification method; older collections retain their applicable rules.
+
+After reveal, Add to my collection saves the edition to the authenticated account and requests both image and signed JSON receipt downloads. Browsers may ask permission for multiple downloads. Retries retain the same assigned copy; closing the page does not reroll it. Keep the confirmation link and use My collection for purchase recovery when available.
+
+- [My collection](https://www.pixelshroomstudio.com/collection.html): Account access, purchase recovery, saved editions and eligible seller setup. Private account content is not a public catalog.
+- [Verify an edition](https://www.pixelshroomstudio.com/verify-mint.html): Local image hash and signed-receipt verification; files are not uploaded for verification. A successful check does not establish current ownership or resale value.
+- [Verify a direct-file original](https://www.pixelshroomstudio.com/verify.html): Earlier original-file verification using an LWV serial.

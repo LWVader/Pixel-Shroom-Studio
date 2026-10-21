@@ -2,7 +2,7 @@ import { setupMarketSelling } from "./market-sell.js";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
 import { escapeHtml, checkoutUrl } from "./catalog-core.js";
-import { editionDisclosure, safeMintImage } from "./mint-core.js?v=20261019-six-tiers";
+import { editionDisclosure, safeMintImage } from "./mint-core.js?v=20261021-edition-language";
 const status = document.querySelector("#collection-status");
 const grid = document.querySelector("#mint-collection");
 const login = document.querySelector("#collection-login");
@@ -135,7 +135,7 @@ async function showMintOffer() {
     return;
   }
   mintPanel.hidden = false;
-  mintPanel.innerHTML = `<h2>Mint a numbered foil edition</h2><p>${edition.totalMinted}/${edition.maxSupply} allocated · ${edition.prismaticsRemaining} Prismatics remaining · ${edition.reserved} checkout reservations</p><p>${escapeHtml(editionDisclosure(edition))}</p><p>The artwork shown in the gallery is the protected master preview. Your tier selects one of the studio’s finished uploaded images; no effects are generated at checkout. The private master is not delivered. Usage rights stay as published; a numbered edition does not make the underlying design exclusive.</p><p>Price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(edition.price))}</p><button class="button" id="start-mint" ${!session || edition.totalMinted + edition.reserved >= edition.maxSupply ? "disabled" : ""}>${session ? "Pay with Stripe and mint" : "Sign in below to mint"}</button>`;
+  mintPanel.innerHTML = `<h2>Collect a numbered digital edition</h2><p>${edition.totalMinted}/${edition.maxSupply} allocated · ${edition.prismaticsRemaining} Prismatics remaining · ${edition.reserved} checkout reservations</p><p>${escapeHtml(editionDisclosure(edition))}</p><p>The gallery shows a protected artwork preview. Your server-assigned tier releases one of the studio’s finished uploaded images; no frames or overlays are generated at checkout. The private master is not delivered. After verified payment, one continuous spin reveals your edition. Select Add to my collection to save it and start the image and signed-receipt downloads. Usage rights stay as published; the underlying design remains nonexclusive.</p><p>Price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(edition.price))}</p><button class="button" id="start-mint" ${!session || edition.totalMinted + edition.reserved >= edition.maxSupply ? "disabled" : ""}>${session ? "Pay with Stripe and mint" : "Sign in below to mint"}</button>`;
   if (edition.tierImages?.length) {
     const sizes = document.createElement("p");
     sizes.textContent =

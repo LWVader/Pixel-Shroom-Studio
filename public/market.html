@@ -27,7 +27,7 @@
     />
     <meta name="twitter:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
     <link rel="icon" href="/assets/pixel-shroom-logo-128.webp" />
-    <link rel="stylesheet" href="/storefront.css?v=20261014-size" />
+    <link rel="stylesheet" href="/storefront.css?v=20261021-edition-language" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -70,7 +70,8 @@
           <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
           ><a href="/apparel.html">Apparel &amp; gifts</a
           ><a href="/how-it-works.html">How it works</a><a href="/usage-rights.html">Usage rights</a
-          ><a href="/verify.html">Verify</a><a href="/contact.html">Contact</a>
+          ><a href="/verify-mint.html">Verify</a><a href="/contact.html">Contact</a>
+          <a href="/collection.html">My collection</a><a href="/market.html">Marketplace</a>
         </nav>
         <a class="button small" href="/all-artwork.html">View collection ↗</a>
         <details class="mobile">
@@ -79,8 +80,9 @@
             <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
             ><a href="/apparel.html">Apparel &amp; gifts</a
             ><a href="/how-it-works.html">How it works</a
-            ><a href="/usage-rights.html">Usage rights</a><a href="/verify.html">Verify</a
-            ><a href="/contact.html">Contact</a>
+            ><a href="/usage-rights.html">Usage rights</a><a href="/verify-mint.html">Verify</a
+            ><a href="/contact.html">Contact</a> <a href="/collection.html">My collection</a
+            ><a href="/market.html">Marketplace</a>
           </nav>
         </details>
       </div>
@@ -97,7 +99,12 @@
       </nav>
     </header>
     <main id="main" class="shell section">
-      <p class="eyebrow">Studio-recorded digital editions</p>
+      <p class="eyebrow">
+        Choose an available numbered edition listed by another member, including its
+        already-revealed tier. After verified payment, its recorded holder and site download access
+        transfer to you. There is no new rarity roll. The underlying artwork remains nonexclusive;
+        these editions are not blockchain tokens.
+      </p>
       <h1>Secondary marketplace</h1>
       <p>
         Find an available numbered variant listed by another member. Purchases transfer its recorded
@@ -108,7 +115,7 @@
         <a class="text-link" href="/collection.html">My collection &amp; seller setup →</a> ·
         <a href="/usage-rights.html">Usage rights</a>
       </p>
-      <p id="market-purchase" role="status" hidden></p>
+      <p id="market-purchase" role="status" hidden=""></p>
       <form id="market-filters" class="market-filters">
         <label
           >Artwork or serial<input
@@ -131,8 +138,8 @@
       <p id="market-status" role="status">Loading marketplace…</p>
       <div class="art-grid" id="market-feed"></div>
       <p>
-        <button class="button" id="market-previous" hidden>Previous</button>
-        <button class="button" id="market-next" hidden>More editions</button>
+        <button class="button" id="market-previous" hidden="">Previous</button>
+        <button class="button" id="market-next" hidden="">More editions</button>
       </p>
       <section>
         <h2>What transfers?</h2>
@@ -154,14 +161,15 @@
         <div>
           <a class="brand" href="/">Pixel Shroom <b>Studio</b></a>
           <p>Serialized AI artwork by LWVader.<br />Find a world that stays with you.</p>
-          <a href="/verify.html">Verify artwork authenticity →</a>
+          <a href="/verify-mint.html">Verify a numbered edition →</a>
         </div>
         <div>
           <h2>Explore</h2>
           <a href="/all-artwork.html">All artwork</a><a href="/faq.html">Buyer FAQ</a
           ><a href="/usage-rights.html">Usage rights</a><a href="/canvases.html">Canvases</a
           ><a href="/apparel.html">Apparel &amp; gifts</a
-          ><a href="/how-it-works.html">How it works</a>
+          ><a href="/how-it-works.html">How it works</a> <a href="/collection.html">My collection</a
+          ><a href="/market.html">Marketplace</a>
         </div>
         <div>
           <h2>Genres</h2>
@@ -195,7 +203,7 @@
         </div>
       </div>
     </footer>
-    <script type="module" src="/app.js?v=20261019-paid-profile"></script>
+    <script type="module" src="/app.js?v=20261021-edition-language"></script>
     <script type="module" src="/market.js?v=20261019-paid-profile"></script>
   </body>
 </html>

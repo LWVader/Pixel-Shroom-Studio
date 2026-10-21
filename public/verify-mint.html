@@ -3,31 +3,31 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Verify a Foil Edition | Pixel Shroom Studio</title>
+    <title>Verify a Numbered Edition | Pixel Shroom Studio</title>
     <meta
       name="description"
-      content="Numbered digital foil editions and signed derivative files from Pixel Shroom Studio."
+      content="Verify an unchanged numbered edition image and its signed JSON receipt locally. Check the studio signature and file fingerprint without uploading your image."
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <link rel="canonical" href="https://www.pixelshroomstudio.com/verify-mint.html" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Pixel Shroom Studio" />
-    <meta property="og:title" content="Verify a Foil Edition | Pixel Shroom Studio" />
+    <meta property="og:title" content="Verify a Numbered Edition | Pixel Shroom Studio" />
     <meta
       property="og:description"
-      content="Numbered digital foil editions and signed derivative files from Pixel Shroom Studio."
+      content="Verify an unchanged numbered edition image and its signed JSON receipt locally. Check the studio signature and file fingerprint without uploading your image."
     />
     <meta property="og:url" content="https://www.pixelshroomstudio.com/verify-mint.html" />
     <meta property="og:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Verify a Foil Edition | Pixel Shroom Studio" />
+    <meta name="twitter:title" content="Verify a Numbered Edition | Pixel Shroom Studio" />
     <meta
       name="twitter:description"
-      content="Numbered digital foil editions and signed derivative files from Pixel Shroom Studio."
+      content="Verify an unchanged numbered edition image and its signed JSON receipt locally. Check the studio signature and file fingerprint without uploading your image."
     />
     <meta name="twitter:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
     <link rel="icon" href="/assets/pixel-shroom-logo-128.webp" />
-    <link rel="stylesheet" href="/storefront.css?v=20261014-size" />
+    <link rel="stylesheet" href="/storefront.css?v=20261021-edition-language" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -44,9 +44,11 @@
           {
             "@type": "WebPage",
             "url": "https://www.pixelshroomstudio.com/verify-mint.html",
-            "name": "Verify a Foil Edition | Pixel Shroom Studio",
-            "description": "Numbered digital foil editions and signed derivative files from Pixel Shroom Studio.",
-            "publisher": { "@id": "https://www.pixelshroomstudio.com/#studio" }
+            "name": "Verify a Numbered Edition | Pixel Shroom Studio",
+            "description": "Verify an unchanged numbered edition image and its signed JSON receipt locally. Check the studio signature and file fingerprint without uploading your image.",
+            "publisher": {
+              "@id": "https://www.pixelshroomstudio.com/#studio"
+            }
           }
         ]
       }
@@ -70,7 +72,8 @@
           <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
           ><a href="/apparel.html">Apparel &amp; gifts</a
           ><a href="/verify-mint.html">How it works</a><a href="/usage-rights.html">Usage rights</a
-          ><a href="/verify.html">Verify</a><a href="/contact.html">Contact</a>
+          ><a href="/verify-mint.html">Verify</a><a href="/contact.html">Contact</a>
+          <a href="/collection.html">My collection</a><a href="/market.html">Marketplace</a>
         </nav>
         <a class="button small" href="/all-artwork.html">View collection ↗</a>
         <details class="mobile">
@@ -79,8 +82,9 @@
             <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
             ><a href="/apparel.html">Apparel &amp; gifts</a
             ><a href="/verify-mint.html">How it works</a
-            ><a href="/usage-rights.html">Usage rights</a><a href="/verify.html">Verify</a
-            ><a href="/contact.html">Contact</a>
+            ><a href="/usage-rights.html">Usage rights</a><a href="/verify-mint.html">Verify</a
+            ><a href="/contact.html">Contact</a> <a href="/collection.html">My collection</a
+            ><a href="/market.html">Marketplace</a>
           </nav>
         </details>
       </div>
@@ -97,7 +101,7 @@
       </nav>
     </header>
     <main id="main" class="shell section">
-      <h1>Verify a foil edition</h1>
+      <h1>Verify a numbered edition</h1>
       <p>
         Select your downloaded variant and its studio-signed receipt. File bytes are hashed in your
         browser and are not uploaded. The studio’s trusted public key is retrieved to check the
@@ -109,18 +113,18 @@
             type="file"
             name="mintFile"
             accept="image/png,image/jpeg,image/webp"
-            required /></label
+            required="" /></label
         ><label
           >Signed JSON receipt<input
             type="file"
             name="receiptFile"
             accept="application/json,.json"
-            required /></label
+            required="" /></label
         ><button class="button">Verify file and receipt</button>
       </form>
       <p id="mint-verdict" role="status"></p>
       <p>
-        <a href="/verify.html">Verify a master original instead →</a> ·
+        <a href="/verify.html">Verify an earlier direct-file original →</a> ·
         <a href="/collection.html">My collection →</a>
       </p>
     </main>
@@ -129,14 +133,15 @@
         <div>
           <a class="brand" href="/">Pixel Shroom <b>Studio</b></a>
           <p>Serialized AI artwork by LWVader.<br />Find a world that stays with you.</p>
-          <a href="/verify.html">Verify artwork authenticity →</a>
+          <a href="/verify-mint.html">Verify a numbered edition →</a>
         </div>
         <div>
           <h2>Explore</h2>
           <a href="/all-artwork.html">All artwork</a><a href="/faq.html">Buyer FAQ</a
           ><a href="/usage-rights.html">Usage rights</a><a href="/canvases.html">Canvases</a
           ><a href="/apparel.html">Apparel &amp; gifts</a
-          ><a href="/verify-mint.html">How it works</a>
+          ><a href="/how-it-works.html">How it works</a> <a href="/collection.html">My collection</a
+          ><a href="/market.html">Marketplace</a>
         </div>
         <div>
           <h2>Genres</h2>
@@ -170,7 +175,7 @@
         </div>
       </div>
     </footer>
-    <script type="module" src="/app.js?v=20261019-six-tiers"></script>
-    <script type="module" src="/verify-mint.js?v=20261019"></script>
+    <script type="module" src="/app.js?v=20261021-edition-language"></script>
+    <script type="module" src="/verify-mint.js?v=20261021-edition-language"></script>
   </body>
 </html>

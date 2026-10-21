@@ -154,7 +154,7 @@ export function cardMarkup(row, { interactive = true } = {}) {
     : `<div class="art-image">${img}</div>`;
   const foil = row.foilEdition || null;
   const actions = foil
-    ? `<div class="payment-actions"><p class="foil-counter">${Number(foil.totalMinted)}/${Number(foil.maxSupply)} allocated · ${Number(foil.prismaticsRemaining)} Prismatics remaining</p><a class="button" href="/collection.html?mint=${encodeURIComponent(row.id)}">Explore foil edition ↗</a><p>One numbered digital variant; master file not included. Read odds and delivery details before checkout.</p></div>`
+    ? `<div class="payment-actions"><p class="foil-counter">${Number(foil.totalMinted)}/${Number(foil.maxSupply)} allocated · ${Number(foil.prismaticsRemaining)} Prismatics remaining</p><a class="button" href="/collection.html?mint=${encodeURIComponent(row.id)}">Explore foil edition ↗</a><p>One numbered copy of an uploaded tier image; master file not included. Review odds, sizes and delivery before checkout.</p></div>`
     : row.category === "NFT"
       ? '<p class="muted">NFT release coming soon.</p><a class="text-link" href="/?updates=nft#studio-updates">Request release notifications →</a>'
       : `<div class="payment-actions" hidden>
@@ -175,8 +175,8 @@ export function cardMarkup(row, { interactive = true } = {}) {
     ${row.category === "NFT" || foil ? "" : artworkInformation(row)}
     ${actions}
     <p class="card-status muted" role="status"></p>
-    <p class="artwork-provenance"><strong>Individually Serialized. Cryptographically Fingerprinted.</strong><br>Each registered LWVADER creation carries a unique serial and digital fingerprint to document its identity and connection to the artist. Verification confirms source and file integrity, not exclusivity.</p>
-    <a class="verify-link" href="/verify.html?serial=${encodeURIComponent(row.serial_number)}">Verify an original →</a>
+    <p class="artwork-provenance"><strong>Individually Serialized. Cryptographically Fingerprinted.</strong><br>The source artwork has a registered LWV identity. Numbered editions also have an individual file fingerprint and signed receipt. Verification checks source and file integrity, not exclusivity.</p>
+    <a class="verify-link" href="/verify.html?serial=${encodeURIComponent(row.serial_number)}">Verify source artwork →</a>
   </div>
 </article>`;
 }
