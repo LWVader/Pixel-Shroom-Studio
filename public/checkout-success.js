@@ -133,9 +133,19 @@ async function revealMint(order) {
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
   let savedToCollection = Boolean(item.inCollection);
+  // New databases persist ownership automatically; keep old deployments recoverable.
+  if (!savedToCollection) {
+    try {
+      const result = await mintAccess("add_to_collection", item.id);
+      savedToCollection = result.added === true;
+    } catch {
+      /* A credential-only return can recover through sign-in. */
+    }
+  }
+  window.dispatchEvent(new Event("studio:collection-saved"));
   const add = document.createElement("button");
   add.className = "buy-button";
-  add.textContent = item.inCollection ? "Download my edition files" : "Add to my collection";
+  add.textContent = "Download edition & signed receipt";
   add.onclick = async () => {
     add.disabled = true;
     try {
@@ -175,7 +185,9 @@ async function revealMint(order) {
     } catch (error) {
       message.textContent =
         (savedToCollection ? "Your edition is saved in your collection. " : "") + error.message;
-      add.textContent = savedToCollection ? "Retry downloading my files" : "Add to my collection";
+      add.textContent = savedToCollection
+        ? "Retry downloading my files"
+        : "Download edition & signed receipt";
     } finally {
       add.disabled = false;
     }
@@ -183,7 +195,16 @@ async function revealMint(order) {
   add.hidden = true;
   const actions = document.createElement("div");
   actions.className = "foil-purchase-actions";
-  actions.append(add);
+  actions.hidden = true;
+  const vault = document.createElement("a");
+  vault.href = "/collection.html";
+  vault.className = "button secondary";
+  vault.textContent = "Open My Vault";
+  const print = document.createElement("a");
+  print.href = "/canvases.html?mint=" + encodeURIComponent(item.id);
+  print.className = "button secondary";
+  print.textContent = "Review canvas options";
+  actions.append(add, vault, print);
   panel.append(actions);
   message.after(panel);
   await waitingEffect.resolveEdition({
@@ -194,11 +215,13 @@ async function revealMint(order) {
       message.textContent =
         "Opening your prepared edition. Replaying does not change its tier or file.";
       add.hidden = true;
+      actions.hidden = true;
     },
     onComplete: () => {
       heading.textContent = `${item.tier} edition revealed`;
-      message.textContent = `#${item.mintNumber} of ${item.maxSupply} · ${item.width} × ${item.height} px. ${savedToCollection ? "Saved in your collection." : "Add this edition to your account profile below."}`;
+      message.textContent = `#${item.mintNumber} of ${item.maxSupply} · ${item.width} × ${item.height} px. ${savedToCollection ? "Saved in your collection." : "Your paid edition is linked to your account. Open My Vault to recover it."}`;
       add.hidden = false;
+      actions.hidden = false;
     },
   });
   waitingPanel = null;

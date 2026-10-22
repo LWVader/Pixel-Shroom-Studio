@@ -1,3 +1,4 @@
+import { printsEnabled, printMode } from "../_shared/gelato.ts";
 import Stripe from "npm:stripe@18";
 import { corsFor, json, service, sha256, randomToken, studioSiteUrl } from "../_shared/common.ts";
 Deno.serve(async (request: Request) => {
@@ -14,17 +15,44 @@ Deno.serve(async (request: Request) => {
     } = await db.auth.getUser(token);
     if (authError || !user)
       return json({ error: "Sign in to your collection before minting." }, 401, request);
-    const { artworkId } = await request.json();
+    const { artworkId, offer } = await request.json();
+    const forgePrint = offer !== undefined;
+    if (
+      forgePrint &&
+      (!["digital", "canvas"].includes(offer) || Deno.env.get("FORGE_PRINT_ENABLED") !== "true")
+    )
+      return json({ error: "This roll offer is not open." }, 503, request);
+    if (offer === "canvas" && Deno.env.get("FORGE_PRINT_CANVAS_ENABLED") !== "true")
+      return json({ error: "Canvas-inclusive rolls are not open." }, 503, request);
     if (!Number.isSafeInteger(Number(artworkId)) || Number(artworkId) < 1)
       return json({ error: "Invalid artwork." }, 400, request);
     const secret = Deno.env.get("STRIPE_SECRET_KEY");
     if (!secret) throw new Error("Stripe is not configured");
+    if (
+      offer === "canvas" &&
+      (!printsEnabled() || secret.startsWith("sk_test_") !== (printMode() === "sandbox"))
+    )
+      return json(
+        { error: "Canvas fulfillment and payment environments must both be ready." },
+        503,
+        request,
+      );
+    if (
+      forgePrint &&
+      secret.startsWith("sk_live_") &&
+      Deno.env.get("FORGE_PRINT_TAX_ENABLED") !== "true"
+    )
+      return json({ error: "Live roll tax settings are not ready." }, 503, request);
     const access = randomToken();
-    const { data: reservation, error } = await db.rpc("reserve_foil_order", {
-      target_artwork: Number(artworkId),
-      buyer: user.id,
-      token_hash: await sha256(access),
-    });
+    const { data: reservation, error } = await db.rpc(
+      forgePrint ? "reserve_forge_print_order" : "reserve_foil_order",
+      {
+        target_artwork: Number(artworkId),
+        buyer: user.id,
+        token_hash: await sha256(access),
+        ...(forgePrint ? { chosen_offer: offer, is_test: secret.startsWith("sk_test_") } : {}),
+      },
+    );
     if (error)
       return json(
         { error: "This edition is unavailable or fully reserved. Please try later." },
@@ -42,17 +70,46 @@ Deno.serve(async (request: Request) => {
         customer_email: user.email,
         success_url: `${studioSiteUrl()}/checkout-success.html?order=${reservation.orderId}&access=${access}&provider=stripe`,
         cancel_url: `${studioSiteUrl()}/collection.html`,
-        metadata: { order_id: reservation.orderId, kind: "foil" },
+        ...(forgePrint
+          ? {
+              billing_address_collection: "required" as const,
+              automatic_tax: { enabled: Deno.env.get("FORGE_PRINT_TAX_ENABLED") === "true" },
+            }
+          : {}),
+        ...(offer === "canvas"
+          ? {
+              shipping_address_collection: { allowed_countries: ["US"] as Array<"US"> },
+              shipping_options: [
+                {
+                  shipping_rate_data: {
+                    display_name: "Prepaid US canvas shipping",
+                    tax_behavior: "exclusive" as const,
+                    tax_code: "txcd_92010001",
+                    type: "fixed_amount" as const,
+                    fixed_amount: { amount: 1349, currency: "usd" },
+                  },
+                },
+              ],
+            }
+          : {}),
+        metadata: { order_id: reservation.orderId, kind: forgePrint ? "forgeprint" : "foil" },
         line_items: [
           {
             quantity: 1,
             price_data: {
               currency: "usd",
-              unit_amount: Math.round(Number(reservation.price) * 100),
+              ...(forgePrint ? { tax_behavior: "exclusive" as const } : {}),
+              unit_amount: forgePrint
+                ? offer === "canvas"
+                  ? 6900
+                  : 800
+                : Math.round(Number(reservation.price) * 100),
               product_data: {
-                name: `${reservation.title} — Foil Edition`,
+                name: `${reservation.title} — ${offer === "canvas" ? "Canvas + Digital Roll" : "Digital Edition"}`,
                 description:
-                  "One numbered digital variant. Random rarity; edition caps apply. No blockchain token or financial return promised.",
+                  offer === "canvas"
+                    ? "One digital variant and one included US canvas claim. Production waits for redemption in My Vault."
+                    : "One numbered digital variant. Printing is optional and separate. Edition caps apply.",
               },
             },
           },

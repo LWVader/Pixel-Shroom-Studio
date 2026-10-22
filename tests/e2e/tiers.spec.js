@@ -21,7 +21,8 @@ test("six-tier odds disclose every rarity and marketplace filters submit both ne
   await page.route("**/rest/v1/rpc/foil_catalog", (route) => route.fulfill({ json: [edition] }));
   await page.goto("/genre.html?genre=portrait");
   const card = page.locator('[data-artwork-id="1"]');
-  await card.getByText("Foil edition: odds and delivery").click();
+  await card.locator(".legacy-card-purchase > summary").click();
+  await card.getByText("Edition details: tiers, odds and delivery").click();
   await expect(card).toContainText("Emerald 6%");
   await expect(card).toContainText("Sapphire 3%");
   await expect(card).toContainText("Standard 60%");
@@ -156,7 +157,17 @@ test("admin uploads finished images privately and registers six source mappings"
     await page.locator(`[name="tierImage${tier}"]`).setInputFiles("public/assets/art-fantasy.png");
   await page.locator("#save-button").click();
   await expect.poll(() => page.evaluate(() => globalThis.assetRecords.length)).toBe(2);
-  const uploaded = await page.evaluate(() => globalThis.uploadRecords.slice(1));
+  const uploaded = await page.evaluate(() =>
+    globalThis.uploadRecords.filter((r) => r.bucket === "originals").slice(1),
+  );
+  const previews = await page.evaluate(() =>
+    globalThis.uploadRecords.filter((r) => r.bucket === "previews"),
+  );
+  expect(previews).toHaveLength(7);
+  for (const preview of previews) {
+    expect(preview.type).toBe("image/webp");
+    expect(preview.path).toMatch(/^foil-tiers\/1\/[^/]+\/[0-9a-f-]+\.webp$/);
+  }
   expect(uploaded).toHaveLength(6);
   for (const record of uploaded) {
     expect(record.bucket).toBe("originals");

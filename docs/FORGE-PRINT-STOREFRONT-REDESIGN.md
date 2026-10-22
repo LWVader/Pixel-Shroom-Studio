@@ -1,3 +1,5 @@
+> Follow-up implementation: see [FORGE-PRINT-LOOP-INSTALL.md](FORGE-PRINT-LOOP-INSTALL.md) for the transactional roll, Forge and print-claim update. Preview-only statements below describe the earlier layout release.
+
 # Forge & Print storefront restructure
 
 This update implements the public layout and connected browsing experience from the supplied outline. It preserves the existing Georgia font, green/cream/gold palette, hero image, protected previews, nine genre pages, newest-14 homepage, current payments and automatic concealed reveal. It does not implement or activate the new $8/$69 checkouts, bundles, Forge consumption or physical entitlements described in `CANVAS-DIGITAL-FORGE-WORKFLOW.md`.

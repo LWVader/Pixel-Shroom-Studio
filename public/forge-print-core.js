@@ -1,9 +1,9 @@
-// Display-only specification. These prices do not authorize or change a checkout.
+// Presentation prices; the server owns all authorization, prices and inventory.
 export const PLANNED_OFFERS = {
   canvas: { name: "Canvas Mystery Roll", price: 69, shipping: 13.49, count: 1 },
   digital: { name: "Single Digital Roll", price: 8, shipping: 0, count: 1 },
   three: { name: "3-Roll Forge Pack", price: 21, shipping: 0, count: 3 },
-  five: { name: "5-Roll Guarantee Pack", price: 32, shipping: 0, count: 5 },
+  five: { name: "5-Roll Forge Pack", price: 32, shipping: 0, count: 5 },
   ten: { name: "10-Roll Hunt Bundle", price: 59, shipping: 0, count: 10 },
 };
 export const TIER_FINISHES = [
@@ -63,13 +63,13 @@ export const money = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 export function rollPaths(row) {
   if (row.category === "NFT") return "";
-  return `<div class="roll-paths"><p class="offer-state">Forge &amp; Print preview · checkout not open</p>
-    <a class="button" href="${artUrl(row.id, "canvas")}">Canvas Roll — $69 <span>+$13.49 shipping · US only</span></a>
-    <a class="button secondary" href="${artUrl(row.id, "digital")}">Digital Roll — $8 <span>Explore digital delivery &amp; the Vault</span></a></div>`;
+  return `<div class="roll-paths"><p class="offer-state">Roll → Reveal → Forge or Print</p>
+    <a class="button" href="${artUrl(row.id, "canvas")}">Canvas + Digital — $69 <span>+$13.49 shipping · US only</span></a>
+    <a class="button secondary" href="${artUrl(row.id, "digital")}">Digital Roll — $8 <span>Collect · Forge · print later</span></a></div>`;
 }
 export function tierShowcase() {
-  return `<div class="tier-showcase"><div class="tier-selector" role="group" aria-label="Explore planned tier finishes">${TIER_FINISHES.map((t, i) => `<button type="button" data-tier-finish="${t.tier}" aria-pressed="${i === 0}"><strong>${t.odds}% ${t.tier}</strong><span>${escape(t.finish)}</span><meter min="0" max="100" value="${t.odds}" aria-label="${t.tier} base odds">${t.odds}%</meter></button>`).join("")}</div>
-    <article class="tier-focus" aria-live="polite"><p class="eyebrow">Planned physical finish</p><h3 id="finish-title">Standard · 60%</h3><p id="finish-format">${TIER_FINISHES[0].finish}</p><p id="finish-description">${TIER_FINISHES[0].detail}</p><a class="text-link" href="/canvas-specs.html">See sizing and print details →</a></article></div>`;
+  return `<div class="tier-showcase"><div class="tier-selector" role="group" aria-label="Explore tier finishes">${TIER_FINISHES.map((t, i) => `<button type="button" data-tier-finish="${t.tier}" aria-pressed="${i === 0}"><strong>${t.odds}% ${t.tier}</strong><span>${escape(t.finish)}</span><meter min="0" max="100" value="${t.odds}" aria-label="${t.tier} base odds">${t.odds}%</meter></button>`).join("")}</div>
+    <article class="tier-focus" aria-live="polite"><p class="eyebrow">Associated canvas finish</p><h3 id="finish-title">Standard · 60%</h3><p id="finish-format">${TIER_FINISHES[0].finish}</p><p id="finish-description">${TIER_FINISHES[0].detail}</p><a class="text-link" href="/canvas-specs.html">See sizing and print details →</a></article></div>`;
 }
 export function forgeEstimate(tier, count) {
   const recipe = FORGE_RECIPES.find((r) => r.from === tier);

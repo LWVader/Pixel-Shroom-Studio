@@ -37,7 +37,8 @@ test("three-step studio loop, featured previews, newest 14 and hidden empty sect
   );
   await page.locator(".featured-card a").first().click();
   await expect(page.locator("#search")).toHaveCount(0);
-  await expect(page.locator("#catalog .art-card")).toHaveCount(6);
+  await expect(page).toHaveURL(/art.html\?id=/);
+  await expect(page.locator("#roll-purchase")).toBeVisible();
 });
 test("NFT notification path records selected topics and explicit consent in existing inbox", async ({
   page,
@@ -66,6 +67,7 @@ test("buyer information precedes the same digital Stripe checkout and physical l
   );
   await page.goto("/genre.html?genre=fantasy");
   const card = page.locator(".art-card").first();
+  await card.locator(".legacy-card-purchase > summary").click();
   await card.locator(".artwork-information summary").click();
   await expect(card.locator(".artwork-information")).toContainText("Nonexclusive");
   await expect(card.locator(".artwork-information")).toContainText("Not recorded");
@@ -91,8 +93,9 @@ test("journal appears only with useful content and signup errors recover", async
       ],
     }),
   );
-  await page.goto("/");
+  await page.goto("/about.html");
   await expect(page.locator("#journal")).toBeVisible();
+  await page.goto("/");
   await page.route("**/functions/v1/submit-message", (r) =>
     r.fulfill({ status: 500, json: { error: "Fixture failure" } }),
   );

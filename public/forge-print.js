@@ -7,8 +7,8 @@ import {
   writeSelections,
   artUrl,
   money,
-} from "./forge-print-core.js?v=20261022-layout";
-import { readPublishedArtworks, validRows, escapeHtml } from "./catalog-core.js?v=20261022-layout";
+} from "./forge-print-core.js?v=20261022-loop";
+import { readPublishedArtworks, validRows, escapeHtml } from "./catalog-core.js?v=20261022-loop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 const searchInput = document.querySelector("#header-art-search");
 if (searchInput)
@@ -53,50 +53,11 @@ calculator?.addEventListener("submit", (event) => {
     result.textContent = error.message;
   }
 });
-const offerForm = document.querySelector("#offer-selector");
-function updateOffer() {
-  const key = offerForm.elements.offer.value;
-  document.querySelector("#offer-summary").textContent = offerSummary(key);
-  document.querySelector("#offer-guarantee").textContent =
-    key === "five"
-      ? "Five same-artwork results. If all are Standard, explicitly forging those five can produce one Silver; it is not a bonus sixth image."
-      : key === "ten"
-        ? "Ten images, with at least one Gold or better under a server-enforced floor. This planned guarantee changes the final bundle distribution."
-        : key === "canvas"
-          ? "One digital image and one included print claim, held until redemption. Shipping is prepaid once; applicable tax is additional."
-          : "Digital-only delivery. No included canvas. Later printing uses the selected asset’s tier price; an eligible Prismatic has one promotional product-charge waiver, with shipping additional.";
-}
-if (offerForm) {
-  offerForm.querySelector('button[type="submit"]').disabled = false;
-  const requested = new URLSearchParams(location.search).get("offer");
-  if (Object.hasOwn(PLANNED_OFFERS, requested || "")) offerForm.elements.offer.value = requested;
-  updateOffer();
-  offerForm.addEventListener("change", updateOffer);
-  offerForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const status = document.querySelector("#selection-status");
-    try {
-      const artworkId = document.querySelector("#catalog")?.dataset.artworkId;
-      if (!artworkId) throw Error("Artwork unavailable.");
-      const selected = readSelections(localStorage),
-        offer = offerForm.elements.offer.value;
-      if (selected.some((x) => x.artworkId === artworkId && x.offer === offer))
-        throw Error("This planned selection is already in your cart.");
-      if (selected.length >= 20)
-        throw Error("Your selection list holds up to 20 offers. Remove one in the cart first.");
-      selected.push({ artworkId, offer });
-      writeSelections(localStorage, selected);
-      updateCartCount();
-      status.innerHTML =
-        'Selection saved. No payment or inventory reservation was made. <a href="/cart.html">View cart →</a>';
-    } catch (error) {
-      status.textContent = error.message || "Your browser could not save this selection.";
-    }
-  });
-  document.querySelector("#finish-preview-select").addEventListener("change", (event) => {
-    document.querySelector(".finish-preview").dataset.previewFinish = event.target.value;
-  });
-}
+const previewSelect = document.querySelector("#finish-preview-select");
+previewSelect?.addEventListener("change", (event) => {
+  document.querySelector(".finish-preview").dataset.previewFinish = event.target.value;
+});
+if (document.querySelector("#roll-purchase")) import("./roll-purchase.js?v=20261022-loop");
 const cart = document.querySelector("#planned-cart");
 async function renderCart() {
   if (!cart) return;

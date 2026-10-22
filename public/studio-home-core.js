@@ -5,7 +5,7 @@ import {
   safePreviewUrl,
   latestArtworks,
   artworkDimensions,
-} from "./catalog-core.js?v=20261022-layout";
+} from "./catalog-core.js?v=20261022-loop";
 import { FEATURED_SERIALS } from "./studio-catalog.js";
 export function featuredArtworks(rows) {
   const digital = rows.filter((row) => row.category !== "NFT");
@@ -23,7 +23,7 @@ export function renderFeatured(rows) {
   return selected
     .map((row) => {
       const slug = Object.keys(GENRES).find((slug) => GENRES[slug].name === row.category);
-      const url = `${genreUrl(slug)}#genre-gallery`;
+      const url = `/art.html?id=${encodeURIComponent(row.id)}`;
       return `<article class="featured-card"><a href="${url}"><img src="${escapeHtml(safePreviewUrl(row.preview_url))}" width="600" height="600" loading="lazy" alt="${escapeHtml(row.title)}, protected digital artwork preview"><div><p class="eyebrow">${escapeHtml(row.category)}</p><h3>${escapeHtml(row.title)}</h3><p class="artwork-size">Original image: ${escapeHtml(artworkDimensions(row))}</p><span class="text-link">Explore this artwork →</span></div></a></article>`;
     })
     .join("");

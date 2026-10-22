@@ -1,6 +1,6 @@
-import { readPublishedArtworks, validRows } from "./catalog-core.js?v=20261022-layout";
-import { renderArtworkDetail } from "./artwork-page-core.js?v=20261022-layout";
-import { safeArtworkId } from "./forge-print-core.js?v=20261022-layout";
+import { readPublishedArtworks, validRows } from "./catalog-core.js?v=20261022-loop";
+import { renderArtworkDetail } from "./artwork-page-core.js?v=20261022-loop";
+import { safeArtworkId } from "./forge-print-core.js?v=20261022-loop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 const params = new URLSearchParams(location.search),
   ids = params.getAll("id"),
@@ -30,8 +30,8 @@ if (ids.length !== 1 || !safeArtworkId(ids[0])) {
     document.title = `${row.title} | Pixel Shroom Studio`;
     document.querySelector('link[rel="canonical"]').href =
       `https://www.pixelshroomstudio.com/art.html?id=${encodeURIComponent(row.id)}`;
-    await import("./app.js?v=20261022-layout");
-    await import("./forge-print.js?v=20261022-layout");
+    await import("./app.js?v=20261022-loop");
+    await import("./forge-print.js?v=20261022-loop");
   } catch {
     if (root)
       root.innerHTML =

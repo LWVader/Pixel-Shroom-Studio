@@ -55,7 +55,7 @@
     </script>
     <link rel="stylesheet" href="/print-nav.css?v=20261009" />
     <link rel="stylesheet" href="/foil.css?v=20261019-copy-inventory" />
-    <link rel="stylesheet" href="/forge-print.css?v=20261022-layout" />
+    <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -75,8 +75,7 @@
           ><a href="/verify.html">Verify Serial</a>
         </nav>
         <div class="header-tools">
-          <a href="/collection.html">My Vault<span data-vault-count hidden></span></a
-          ><a href="/cart.html">Cart (<span data-cart-count>0</span>)</a>
+          <a href="/collection.html">My Vault<span data-vault-count hidden></span></a>
           <details class="header-search">
             <summary>Search artworks</summary>
             <form class="site-search" role="search" action="/all-artwork.html#gallery" method="get">
@@ -117,16 +116,16 @@
     <main id="main" class="shell section">
       <h1>My Vault</h1>
       <p>
-        Your revealed numbered editions by LWVader. After purchase, Add to my collection saves an
-        edition and starts its image and signed-receipt downloads. These editions use the studio
-        ledger, not a blockchain.
+        Your artwork, upgrades and canvas orders in one place. Ready paid editions save
+        automatically; printing is your choice.
       </p>
-      <p><a class="text-link" href="/print-orders.html">View physical print orders →</a></p>
-      <p>
-        <a href="/all-artwork.html">Explore artwork</a> ·
-        <a href="/verify-mint.html">Verify an edition</a> ·
-        <a href="/contact.html">Contact the studio</a>
-      </p>
+      <nav class="vault-tabs" aria-label="My Vault sections">
+        <button type="button" data-vault-tab="artwork" aria-pressed="true">My Artwork</button
+        ><button type="button" data-vault-tab="forge" aria-pressed="false">Forge</button
+        ><button type="button" data-vault-tab="print" aria-pressed="false">Print</button
+        ><button type="button" data-vault-tab="orders" aria-pressed="false">Orders</button
+        ><button type="button" data-vault-tab="selling" aria-pressed="false">Resell</button>
+      </nav>
       <section id="mint-panel" hidden=""></section>
       <section id="collection-login">
         <h2>Sign in or create an account</h2>
@@ -146,26 +145,28 @@
           </div>
         </form>
         <p>
-          New accounts may require email confirmation. For account recovery,
-          <a href="/contact.html">contact the studio</a>.
+          New accounts may require email confirmation.
+          <button type="button" id="password-reset">Email me a password-reset link</button>
         </p>
       </section>
       <button class="button" id="collection-signout" hidden="">Sign out</button>
       <p id="collection-status" role="status">Loading your collection…</p>
-      <section id="market-selling">
-        <h2>Sell an edition</h2>
-        <p><a class="text-link" href="/market.html">Browse the secondary marketplace →</a></p>
-        <p>
-          Selling currently supports US Stripe-connected accounts and USD. Transfers change the
-          studio-recorded holder of an edition, not exclusive ownership of the underlying artwork.
-          Previously downloaded files cannot be recalled.
-        </p>
-        <button class="button" id="connect-seller">Connect or finish Stripe onboarding</button>
-        <button class="button" id="refresh-seller">Check seller status</button>
-        <button class="button" id="seller-dashboard">Stripe seller dashboard</button>
-        <button class="button" id="show-sale-listings">My sale listings</button>
-        <p id="seller-status" role="status"></p>
-        <div id="my-market-listings"></div>
+      <section id="vault-panel-selling" data-vault-panel="selling" hidden>
+        <section id="market-selling">
+          <h2>Sell an edition</h2>
+          <p><a class="text-link" href="/market.html">Browse the secondary marketplace →</a></p>
+          <p>
+            Selling currently supports US Stripe-connected accounts and USD. Transfers change the
+            studio-recorded holder of an edition, not exclusive ownership of the underlying artwork.
+            Previously downloaded files cannot be recalled.
+          </p>
+          <button class="button" id="connect-seller">Connect or finish Stripe onboarding</button>
+          <button class="button" id="refresh-seller">Check seller status</button>
+          <button class="button" id="seller-dashboard">Stripe seller dashboard</button>
+          <button class="button" id="show-sale-listings">My sale listings</button>
+          <p id="seller-status" role="status"></p>
+          <div id="my-market-listings"></div>
+        </section>
       </section>
       <dialog id="sell-dialog" aria-labelledby="sell-heading">
         <form id="sell-form" class="collection-auth">
@@ -189,11 +190,53 @@
           ><button class="button" id="sell-close" type="button">Cancel</button>
         </form>
       </dialog>
-      <div class="art-grid" id="mint-collection"></div>
-      <p>
-        <button class="button" id="collection-previous" hidden="">Previous editions</button>
-        <button class="button" id="collection-next" hidden="">More editions</button>
-      </p>
+      <section id="vault-panel-artwork" data-vault-panel="artwork">
+        <div class="art-grid" id="mint-collection"></div>
+        <p>
+          <button class="button" id="collection-previous" hidden="">Previous editions</button>
+          <button class="button" id="collection-next" hidden="">More editions</button>
+        </p>
+      </section>
+      <section id="vault-panel-forge" data-vault-panel="forge" hidden>
+        <h2>The Forge</h2>
+        <p>
+          Combine eligible editions of the same artwork and tier into a better variant. Available
+          authorized output stock is required.
+        </p>
+        <div id="vault-forge"></div>
+      </section>
+      <section id="vault-panel-print" data-vault-panel="print" hidden>
+        <h2>Choose an edition to print</h2>
+        <p>
+          Your selected edition determines the canvas size and frame. Review its approved
+          composition, delivery and total before confirming.
+        </p>
+        <div class="art-grid" id="vault-print-list"></div>
+      </section>
+      <section id="vault-panel-orders" data-vault-panel="orders" hidden>
+        <h2>Canvas &amp; product orders</h2>
+        <p id="print-order-status" role="status">Sign in to view orders.</p>
+        <button id="refresh-print-orders" class="button" type="button">Refresh orders</button>
+        <div id="print-order-list"></div>
+      </section>
+      <form id="recovery-password" hidden class="collection-auth">
+        <h2>Choose a new password</h2>
+        <label
+          >New password<input
+            name="password"
+            type="password"
+            minlength="12"
+            autocomplete="new-password"
+            required /></label
+        ><label
+          >Confirm password<input
+            name="confirmation"
+            type="password"
+            minlength="12"
+            autocomplete="new-password"
+            required /></label
+        ><button class="button" type="submit">Save new password</button>
+      </form>
     </main>
     <footer>
       <div class="shell footer-grid forge-footer">
@@ -204,14 +247,14 @@
             trace.
           </p>
           <p>
-            Forge &amp; Print offers are in preview. Current listings show their available purchase
-            paths.
+            Roll a variant. Combine eligible editions. Print when you choose. Availability is shown
+            before payment.
           </p>
         </div>
         <div>
           <h2>Studio</h2>
           <a href="/about.html">About LWVader</a
-          ><a href="/#journal" data-journal-link hidden>Studio Journal</a
+          ><a href="/about.html#journal" data-journal-link hidden>Studio Journal</a
           ><a href="/about.html#sir-shroomalot">Sir Shroomalot’s story</a
           ><a href="/contact.html">Contact</a><a href="/all-artwork.html">Explore gallery</a
           ><a href="/apparel.html">Apparel &amp; gifts</a>
@@ -222,7 +265,7 @@
           ><a href="/forge.html#recipes">Forge trade-up rules</a
           ><a href="/canvas-specs.html">Canvas specs &amp; sizing</a
           ><a href="/how-it-works.html">How it works</a><a href="/collection.html">My Vault</a
-          ><a href="/print-orders.html">Physical orders</a
+          ><a href="/collection.html?tab=orders">My orders</a
           ><a href="/market.html">Secondary marketplace</a>
         </div>
         <div>
@@ -242,9 +285,11 @@
         </div>
       </div>
     </footer>
-    <script type="module" src="/app.js?v=20261022-layout"></script>
-    <script type="module" src="/collection.js?v=20261022-layout"></script>
-    <script type="module" src="/forge-print.js?v=20261022-layout"></script>
-    <script type="module" src="/storefront-shell.js?v=20261022-layout"></script>
+    <script type="module" src="/app.js?v=20261022-loop"></script>
+    <script type="module" src="/collection.js?v=20261022-loop"></script>
+    <script type="module" src="/forge-print.js?v=20261022-loop"></script>
+    <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
+    <script type="module" src="/vault-tabs.js?v=20261022-loop"></script>
+    <script type="module" src="/print-orders.js?v=20261022-loop"></script>
   </body>
 </html>

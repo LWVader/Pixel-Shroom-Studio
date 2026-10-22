@@ -1,4 +1,4 @@
-import { artUrl, rollPaths } from "./forge-print-core.js";
+import { artUrl, rollPaths } from "./forge-print-core.js?v=20261022-loop";
 import { editionDisclosure, FOIL_TIERS, SIX_TIER_RATES, LEGACY_FOIL_RATES } from "./mint-core.js";
 import { correctedArtwork } from "./studio-catalog.js";
 // Shared by the browser and the routing Worker: the only supported genres.
@@ -148,7 +148,7 @@ export function editionActionsMarkup(edition) {
   return `<div class="edition-availability"><span class="edition-state">${active ? "Numbered edition" : "Preparing or fully reserved"}</span><span>${Number(edition.totalMinted)}/${Number(edition.maxSupply)} allocated</span></div>
   <div class="edition-tier-list" aria-label="Collection tiers">${tiers.map((tier) => `<span>${tier}</span>`).join("")}</div>
   <progress value="${Number(edition.totalMinted)}" max="${Number(edition.maxSupply)}" aria-label="Paid edition allocations"></progress>
-  <details class="edition-details"><summary>Edition details: tiers, odds and delivery</summary><p>${escapeHtml(editionDisclosure(edition))}</p><p>One numbered copy of the studio-uploaded tier image (PNG, JPEG or WebP), with a prepared file fingerprint and individual signed receipt. The master file is not included. Visible pixels are preserved; copy-identification metadata makes each prepared copy distinct.</p>${sizes ? `<ul class="edition-dimensions">${sizes}</ul>` : "<p>Tier image dimensions are shown in the purchase details when recorded. Ask the studio if specifications are missing.</p>"}<p>After verified payment, one continuous spin reveals the server-assigned tier. Add to my collection saves it and starts both image and signed-receipt downloads. Personal and commercial permissions remain as published.</p><p>${Number(edition.prismaticsRemaining)} Prismatics remaining · ${Number(edition.reserved || 0)} checkout reservations. Effective odds change as caps fill.</p><a href="/usage-rights.html">Read usage rights →</a></details>
+  <details class="edition-details"><summary>Edition details: tiers, odds and delivery</summary><p>${escapeHtml(editionDisclosure(edition))}</p><p>One numbered copy of the studio-uploaded tier image (PNG, JPEG or WebP), with a prepared file fingerprint and individual signed receipt. The master file is not included. Visible pixels are preserved; copy-identification metadata makes each prepared copy distinct.</p>${sizes ? `<ul class="edition-dimensions">${sizes}</ul>` : "<p>Tier image dimensions are shown in the purchase details when recorded. Ask the studio if specifications are missing.</p>"}<p>After verified payment, one continuous spin reveals the server-assigned tier. Ready editions save automatically in My Vault. Download the image and signed receipt whenever you choose. Personal and commercial permissions remain as published.</p><p>${Number(edition.prismaticsRemaining)} Prismatics remaining · ${Number(edition.reserved || 0)} checkout reservations. Effective odds change as caps fill.</p><a href="/usage-rights.html">Read usage rights →</a></details>
   ${active ? `<a class="button edition-buy" href="/collection.html?mint=${encodeURIComponent(edition.artworkId)}">Collect with Stripe ↗</a>` : '<span class="button edition-buy" aria-disabled="true">Checkout unavailable</span>'}
   <p class="edition-next">Choose artwork → Pay → Reveal → Save to your collection</p>`;
 }
@@ -191,14 +191,13 @@ export function cardMarkup(row, { interactive = true } = {}) {
     <p>${escapeHtml(row.category)} · ${escapeHtml(row.serial_number)}</p>
     <div>
       <h3><a href="${artUrl(row.id)}">${escapeHtml(row.title)}</a></h3>
-      ${row.category === "NFT" ? "" : `<span class="price">${formatPrice(foil ? foil.price : row.price)}</span>`}
+      
     </div>
     <p class="artist">by ${escapeHtml(row.artist || "LWVader")}</p>
     <p class="artwork-size">${foil ? "Preview source" : "Original image"}: ${escapeHtml(artworkDimensions(row))}</p>
-    ${row.category === "NFT" || foil ? "" : artworkInformation(row)}
-    ${rollPaths(row)}
+    ${rollPaths(row)}<details class="legacy-card-purchase"><summary>Existing purchase options</summary><span class="price">${formatPrice(foil ? foil.price : row.price)}</span>${row.category === "NFT" || foil ? "" : artworkInformation(row)}
     <p class="listing-current-label">${row.category === "NFT" ? "Release information" : "Current listing purchase"}</p>
-    ${actions}
+    ${actions}</details>
     <p class="card-status muted" role="status"></p>
     <details class="artwork-provenance"><summary>Studio identity &amp; verification</summary><p>The source artwork has a registered LWV identity. Numbered editions also have an individual file fingerprint and signed receipt. Verification checks source and file integrity, not exclusivity.</p></details>
     <a class="verify-link" href="/verify.html?serial=${encodeURIComponent(row.serial_number)}">Verify source artwork →</a>

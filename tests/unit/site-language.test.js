@@ -31,17 +31,15 @@ describe("customer information matches edition delivery", () => {
       "Emerald",
       "Sapphire",
       "Prismatic",
-      "after verified payment",
+      "after payment",
       "signed JSON receipt",
-      "same edition number",
-      "Copy-identification metadata",
-      "does not include the private master",
+      "same copy, tier and edition number",
+      "private master is not delivered",
       "redistribution and resale",
-      "no new rarity roll",
       "Gelato",
     ])
       expect(body).toContain(term);
-    expect($(".faq details").length).toBeGreaterThanOrEqual(20);
+    expect($("main details").length).toBeGreaterThanOrEqual(15);
   });
   it("preserves nine genre pages and separates edition verification from originals", () => {
     for (const file of readdirSync("public").filter((name) => name.endsWith(".html"))) {

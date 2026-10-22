@@ -173,7 +173,7 @@ const mime = {
 };
 function client() {
   return `const session={access_token:'local-demo-user'};
-  const send=async(name,body)=>{const q=new URLSearchParams(location.search);const r=await fetch('/demo/api/'+name+'?tier='+(q.get('tier')||'Standard'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await r.json();if(!r.ok)throw Error(result.error);return result;};
+  const send=async(name,body)=>{const q=new URLSearchParams(location.search);const r=await fetch('/demo/api/'+name+'?tier='+(q.get('tier')||${JSON.stringify(demoForgeTier || "Standard")}),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await r.json();if(!r.ok)throw Error(result.error);return result;};
   export const invoke=send;
   export const functionUrl=name=>location.origin+'/demo/api/'+name;
   export const supabase={auth:{getSession:async()=>({data:{session}}),onAuthStateChange:()=>{},signOut:async()=>{},signInWithPassword:async()=>({data:{session}}),signUp:async()=>({data:{session}})},rpc:async()=>({data:${JSON.stringify([edition])}})};
@@ -182,6 +182,8 @@ function client() {
 const demoPage = await fs.readFile(new URL("./demo-page.html", import.meta.url), "utf8");
 
 const purchases = new Map();
+let demoForgeTier = "";
+const demoForgeOperations = new Map();
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, origin);
   const tier = tiers.includes(url.searchParams.get("tier"))
@@ -245,9 +247,57 @@ const server = http.createServer(async (req, res) => {
       const ready = paid && (!purchase || Date.now() - purchase.paidAt > 2500);
       item.state = ready ? "ready" : "queued";
       item.paymentConfirmed = paid;
-      item.inCollection = !purchase || purchase.added;
+      item.inCollection = ready;
+      if (name === "forge-api") {
+        if (body.action === "availability")
+          return json({
+            edition,
+            digitalEnabled: true,
+            canvasEnabled: false,
+            forgeEnabled: true,
+            previews: tiers.map((t) => ({
+              tier: t,
+              width: variants.get(t).width,
+              height: variants.get(t).height,
+              mimeType: variants.get(t).manifest.payload.mimeType,
+              previewUrl: `${origin}/storage/v1/object/public/previews/demo.webp?tier=${t}`,
+            })),
+          });
+        if (body.action === "inventory")
+          return json({
+            forgeEnabled: true,
+            items: demoForgeTier
+              ? []
+              : Array.from({ length: 5 }, (_, i) => ({
+                  id: `aaaaaaaa-aaaa-4aaa-8aaa-${String(i + 1).padStart(12, "0")}`,
+                  artworkId: 1,
+                  title: "Local demo artwork",
+                  tier: "Standard",
+                  mintNumber: i + 1,
+                  eligible: true,
+                })),
+          });
+        if (body.action === "forge") {
+          if (demoForgeOperations.has(body.requestId))
+            return json(demoForgeOperations.get(body.requestId));
+          if (demoForgeTier || !Array.isArray(body.mintIds) || new Set(body.mintIds).size !== 5)
+            return json({ error: "Local demo: select the five supplied Standard fixtures." }, 409);
+          demoForgeTier = "Silver";
+          purchases.set("Silver", { paidAt: Date.now(), added: true });
+          const output = { mintId, tier: "Silver", replayed: false };
+          demoForgeOperations.set(body.requestId, output);
+          return json(output);
+        }
+      }
+      if (name === "print-api")
+        return json(
+          body.action === "catalog"
+            ? { products: [], enabled: false, testMode: true }
+            : { orders: [] },
+        );
       if (!ready) item.imageUrl = null;
       if (name === "mint-access") {
+        if (body.action === "vault_count") return json({ count: ready ? 1 : 0 });
         if (body.action === "add_to_collection") {
           if (!ready) return json({ error: "Edition not ready" }, 409);
           if (purchase) purchase.added = true;
@@ -324,6 +374,22 @@ const server = http.createServer(async (req, res) => {
       return send(variant.bytes, variant.manifest.payload.mimeType);
     if (url.pathname.startsWith("/storage/v1/object/public/previews/"))
       return send(variant.preview, "image/webp");
+    if (url.pathname === "/rest/v1/artworks")
+      return json([
+        {
+          id: 1,
+          title: "Local demo artwork",
+          artist: "LWVader",
+          category: "Fantasy",
+          serial_number: "LWV-0000000001",
+          price: 15,
+          created_at: new Date().toISOString(),
+          preview_url: `${origin}/storage/v1/object/public/previews/demo.webp`,
+          display_width: 512,
+          display_height: 512,
+        },
+      ]);
+    if (url.pathname === "/rest/v1/rpc/foil_catalog") return json([edition]);
     if (url.pathname.startsWith("/rest/")) return json([]);
     const file = path.resolve(root, "." + decodeURIComponent(url.pathname));
     if (

@@ -55,6 +55,7 @@ test("foil mode replaces master checkout and discloses changing odds", async ({ 
   await routes(page);
   await page.goto("/genre.html?genre=portrait");
   const card = page.locator('[data-artwork-id="1"]');
+  await card.locator(".legacy-card-purchase > summary").click();
   await expect(card.getByText("42/500 allocated", { exact: false })).toBeVisible();
   await expect(card.locator("[data-buy]")).toHaveCount(0);
   await card.getByText("Edition details: tiers, odds and delivery").click();
@@ -92,7 +93,7 @@ test("collection shows only private variants and confirmation reveals the mint",
   await expect(page.locator("h1")).toHaveText("Prismatic edition revealed", { timeout: 15000 });
   await expect(page.locator("#download-link")).toBeHidden();
   await expect(page.getByRole("button", { name: "Download minted variant" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Add to my collection" }).click();
+  await page.getByRole("button", { name: "Download edition & signed receipt" }).click();
   await expect(page.getByRole("button", { name: "Download my edition files again" })).toBeEnabled();
 });
 test("pending or failed rendering never exposes the original download", async ({ page }) => {
@@ -188,7 +189,9 @@ test("only verified payment starts a concealed reveal; saving waits for completi
   await page.waitForTimeout(700);
   expect(await page.evaluate(() => window.openingScenes.size)).toBe(1);
   expect(await page.locator(".foil-rotor").getAttribute("style")).not.toBe(firstAngle);
-  await expect(page.getByRole("button", { name: "Add to my collection" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Download edition & signed receipt" })).toHaveCount(
+    0,
+  );
   const waitingStage = await page.locator(".foil-mystery-stage[open]").elementHandle();
   await page.evaluate(() => {
     window.stageClosedDuringHandoff = false;
@@ -204,7 +207,9 @@ test("only verified payment starts a concealed reveal; saving waits for completi
   expect(await page.locator(".foil-mystery-stage").count()).toBe(1);
   expect(await page.evaluate(() => window.stageClosedDuringHandoff)).toBe(false);
   await expect(page.locator("h1")).toHaveText("Prismatic edition revealed", { timeout: 15000 });
-  await expect(page.getByRole("button", { name: "Add to my collection" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Download edition & signed receipt" }),
+  ).toBeVisible();
   expect(await page.evaluate(() => window.openingScenes.size)).toBe(1);
 });
 
@@ -229,7 +234,7 @@ test("collection save survives a file failure and retries the same edition", asy
     }),
   );
   await page.goto("/checkout-success.html?order=fixture&access=fixture");
-  await page.getByRole("button", { name: "Add to my collection" }).click();
+  await page.getByRole("button", { name: "Download edition & signed receipt" }).click();
   await expect(page.locator("#checkout-message")).toContainText("saved in your collection");
   const downloads = [];
   page.on("download", (file) => downloads.push(file));

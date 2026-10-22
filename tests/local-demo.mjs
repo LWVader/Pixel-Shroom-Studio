@@ -69,67 +69,44 @@ try {
     });
     assert.equal(await demo.locator(".foil-card").getAttribute("data-tier"), tier);
     await demo.locator('.foil-scene[data-animation="running"]').waitFor();
-    assert.match(
-      await demo.locator(".foil-seal").evaluate((face) => getComputedStyle(face).backgroundImage),
-      /foil-card-back\.jpg/,
-    );
-    assert.equal(await demo.locator(".foil-mystery-stage").innerText(), "");
-    assert.equal(
-      await demo
-        .locator(".foil-mystery-stage .foil-scene")
-        .evaluate((el) => getComputedStyle(el).overflow),
-      "visible",
-    );
-    assert.equal(
-      await demo.locator(".foil-rotor").evaluate((el) => getComputedStyle(el).outlineStyle),
-      "none",
-    );
-    assert.equal(await page.locator("header").isVisible(), false);
-    assert.equal(
-      await demo
-        .locator(".foil-mystery-stage .foil-scene")
-        .evaluate((el) => el.style.getPropertyValue("--foil-light")),
-      "#d8e5ed",
-    );
-    assert.equal(await demo.locator(".foil-back-title").count(), 0);
-    if (tier === "Standard")
-      await demo.locator(".foil-scene").evaluate((scene) => {
-        scene.revealAudit = { angles: [], samples: [], leaked: false };
-        const sample = () => {
-          if (scene.dataset.animation === "complete") return;
-          const rotor = scene.querySelector(".foil-rotor");
-          const angle = /rotateY\(([-.\d]+)deg\)/.exec(rotor.style.transform);
-          if (angle) {
-            scene.revealAudit.angles.push(Number(angle[1]));
-            scene.revealAudit.samples.push({ angle: Number(angle[1]), time: performance.now() });
-          }
-          if (getComputedStyle(rotor.querySelector("img")).visibility !== "hidden")
-            scene.revealAudit.leaked = true;
-          requestAnimationFrame(sample);
-        };
+    await page.locator("body.mystery-active").waitFor({ state: "attached" });
+    // Read the live spin atomically: serial browser round-trips may outlast it.
+    const spin = await demo.locator(".foil-scene").evaluate((scene) => {
+      const rotor = scene.querySelector(".foil-rotor"),
+        image = rotor.querySelector("img");
+      scene.revealAudit = { angles: [], samples: [], leaked: false };
+      const sample = () => {
+        if (scene.dataset.animation === "complete") return;
+        const angle = /rotateY\(([-.\d]+)deg\)/.exec(rotor.style.transform);
+        if (angle) {
+          scene.revealAudit.angles.push(Number(angle[1]));
+          scene.revealAudit.samples.push({ angle: Number(angle[1]), time: performance.now() });
+        }
+        if (getComputedStyle(image).visibility !== "hidden") scene.revealAudit.leaked = true;
         requestAnimationFrame(sample);
-      });
-
-    const ratio = await demo
-      .locator(".foil-rotor")
-      .evaluate((card) => card.offsetWidth / card.offsetHeight);
-    assert.ok(
-      Math.abs(ratio - 1280 / 1909) < 0.01,
-      "Opening card must preserve the supplied portrait proportions",
-    );
-
-    assert.equal(
-      await demo
-        .locator(".foil-rotor > img")
-        .evaluate((image) => getComputedStyle(image).visibility),
-      "hidden",
-    );
-    assert.equal(
-      await demo
-        .locator(".foil-seal")
-        .evaluate((seal) => getComputedStyle(seal).display !== "none"),
-      true,
-    );
+      };
+      requestAnimationFrame(sample);
+      return {
+        back: getComputedStyle(scene.querySelector(".foil-seal")).backgroundImage,
+        text: scene.closest(".foil-mystery-stage").innerText,
+        overflow: getComputedStyle(scene).overflow,
+        outline: getComputedStyle(rotor).outlineStyle,
+        light: scene.style.getPropertyValue("--foil-light"),
+        titles: scene.querySelectorAll(".foil-back-title").length,
+        ratio: rotor.offsetWidth / rotor.offsetHeight,
+        visibility: getComputedStyle(image).visibility,
+        seal: getComputedStyle(scene.querySelector(".foil-seal")).display !== "none",
+      };
+    });
+    assert.match(spin.back, /foil-card-back\.jpg/);
+    assert.equal(spin.text, "");
+    assert.equal(spin.overflow, "visible");
+    assert.equal(spin.outline, "none");
+    assert.equal(spin.light, "#d8e5ed");
+    assert.equal(spin.titles, 0);
+    assert.ok(Math.abs(spin.ratio - 1280 / 1909) < 0.01);
+    assert.equal(spin.visibility, "hidden");
+    assert.equal(spin.seal, true);
     // Observe actual painted lightning pixels rather than mirroring its implementation.
     await demo.locator("canvas.foil-lightning").evaluate(
       (canvas) =>
@@ -236,7 +213,9 @@ try {
   const downloads = [];
   page.on("download", (download) => downloads.push(download));
   const confirmationUrl = await demo.locator("body").evaluate(() => location.href);
-  await demo.getByRole("button", { name: "Add to my collection", exact: true }).click();
+  await demo
+    .getByRole("button", { name: "Download edition & signed receipt", exact: true })
+    .click();
   await demo
     .getByRole("button", { name: "Download my edition files again", exact: true })
     .waitFor();

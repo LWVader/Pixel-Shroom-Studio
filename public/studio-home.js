@@ -1,11 +1,11 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { validRows } from "./catalog-core.js?v=20261022-layout";
+import { validRows } from "./catalog-core.js?v=20261022-loop";
 import {
   renderFeatured,
   renderProductExamples,
   renderProjectExample,
   renderFeedback,
-} from "./studio-home-core.js?v=20261021-gelato";
+} from "./studio-home-core.js?v=20261022-loop";
 export function updateArtworkFeatures(rows) {
   const featured = document.querySelector("#featured-artwork"),
     project = document.querySelector("#creative-project-preview");

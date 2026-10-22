@@ -1,6 +1,6 @@
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
-import { escapeHtml, checkoutUrl } from "./catalog-core.js?v=20261022-layout";
+import { escapeHtml, checkoutUrl } from "./catalog-core.js?v=20261022-loop";
 import { marketMoney, marketPreviewUrl } from "./market-core.js";
 const grid = document.querySelector("#market-feed"),
   status = document.querySelector("#market-status"),

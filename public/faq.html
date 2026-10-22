@@ -37,201 +37,141 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@graph": [
+        "@type": "FAQPage",
+        "mainEntity": [
           {
-            "@type": "Organization",
-            "@id": "https://www.pixelshroomstudio.com/#studio",
-            "name": "Pixel Shroom Studio",
-            "alternateName": "LWVader",
-            "url": "https://www.pixelshroomstudio.com/",
-            "logo": "https://www.pixelshroomstudio.com/assets/pixel-shroom-logo-128.webp",
-            "email": "lwvader@pixelshroomstudio.com"
+            "@type": "Question",
+            "name": "What am I buying?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "You choose the artwork, then buy an available roll. Verified payment assigns one of its finished uploaded variants. A digital-only roll includes the digital edition and signed receipt. A canvas-inclusive roll also includes one prepaid US canvas claim."
+            }
           },
           {
-            "@type": "WebPage",
-            "url": "https://www.pixelshroomstudio.com/faq.html",
-            "name": "Digital Editions, Reveal & Purchase FAQ | Pixel Shroom Studio",
-            "description": "Understand six-tier digital editions, payment-confirmed reveals, signed receipts, collection downloads, resale and Gelato physical products from Pixel Shroom Studio.",
-            "publisher": { "@id": "https://www.pixelshroomstudio.com/#studio" }
+            "@type": "Question",
+            "name": "Can I choose my tier?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "A primary roll assigns a tier after payment. You can see the six protected previews, dimensions, listing rules and supply before buying. Forge combines eligible editions into the stated next tier; it does not roll again."
+            }
           },
           {
-            "@type": "FAQPage",
-            "mainEntity": [
-              {
-                "@type": "Question",
-                "name": "What is a numbered digital edition?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "A numbered edition is one privately delivered copy of a studio-uploaded tier image, with its own edition number, prepared file fingerprint and studio-signed receipt. It is recorded in the studio’s internal collection ledger. It does not include the private master asset or a blockchain token. “Minting” here means issuing that numbered copy in the studio ledger, not creating a blockchain asset."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Which tiers are available?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "New six-tier collections use Standard, Silver, Gold, Emerald, Sapphire and Prismatic. LWVader uploads a finished image for each tier before the collection can open. The purchased file uses the assigned tier image; the reveal does not generate an overlay or alter the artwork’s visible pixels. Check the listing for its available tiers, image sizes, supply and caps. Older collections may use an earlier tier structure."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Can I choose my tier before paying?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "A primary edition purchase assigns a tier on the server after verified payment. You choose the artwork, not the tier. Review the listing’s published initial odds and tier caps before checkout. A secondary marketplace purchase is different: you buy the specific tier and edition already shown in that listing."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "How do odds, supply and tier caps work?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "New six-tier collections start with Standard 60%, Silver 20%, Gold 10%, Emerald 6%, Sapphire 3% and Prismatic 1%, unless the listing shows another supported rule set. The server uses secure randomness and atomically reserves one prepared copy. Each collection has a maximum supply and caps on its tiers. If a rolled tier is exhausted, allocation moves down to an available lower tier under the listing’s rules, so effective probabilities change as caps fill. The listing’s current disclosures apply; a rare tier is never guaranteed."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What happens after payment is confirmed?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Once the server verifies payment, the concealed card starts spinning on the forest reveal screen. It keeps moving while your assigned image is prepared and loaded, then slows smoothly into the reveal. There is one continuous opening, without a stationary waiting card or a second roll. Reduced-motion settings disable spinning. The animation presents the server’s result; it never chooses the tier."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What files and dimensions will I receive?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "You receive a numbered copy of the assigned finished tier image in its listed PNG, JPEG or WebP format, plus a signed JSON receipt. Check the tier image dimensions before paying; they can differ from the protected master preview. Copy-identification metadata gives prepared copies distinct file bytes and SHA-256 fingerprints while preserving the uploaded image’s visible pixels. The delivery keeps any lettering or design elements included in that finished artwork; the storefront’s protective preview watermark is not added to the purchase."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What does Add to my collection do?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "After reveal, select Add to my collection. It saves the edition to your signed-in account and starts downloads of the exact minted image and signed JSON receipt. Your browser may ask you to allow multiple downloads or choose where to save them. Keep both files and a backup. Already-saved editions offer file downloads again without another collection entry."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What if preparation, a download or my connection fails?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Your paid allocation keeps the same edition number, tier and prepared copy on retries; it is not rolled again. Keep your confirmation link. Sign in to My collection and use the purchase waiting to add to reopen the reveal when available. If collection saving succeeded but a download failed, retry downloading the same edition’s files. Contact the studio with your order details if processing needs attention."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Do I need an account or a crypto wallet?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Sign in or create a studio account before purchasing a numbered edition. The account stores your collection and lets the site confirm the current holder for downloads and marketplace actions. You do not need a crypto wallet or blockchain transaction for these editions."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "How do I verify my numbered edition?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Open Verify an edition and select the unchanged downloaded image and its signed JSON receipt. Your browser calculates the file’s SHA-256 fingerprint and checks the receipt with the studio’s trusted public signing key. The image is not uploaded for this check. A match confirms the file and studio-signed receipt; it does not prove current ownership, exclusivity or resale value."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Do copies of the same tier have different hashes?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "For new prepared-copy collections, each authorized copy has its own identity metadata and file fingerprint before checkout opens. A paid allocation releases that reserved copy and its signed receipt. Copies can look identical while their file bytes and hashes differ. A hash is calculated from file bytes; it cannot be assigned a different value without a byte change. Earlier delivered files keep their original verification method."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What if a listing sells a direct digital file instead?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "A direct-file listing uses its existing checkout and private download process. It does not include a random tier reveal or a numbered-edition receipt unless its listing explicitly says so. For an earlier studio-issued original, use the original-file verification page with its LWV serial. Follow the format, delivery limits and permissions shown on that listing."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Can I use, modify, redistribute or resell the artwork?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Personal and commercial use, editing, printing, reproduction, redistribution and resale remain permitted under the published Usage Rights. Keep the issued file and receipt unchanged and edit separate copies, because changed bytes produce a different fingerprint. Redistributing a file does not transfer its recorded holder in the studio’s collection ledger."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Does a limited edition give me exclusive rights?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "No, unless a listing explicitly states otherwise. Edition supply limits the studio-issued numbered copies for that collection; it does not make the underlying artwork exclusive or prevent copying. A serial, hash or receipt verifies the issued file’s identity and integrity, not exclusive copyright or ownership of every copy."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "How does the secondary marketplace work?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "When marketplace selling is available, an eligible current holder can complete Stripe seller onboarding and list a ready edition from My collection. Buyers purchase that existing tier and edition; there is no new rarity roll. After verified payment, the studio ledger transfers the recorded holder and site download access. The image and signed receipt stay the same, and previously downloaded files cannot be recalled. The current platform fee is 10%; Stripe processing fees are paid from the platform’s share. Seller payouts follow Stripe requirements. No sale or future resale value is guaranteed."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Can I buy canvas prints, apparel or gifts?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Yes. Canvas and apparel pages show studio-mapped products fulfilled by Gelato. Choose the exact variation, sign in, enter a supported delivery address and request a shipping quote before Stripe checkout. Physical products do not include a tier roll, digital download or numbered-edition transfer. Current availability is checked through the quote; the initial integration supports US delivery in USD."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Can I request any studio artwork on canvas or apparel?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Use the contact form to send the artwork title or LWV serial and the product you want. LWVader will check print suitability, available Gelato product variations and pricing. A request does not guarantee that a product or destination can be supported."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Are these editions NFTs?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "No. Numbered editions and their internal marketplace use the studio’s own ledger, not a blockchain. The NFT genre page remains available for separate release updates. Join studio updates to request NFT release notifications; do not treat a digital edition purchase as an NFT transfer."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Does verification stop copying?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "No. Verification checks the source and integrity of the issued file and signed record. It does not stop screenshots, copying, editing or redistribution, and it does not erase files previously downloaded by another holder."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Are digital purchases refundable?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Because downloaded digital files cannot be returned, completed digital purchases are generally final except where required by law or when the delivered file is defective or materially different from its listing. Contact the studio about a delivery problem. See the Terms and the individual listing."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Does Pixel Shroom Studio claim copyright over purchased artwork?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Pixel Shroom Studio does not assert copyright restrictions over its purchased AI-generated artwork. Copyright treatment of AI-generated material can vary by country and may depend on the amount of human contribution. Pixel Shroom Studio does not promise that a buyer can obtain exclusive copyright protection."
-                }
-              }
-            ]
+            "@type": "Question",
+            "name": "Which offers are open?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Artwork pages check live availability. Digital Rolls are $8 and Canvas + Digital Rolls are $69 plus $13.49 US shipping before applicable tax when enabled. Older listings retain their displayed prices. Bundles and promotional free prints are not enabled in this release."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the Forge work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Combine distinct eligible digital-only editions of the same artwork and tier: 5 Standard for 1 Silver; 3 Silver for 1 Gold; 3 Gold for 1 Emerald; 2 Emerald for 1 Sapphire; 2 Sapphire for 1 Prismatic. Confirm the exact inputs before permanent consumption. Authorized output stock and caps apply."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which editions cannot be Forged?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Consumed, held, listed, printed or canvas-inclusive editions cannot be Forge inputs. An included canvas claim cannot be sacrificed in a digital-only upgrade. Your Vault checks eligibility; the server checks again before committing."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens after payment?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The server verifies payment and reserves one copy. A concealed card starts its continuous opening, then slows into the reveal. Your ready edition saves automatically in My Vault. The animation presents the server result and does not choose it."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What if payment, preparation or my connection is interrupted?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "A paid allocation keeps the same copy, tier and edition number. Return to My Vault or retain your confirmation link. A Forge retry with the same operation returns its original output. Contact the studio if preparation needs attention; do not pay again to recover an existing edition."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What files will I receive?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "One copy of the assigned uploaded image in its listed format and dimensions, plus a studio-signed JSON receipt. The private master is not delivered. Protected public previews are separate from delivered edition files. Download and back up both files from My Vault."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "When is my canvas printed?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Gelato fulfills approved canvases. Printing is optional for digital-only editions. For a canvas-inclusive roll, the included product and US shipping are prepaid but production waits until you redeem the claim and confirm an address. Track the resulting order in My Vault. Delivery estimates depend on the approved product and destination."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does forging include a free canvas?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. A digital-only Forge upgrades the digital edition. Its canvas is purchased separately at the displayed product price, shipping and applicable tax. This release does not enable promotional free Prismatic claims."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What canvas does each tier offer?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Standard and Silver: 16 × 16 slim unframed. Gold: 16 × 16 thick unframed. Emerald: 16 × 20 portrait Black frame. Sapphire: 16 × 20 portrait Dark wood frame. Prismatic: 16 × 20 portrait Natural wood frame. US delivery only."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Are the odds fixed or on-chain?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Published percentages are base roll rates. Listing-specific caps and remaining inventory can change effective odds. Assignments use secure server-side randomness and the studio ledger, not a blockchain. Secure randomness alone is not publicly verifiable proof of fairness."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do I need an account or a crypto wallet?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "A studio account is required for numbered editions, Forge eligibility and private downloads. No crypto wallet is required. Use the password-reset email option on My Vault if you need account recovery."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What does verification establish?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "An unchanged image and its signed receipt can be checked locally using SHA-256 against the studio public key. Verification establishes file identity and source integrity, not exclusivity, resale value or copy protection. Earlier direct-file purchases retain their original verification method."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use or edit the artwork commercially?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Published personal and commercial permissions remain unchanged. Read Usage Rights for editing, reproduction, redistribution and resale. Preserve the issued image and receipt unchanged and edit a separate copy. Forging changes platform records; it cannot erase previously downloaded files."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I get help with downloads or a physical order?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Contact the studio with your order reference or artwork serial. Completed digital purchases follow the published Terms. Report damaged, incorrect or delayed physical products promptly; production and shipment may already be underway. Your applicable rights remain unchanged."
+            }
           }
         ]
       }
     </script>
     <link rel="stylesheet" href="/print-nav.css?v=20261009" />
-    <link rel="stylesheet" href="/forge-print.css?v=20261022-layout" />
+    <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -251,8 +191,7 @@
           ><a href="/verify.html">Verify Serial</a>
         </nav>
         <div class="header-tools">
-          <a href="/collection.html">My Vault<span data-vault-count hidden></span></a
-          ><a href="/cart.html">Cart (<span data-cart-count>0</span>)</a>
+          <a href="/collection.html">My Vault<span data-vault-count hidden></span></a>
           <details class="header-search">
             <summary>Search artworks</summary>
             <form class="site-search" role="search" action="/all-artwork.html#gallery" method="get">
@@ -290,282 +229,154 @@
         ><a href="/faq.html">FAQ</a>
       </nav>
     </header>
-    <main id="main">
-      <section class="shell intro">
-        <p class="eyebrow">Buyer information</p>
-        <h1 id="genre-title">Your edition. Your questions answered.</h1>
-        <p class="lede" id="genre-description">
-          From choosing artwork to revealing, saving, verifying and trading a numbered edition.
-        </p>
+    <main id="main" class="shell section">
+      <p class="eyebrow">Forge &amp; Print help</p>
+      <h1>Your next step, explained.</h1>
+      <p>Rolling, collecting, upgrading and printing—with your purchases together in My Vault.</p>
+      <section class="faq-list">
+        <details>
+          <summary>What am I buying?</summary>
+          <p>
+            You choose the artwork, then buy an available roll. Verified payment assigns one of its
+            finished uploaded variants. A digital-only roll includes the digital edition and signed
+            receipt. A canvas-inclusive roll also includes one prepaid US canvas claim.
+          </p>
+        </details>
+        <details>
+          <summary>Can I choose my tier?</summary>
+          <p>
+            A primary roll assigns a tier after payment. You can see the six protected previews,
+            dimensions, listing rules and supply before buying. Forge combines eligible editions
+            into the stated next tier; it does not roll again.
+          </p>
+        </details>
+        <details>
+          <summary>Which offers are open?</summary>
+          <p>
+            Artwork pages check live availability. Digital Rolls are $8 and Canvas + Digital Rolls
+            are $69 plus $13.49 US shipping before applicable tax when enabled. Older listings
+            retain their displayed prices. Bundles and promotional free prints are not enabled in
+            this release.
+          </p>
+        </details>
+        <details>
+          <summary>How does the Forge work?</summary>
+          <p>
+            Combine distinct eligible digital-only editions of the same artwork and tier: 5 Standard
+            for 1 Silver; 3 Silver for 1 Gold; 3 Gold for 1 Emerald; 2 Emerald for 1 Sapphire; 2
+            Sapphire for 1 Prismatic. Confirm the exact inputs before permanent consumption.
+            Authorized output stock and caps apply.
+          </p>
+        </details>
+        <details>
+          <summary>Which editions cannot be Forged?</summary>
+          <p>
+            Consumed, held, listed, printed or canvas-inclusive editions cannot be Forge inputs. An
+            included canvas claim cannot be sacrificed in a digital-only upgrade. Your Vault checks
+            eligibility; the server checks again before committing.
+          </p>
+        </details>
+        <details>
+          <summary>What happens after payment?</summary>
+          <p>
+            The server verifies payment and reserves one copy. A concealed card starts its
+            continuous opening, then slows into the reveal. Your ready edition saves automatically
+            in My Vault. The animation presents the server result and does not choose it.
+          </p>
+        </details>
+        <details>
+          <summary>What if payment, preparation or my connection is interrupted?</summary>
+          <p>
+            A paid allocation keeps the same copy, tier and edition number. Return to My Vault or
+            retain your confirmation link. A Forge retry with the same operation returns its
+            original output. Contact the studio if preparation needs attention; do not pay again to
+            recover an existing edition.
+          </p>
+        </details>
+        <details>
+          <summary>What files will I receive?</summary>
+          <p>
+            One copy of the assigned uploaded image in its listed format and dimensions, plus a
+            studio-signed JSON receipt. The private master is not delivered. Protected public
+            previews are separate from delivered edition files. Download and back up both files from
+            My Vault.
+          </p>
+        </details>
+        <details>
+          <summary>When is my canvas printed?</summary>
+          <p>
+            Gelato fulfills approved canvases. Printing is optional for digital-only editions. For a
+            canvas-inclusive roll, the included product and US shipping are prepaid but production
+            waits until you redeem the claim and confirm an address. Track the resulting order in My
+            Vault. Delivery estimates depend on the approved product and destination.
+          </p>
+        </details>
+        <details>
+          <summary>Does forging include a free canvas?</summary>
+          <p>
+            No. A digital-only Forge upgrades the digital edition. Its canvas is purchased
+            separately at the displayed product price, shipping and applicable tax. This release
+            does not enable promotional free Prismatic claims.
+          </p>
+        </details>
+        <details>
+          <summary>What canvas does each tier offer?</summary>
+          <p>
+            Standard and Silver: 16 × 16 slim unframed. Gold: 16 × 16 thick unframed. Emerald: 16 ×
+            20 portrait Black frame. Sapphire: 16 × 20 portrait Dark wood frame. Prismatic: 16 × 20
+            portrait Natural wood frame. US delivery only.
+          </p>
+        </details>
+        <details>
+          <summary>Are the odds fixed or on-chain?</summary>
+          <p>
+            Published percentages are base roll rates. Listing-specific caps and remaining inventory
+            can change effective odds. Assignments use secure server-side randomness and the studio
+            ledger, not a blockchain. Secure randomness alone is not publicly verifiable proof of
+            fairness.
+          </p>
+        </details>
+        <details>
+          <summary>Do I need an account or a crypto wallet?</summary>
+          <p>
+            A studio account is required for numbered editions, Forge eligibility and private
+            downloads. No crypto wallet is required. Use the password-reset email option on My Vault
+            if you need account recovery.
+          </p>
+        </details>
+        <details>
+          <summary>What does verification establish?</summary>
+          <p>
+            An unchanged image and its signed receipt can be checked locally using SHA-256 against
+            the studio public key. Verification establishes file identity and source integrity, not
+            exclusivity, resale value or copy protection. Earlier direct-file purchases retain their
+            original verification method.
+          </p>
+        </details>
+        <details>
+          <summary>Can I use or edit the artwork commercially?</summary>
+          <p>
+            Published personal and commercial permissions remain unchanged. Read Usage Rights for
+            editing, reproduction, redistribution and resale. Preserve the issued image and receipt
+            unchanged and edit a separate copy. Forging changes platform records; it cannot erase
+            previously downloaded files.
+          </p>
+        </details>
+        <details>
+          <summary>How do I get help with downloads or a physical order?</summary>
+          <p>
+            Contact the studio with your order reference or artwork serial. Completed digital
+            purchases follow the published Terms. Report damaged, incorrect or delayed physical
+            products promptly; production and shipment may already be underway. Your applicable
+            rights remain unchanged.
+          </p>
+        </details>
       </section>
-      <section class="shell section">
-        <div class="faq">
-          <details>
-            <summary>What is a numbered digital edition?</summary>
-            <p>
-              A numbered edition is one privately delivered copy of a studio-uploaded tier image,
-              with its own edition number, prepared file fingerprint and studio-signed receipt. It
-              is recorded in the studio’s internal collection ledger. It does not include the
-              private master asset or a blockchain token. “Minting” here means issuing that numbered
-              copy in the studio ledger, not creating a blockchain asset.
-            </p>
-          </details>
-          <details>
-            <summary>Which tiers are available?</summary>
-            <p>
-              New six-tier collections use Standard, Silver, Gold, Emerald, Sapphire and Prismatic.
-              LWVader uploads a finished image for each tier before the collection can open. The
-              purchased file uses the assigned tier image; the reveal does not generate an overlay
-              or alter the artwork’s visible pixels. Check the listing for its available tiers,
-              image sizes, supply and caps. Older collections may use an earlier tier structure.
-            </p>
-          </details>
-          <details>
-            <summary>Can I choose my tier before paying?</summary>
-            <p>
-              A primary edition purchase assigns a tier on the server after verified payment. You
-              choose the artwork, not the tier. Review the listing’s published initial odds and tier
-              caps before checkout. A secondary marketplace purchase is different: you buy the
-              specific tier and edition already shown in that listing.
-            </p>
-          </details>
-          <details>
-            <summary>How do odds, supply and tier caps work?</summary>
-            <p>
-              New six-tier collections start with Standard 60%, Silver 20%, Gold 10%, Emerald 6%,
-              Sapphire 3% and Prismatic 1%, unless the listing shows another supported rule set. The
-              server uses secure randomness and atomically reserves one prepared copy. Each
-              collection has a maximum supply and caps on its tiers. If a rolled tier is exhausted,
-              allocation moves down to an available lower tier under the listing’s rules, so
-              effective probabilities change as caps fill. The listing’s current disclosures apply;
-              a rare tier is never guaranteed.
-            </p>
-          </details>
-          <details>
-            <summary>What happens after payment is confirmed?</summary>
-            <p>
-              Once the server verifies payment, the concealed card starts spinning on the forest
-              reveal screen. It keeps moving while your assigned image is prepared and loaded, then
-              slows smoothly into the reveal. There is one continuous opening, without a stationary
-              waiting card or a second roll. Reduced-motion settings disable spinning. The animation
-              presents the server’s result; it never chooses the tier.
-            </p>
-          </details>
-          <details>
-            <summary>What files and dimensions will I receive?</summary>
-            <p>
-              You receive a numbered copy of the assigned finished tier image in its listed PNG,
-              JPEG or WebP format, plus a signed JSON receipt. Check the tier image dimensions
-              before paying; they can differ from the protected master preview. Copy-identification
-              metadata gives prepared copies distinct file bytes and SHA-256 fingerprints while
-              preserving the uploaded image’s visible pixels. The delivery keeps any lettering or
-              design elements included in that finished artwork; the storefront’s protective preview
-              watermark is not added to the purchase.
-            </p>
-          </details>
-          <details>
-            <summary>What does Add to my collection do?</summary>
-            <p>
-              After reveal, select Add to my collection. It saves the edition to your signed-in
-              account and starts downloads of the exact minted image and signed JSON receipt. Your
-              browser may ask you to allow multiple downloads or choose where to save them. Keep
-              both files and a backup. Already-saved editions offer file downloads again without
-              another collection entry.
-            </p>
-          </details>
-          <details>
-            <summary>What if preparation, a download or my connection fails?</summary>
-            <p>
-              Your paid allocation keeps the same edition number, tier and prepared copy on retries;
-              it is not rolled again. Keep your confirmation link. Sign in to My collection and use
-              the purchase waiting to add to reopen the reveal when available. If collection saving
-              succeeded but a download failed, retry downloading the same edition’s files. Contact
-              the studio with your order details if processing needs attention.
-            </p>
-          </details>
-          <details>
-            <summary>Do I need an account or a crypto wallet?</summary>
-            <p>
-              Sign in or create a studio account before purchasing a numbered edition. The account
-              stores your collection and lets the site confirm the current holder for downloads and
-              marketplace actions. You do not need a crypto wallet or blockchain transaction for
-              these editions.
-            </p>
-          </details>
-          <details>
-            <summary>How do I verify my numbered edition?</summary>
-            <p>
-              Open Verify an edition and select the unchanged downloaded image and its signed JSON
-              receipt. Your browser calculates the file’s SHA-256 fingerprint and checks the receipt
-              with the studio’s trusted public signing key. The image is not uploaded for this
-              check. A match confirms the file and studio-signed receipt; it does not prove current
-              ownership, exclusivity or resale value.
-            </p>
-          </details>
-          <details>
-            <summary>Do copies of the same tier have different hashes?</summary>
-            <p>
-              For new prepared-copy collections, each authorized copy has its own identity metadata
-              and file fingerprint before checkout opens. A paid allocation releases that reserved
-              copy and its signed receipt. Copies can look identical while their file bytes and
-              hashes differ. A hash is calculated from file bytes; it cannot be assigned a different
-              value without a byte change. Earlier delivered files keep their original verification
-              method.
-            </p>
-          </details>
-          <details>
-            <summary>What if a listing sells a direct digital file instead?</summary>
-            <p>
-              A direct-file listing uses its existing checkout and private download process. It does
-              not include a random tier reveal or a numbered-edition receipt unless its listing
-              explicitly says so. For an earlier studio-issued original, use the original-file
-              verification page with its LWV serial. Follow the format, delivery limits and
-              permissions shown on that listing.
-            </p>
-          </details>
-          <details>
-            <summary>Can I use, modify, redistribute or resell the artwork?</summary>
-            <p>
-              Personal and commercial use, editing, printing, reproduction, redistribution and
-              resale remain permitted under the published Usage Rights. Keep the issued file and
-              receipt unchanged and edit separate copies, because changed bytes produce a different
-              fingerprint. Redistributing a file does not transfer its recorded holder in the
-              studio’s collection ledger.
-            </p>
-          </details>
-          <details>
-            <summary>Does a limited edition give me exclusive rights?</summary>
-            <p>
-              No, unless a listing explicitly states otherwise. Edition supply limits the
-              studio-issued numbered copies for that collection; it does not make the underlying
-              artwork exclusive or prevent copying. A serial, hash or receipt verifies the issued
-              file’s identity and integrity, not exclusive copyright or ownership of every copy.
-            </p>
-          </details>
-          <details>
-            <summary>How does the secondary marketplace work?</summary>
-            <p>
-              When marketplace selling is available, an eligible current holder can complete Stripe
-              seller onboarding and list a ready edition from My collection. Buyers purchase that
-              existing tier and edition; there is no new rarity roll. After verified payment, the
-              studio ledger transfers the recorded holder and site download access. The image and
-              signed receipt stay the same, and previously downloaded files cannot be recalled. The
-              current platform fee is 10%; Stripe processing fees are paid from the platform’s
-              share. Seller payouts follow Stripe requirements. No sale or future resale value is
-              guaranteed.
-            </p>
-          </details>
-          <details>
-            <summary>Can I buy canvas prints, apparel or gifts?</summary>
-            <p>
-              Yes. Canvas and apparel pages show studio-mapped products fulfilled by Gelato. Choose
-              the exact variation, sign in, enter a supported delivery address and request a
-              shipping quote before Stripe checkout. Physical products do not include a tier roll,
-              digital download or numbered-edition transfer. Current availability is checked through
-              the quote; the initial integration supports US delivery in USD.
-            </p>
-          </details>
-          <details>
-            <summary>Can I request any studio artwork on canvas or apparel?</summary>
-            <p>
-              Use the contact form to send the artwork title or LWV serial and the product you want.
-              LWVader will check print suitability, available Gelato product variations and pricing.
-              A request does not guarantee that a product or destination can be supported.
-            </p>
-          </details>
-          <details>
-            <summary>Are these editions NFTs?</summary>
-            <p>
-              No. Numbered editions and their internal marketplace use the studio’s own ledger, not
-              a blockchain. The NFT genre page remains available for separate release updates. Join
-              studio updates to request NFT release notifications; do not treat a digital edition
-              purchase as an NFT transfer.
-            </p>
-          </details>
-          <details>
-            <summary>Does verification stop copying?</summary>
-            <p>
-              No. Verification checks the source and integrity of the issued file and signed record.
-              It does not stop screenshots, copying, editing or redistribution, and it does not
-              erase files previously downloaded by another holder.
-            </p>
-          </details>
-          <details>
-            <summary>Are digital purchases refundable?</summary>
-            <p>
-              Because downloaded digital files cannot be returned, completed digital purchases are
-              generally final except where required by law or when the delivered file is defective
-              or materially different from its listing. Contact the studio about a delivery problem.
-              See the Terms and the individual listing.
-            </p>
-          </details>
-          <details>
-            <summary>Does Pixel Shroom Studio claim copyright over purchased artwork?</summary>
-            <p>
-              Pixel Shroom Studio does not assert copyright restrictions over its purchased
-              AI-generated artwork. Copyright treatment of AI-generated material can vary by country
-              and may depend on the amount of human contribution. Pixel Shroom Studio does not
-              promise that a buyer can obtain exclusive copyright protection.
-            </p>
-          </details>
-        </div>
-        <p>
-          <a class="button" href="/collection.html">My collection ↗</a>
-          <a class="text-link" href="/verify-mint.html">Verify an edition →</a> ·
-          <a href="/contact.html#contact-form">Ask the studio</a>
-        </p>
-      </section>
-      <section class="shell section">
-        <h2>Forge &amp; Print questions.</h2>
-        <div class="faq">
-          <details>
-            <summary>Are the new Canvas Roll, digital bundles and Forge open?</summary>
-            <p>
-              The new $8 digital roll, $69 canvas roll, digital bundles, Forge trade-ups and prepaid
-              canvas claims are in preview. Their detail pages and cart let you explore or save
-              planned selections. Current digital editions and mapped Gelato products keep their own
-              displayed prices and existing checkout paths.
-            </p>
-          </details>
-          <details>
-            <summary>Does the Canvas Roll ship immediately?</summary>
-            <p>
-              The planned $69 Canvas Roll includes one digital image and one canvas claim, plus
-              $13.49 prepaid shipping and applicable tax. Production is held until redemption. Its
-              product and shipping are paid once; a Prismatic result does not create an extra second
-              free canvas. This new entitlement flow is not open yet.
-            </p>
-          </details>
-          <details>
-            <summary>Are rolls on-chain or publicly provably fair?</summary>
-            <p>
-              Current edition rolls are assigned securely on the server after verified payment. They
-              are not on-chain. A cryptographic random-number generator is not, by itself, a
-              publicly verifiable fairness proof. Listing-specific rates and caps apply; guaranteed
-              bundles need their own disclosed rules.
-            </p>
-          </details>
-          <details>
-            <summary>Does every tier upgrade the physical canvas?</summary>
-            <p>
-              Under the planned mapping, Standard and Silver both use a 16 × 16 slim canvas. Gold
-              uses a 16 × 16 thick canvas. Emerald, Sapphire and Prismatic use 16 × 20 portrait
-              framed canvases in Black, Dark wood and Natural wood finishes. Only Gold and above
-              upgrade the physical format: 20% combined base odds.
-            </p>
-          </details>
-          <details>
-            <summary>Does a digital Forge upgrade include a free print?</summary>
-            <p>
-              A digital-only Forge upgrade changes the digital asset; it does not automatically
-              include a prepaid canvas. Planned later product prices are $49 for Standard/Silver,
-              $55 for Gold and $79 for Emerald/Sapphire, plus $13.49 shipping and applicable tax. An
-              eligible unused Prismatic promotion waives one product charge, with shipping and any
-              applicable tax still additional.
-            </p>
-          </details>
-        </div>
-      </section>
+      <p>
+        <a class="button" href="/collection.html">Open My Vault →</a>
+        <a href="/contact.html">Contact the studio →</a> ·
+        <a href="/usage-rights.html">Usage rights</a> · <a href="/terms.html">Terms</a>
+      </p>
     </main>
     <footer>
       <div class="shell footer-grid forge-footer">
@@ -576,14 +387,14 @@
             trace.
           </p>
           <p>
-            Forge &amp; Print offers are in preview. Current listings show their available purchase
-            paths.
+            Roll a variant. Combine eligible editions. Print when you choose. Availability is shown
+            before payment.
           </p>
         </div>
         <div>
           <h2>Studio</h2>
           <a href="/about.html">About LWVader</a
-          ><a href="/#journal" data-journal-link hidden>Studio Journal</a
+          ><a href="/about.html#journal" data-journal-link hidden>Studio Journal</a
           ><a href="/about.html#sir-shroomalot">Sir Shroomalot’s story</a
           ><a href="/contact.html">Contact</a><a href="/all-artwork.html">Explore gallery</a
           ><a href="/apparel.html">Apparel &amp; gifts</a>
@@ -594,7 +405,7 @@
           ><a href="/forge.html#recipes">Forge trade-up rules</a
           ><a href="/canvas-specs.html">Canvas specs &amp; sizing</a
           ><a href="/how-it-works.html">How it works</a><a href="/collection.html">My Vault</a
-          ><a href="/print-orders.html">Physical orders</a
+          ><a href="/collection.html?tab=orders">My orders</a
           ><a href="/market.html">Secondary marketplace</a>
         </div>
         <div>
@@ -614,8 +425,8 @@
         </div>
       </div>
     </footer>
-    <script type="module" src="/app.js?v=20261022-layout"></script>
-    <script type="module" src="/forge-print.js?v=20261022-layout"></script>
-    <script type="module" src="/storefront-shell.js?v=20261022-layout"></script>
+    <script type="module" src="/app.js?v=20261022-loop"></script>
+    <script type="module" src="/forge-print.js?v=20261022-loop"></script>
+    <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
   </body>
 </html>

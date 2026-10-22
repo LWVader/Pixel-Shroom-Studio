@@ -58,7 +58,9 @@ export async function submitPaidPrint(db: any, id: string) {
     if (
       !refreshed.some(
         (option: any) =>
-          option.uid === order.shipment_method_uid && option.cents <= order.shipping_cents,
+          option.uid === order.shipment_method_uid &&
+          option.cents <=
+            (order.product_snapshot.providerShipping?.[option.uid] ?? order.shipping_cents),
       )
     )
       throw new Error("Delivery quote changed; studio review required.");

@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { load } from "cheerio";
@@ -11,7 +12,7 @@ import {
   safeArtworkId,
 } from "../../public/forge-print-core.js";
 import { renderArtworkDetail } from "../../public/artwork-page-core.js";
-it("discloses planned prices separately from current checkout and protects public artwork text", () => {
+it("keeps new roll selection separate from existing checkout and protects public artwork text", () => {
   const row = {
     id: 1,
     title: "<script>alert(1)</script>",
@@ -26,7 +27,9 @@ it("discloses planned prices separately from current checkout and protects publi
   const $ = load(html);
   expect($('[data-buy="1"]')).toHaveLength(1);
   expect($(".roll-paths a")).toHaveLength(2);
-  expect($(".offer-state").text()).toContain("not open");
+  expect($("#roll-purchase input[name=offer]")).toHaveLength(2);
+  expect($("#roll-purchase button").attr("disabled")).toBeDefined();
+  expect($(".legacy-detail [data-buy]")).toHaveLength(1);
   expect(rollPaths({ ...row, category: "NFT" })).toBe("");
   expect(PLANNED_OFFERS.canvas.price + PLANNED_OFFERS.canvas.shipping).toBe(82.49);
   expect(TIER_FINISHES.reduce((n, t) => n + t.odds, 0)).toBe(100);
@@ -66,4 +69,10 @@ it("new routes are linked, indexable guides have canonical metadata, and cart st
   }
   const cart = load(readFileSync("public/cart.html", "utf8"));
   expect(cart("meta[name=robots]").attr("content")).toContain("noindex");
+});
+
+it("enforces transactional Forge and prepaid canvas boundaries in PostgreSQL", () => {
+  expect(
+    execFileSync(process.execPath, ["tests/forge-loop-database.mjs"], { encoding: "utf8" }),
+  ).toContain("PASS");
 });

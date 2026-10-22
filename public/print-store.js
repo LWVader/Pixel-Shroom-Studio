@@ -1,5 +1,5 @@
 import { supabase, invoke } from "./supabase-client.js";
-import { escapeHtml, safePreviewUrl } from "./catalog-core.js?v=20261022-layout";
+import { escapeHtml, safePreviewUrl } from "./catalog-core.js?v=20261022-loop";
 const status = document.querySelector("#print-status"),
   grid = document.querySelector("#print-products"),
   dialog = document.querySelector("#print-dialog"),
@@ -7,6 +7,8 @@ const status = document.querySelector("#print-status"),
   result = document.querySelector("#print-quote-result");
 const money = (cents) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+const editionMint = new URLSearchParams(location.search).get("mint");
+let canvasClaim = null;
 let products = [],
   selected,
   quote,
@@ -61,12 +63,13 @@ form.addEventListener("submit", async (event) => {
     const response = await call({
       action: "quote",
       productId: selected.id,
-      quantity: Number(values.get("quantity")),
+      quantity: editionMint ? 1 : Number(values.get("quantity")),
+      ...(editionMint ? { mintId: editionMint } : {}),
       recipient,
       consent: values.get("consent") === "on",
     });
     quote = response;
-    result.innerHTML = `<label>Delivery option<select id="print-shipping">${response.shipping.map((s) => `<option value="${escapeHtml(s.uid)}">${escapeHtml(s.name)} · ${money(s.cents)}${s.minDays && s.maxDays ? ` · estimated ${s.minDays}–${s.maxDays} days` : ""}</option>`).join("")}</select></label><p id="print-total"></p><p>Taxes, if applicable, are calculated at Stripe checkout. Confirm your delivery address before continuing. A physical purchase does not include an artwork download or a numbered digital edition.</p><button type="button" id="print-pay" class="button">${response.testMode ? "Continue to test checkout" : "Continue to secure checkout"} ↗</button>`;
+    result.innerHTML = `<label>Delivery option<select id="print-shipping">${response.shipping.map((s) => `<option value="${escapeHtml(s.uid)}">${escapeHtml(s.name)} · ${money(s.cents)}${s.minDays && s.maxDays ? ` · estimated ${s.minDays}–${s.maxDays} days` : ""}</option>`).join("")}</select></label><p id="print-total"></p><p>Taxes, if applicable, are calculated at Stripe checkout. Confirm your delivery address before continuing. This prints the selected design. Your existing digital edition remains in My Vault.</p><button type="button" id="print-pay" class="button">${response.prepaid ? "Redeem included canvas" : response.testMode ? "Continue to test checkout" : "Continue to secure checkout"} ↗</button>`;
     const shipping = result.querySelector("select"),
       total = result.querySelector("#print-total");
     const update = () => {
@@ -84,6 +87,12 @@ form.addEventListener("submit", async (event) => {
           quoteId: quote.quoteId,
           shippingMethod: shipping.value,
         });
+        if (response.redeemed && response.orderUrl) {
+          const orderUrl = new URL(response.orderUrl);
+          if (orderUrl.origin !== location.origin) throw Error("Invalid order destination.");
+          location.assign(orderUrl.href);
+          return;
+        }
         const url = new URL(response.checkoutUrl);
         if (url.origin !== "https://checkout.stripe.com") throw Error("Invalid checkout URL.");
         location.assign(url.href);
@@ -102,23 +111,38 @@ form.addEventListener("submit", async (event) => {
   }
 });
 try {
-  const response = await call({ action: "catalog" });
+  const response = await call({
+    action: "catalog",
+    ...(editionMint ? { mintId: editionMint } : {}),
+  });
+  canvasClaim = response.canvasClaim;
+  if (editionMint) {
+    document.querySelector("h1").textContent = "Print your chosen edition";
+    document.querySelector("main > section p")?.setAttribute("hidden", "");
+  }
+  if (editionMint) {
+    form.elements.quantity.value = "1";
+    form.elements.quantity.closest("label").hidden = true;
+  }
   products = (response.products || []).filter(
     (p) => p.kind === document.body.dataset.printCategory,
   );
   enabled = response.enabled;
   testMode = response.testMode;
-  status.textContent = products.length
-    ? testMode
-      ? "Test shop: physical products are not being shipped."
-      : enabled
-        ? "Choose your product variation, then request delivery options."
-        : "Products are being prepared. Checkout is not open yet."
-    : "New printed products are being prepared. Request your favorite artwork through the contact form.";
+  status.textContent =
+    canvasClaim === "available"
+      ? "Your included canvas and US shipping are already paid. Review the address and redeem once."
+      : products.length
+        ? testMode
+          ? "Test shop: physical products are not being shipped."
+          : enabled
+            ? "Choose your product variation, then request delivery options."
+            : "Products are being prepared. Checkout is not open yet."
+        : "New printed products are being prepared. Request your favorite artwork through the contact form.";
   grid.innerHTML = products
     .map(
       (p) =>
-        `<article class="print-product"><img src="${escapeHtml(safePreviewUrl(p.preview_url))}" width="600" height="600" loading="lazy" alt="${escapeHtml(p.title)} product preview"><div><h3>${escapeHtml(p.title)}</h3><p>${escapeHtml(p.variant_label)}</p><p>${money(p.retail_cents)} + delivery and applicable tax</p><button class="button" type="button" data-print-product="${escapeHtml(p.id)}" ${enabled ? "" : "disabled"}>Choose delivery ↗</button></div></article>`,
+        `<article class="print-product"><img src="${escapeHtml(safePreviewUrl(p.preview_url))}" width="600" height="600" loading="lazy" alt="${escapeHtml(p.title)} product preview"><div><h3>${escapeHtml(p.title)}</h3><p>${escapeHtml(p.variant_label)}</p><p>${canvasClaim === "available" ? "Included canvas claim · no second product or shipping charge" : money(p.retail_cents) + " + $13.49 US delivery and applicable tax"}</p><button class="button" type="button" data-print-product="${escapeHtml(p.id)}" ${enabled ? "" : "disabled"}>Choose delivery ↗</button></div></article>`,
     )
     .join("");
   const schema = document.querySelector("#print-schema");

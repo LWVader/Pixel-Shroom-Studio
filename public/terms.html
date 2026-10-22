@@ -45,7 +45,7 @@
       }
     </script>
     <link rel="stylesheet" href="/print-nav.css?v=20261009" />
-    <link rel="stylesheet" href="/forge-print.css?v=20261022-layout" />
+    <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -65,8 +65,7 @@
           ><a href="/verify.html">Verify Serial</a>
         </nav>
         <div class="header-tools">
-          <a href="/collection.html">My Vault<span data-vault-count hidden></span></a
-          ><a href="/cart.html">Cart (<span data-cart-count>0</span>)</a>
+          <a href="/collection.html">My Vault<span data-vault-count hidden></span></a>
           <details class="header-search">
             <summary>Search artworks</summary>
             <form class="site-search" role="search" action="/all-artwork.html#gallery" method="get">
@@ -158,6 +157,30 @@
           return terms for a physical product.
         </p>
       </div>
+      <section>
+        <h2>Forge &amp; Print editions</h2>
+        <p>
+          For enabled new offers, a Digital Roll costs $8 before applicable tax. Canvas + Digital
+          costs $69 plus $13.49 prepaid US shipping before applicable tax and includes one canvas
+          claim. The digital variant is randomly assigned after verified payment; the canvas is
+          produced only after claim redemption. Each artwork discloses the available offer and
+          listing-specific rules before payment.
+        </p>
+        <p>
+          Forge consumes the confirmed eligible digital-only edition records in exchange for the
+          stated next-tier copy, subject to authorized output inventory. Consumed editions cannot be
+          downloaded, printed or resold through the studio again. Previously downloaded files and
+          published permissions cannot be revoked. Editions attached to prepaid canvas claims or
+          print orders are excluded from this release's Forge. Digital-only upgrades do not include
+          a free print.
+        </p>
+        <p>
+          Included claims are redeemable once for the associated artwork and tier in the US, with no
+          second product or shipping charge. They cannot be transferred or combined. Bundles and
+          promotional free prints are not enabled in this release. Existing purchases keep their
+          stated price and delivery promises.
+        </p>
+      </section>
     </main>
     <footer>
       <div class="shell footer-grid forge-footer">
@@ -168,14 +191,14 @@
             trace.
           </p>
           <p>
-            Forge &amp; Print offers are in preview. Current listings show their available purchase
-            paths.
+            Roll a variant. Combine eligible editions. Print when you choose. Availability is shown
+            before payment.
           </p>
         </div>
         <div>
           <h2>Studio</h2>
           <a href="/about.html">About LWVader</a
-          ><a href="/#journal" data-journal-link hidden>Studio Journal</a
+          ><a href="/about.html#journal" data-journal-link hidden>Studio Journal</a
           ><a href="/about.html#sir-shroomalot">Sir Shroomalot’s story</a
           ><a href="/contact.html">Contact</a><a href="/all-artwork.html">Explore gallery</a
           ><a href="/apparel.html">Apparel &amp; gifts</a>
@@ -186,7 +209,7 @@
           ><a href="/forge.html#recipes">Forge trade-up rules</a
           ><a href="/canvas-specs.html">Canvas specs &amp; sizing</a
           ><a href="/how-it-works.html">How it works</a><a href="/collection.html">My Vault</a
-          ><a href="/print-orders.html">Physical orders</a
+          ><a href="/collection.html?tab=orders">My orders</a
           ><a href="/market.html">Secondary marketplace</a>
         </div>
         <div>
@@ -206,7 +229,7 @@
         </div>
       </div>
     </footer>
-    <script type="module" src="/forge-print.js?v=20261022-layout"></script>
-    <script type="module" src="/storefront-shell.js?v=20261022-layout"></script>
+    <script type="module" src="/forge-print.js?v=20261022-loop"></script>
+    <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
   </body>
 </html>

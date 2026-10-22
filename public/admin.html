@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/styles.css?v=20261014-size" />
     <link rel="stylesheet" href="/admin-dashboard.css?v=20261021-catalog-relaunch" />
     <link rel="stylesheet" href="/print-store.css?v=20261022-preflight" />
+    <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
   </head>
   <body class="admin-page">
     <!-- SECTION: Administrator sign-in gate -->
@@ -367,6 +368,9 @@
                     prepare their authorized caps. Total sold editions still cannot exceed maximum
                     supply.
                   </p>
+                  <button type="button" id="prepare-tier-previews">
+                    Prepare protected previews for saved tier images
+                  </button>
                   <p id="copy-inventory-status" role="status">
                     Copy hashes are prepared after the finished images are saved.
                   </p>
@@ -476,6 +480,32 @@
                 <p id="gelato-admin-status" role="status"></p>
                 <div id="gelato-admin-list"></div>
                 <form id="gelato-product-form" class="print-form">
+                  <fieldset>
+                    <legend>Forge &amp; Print edition mapping (optional)</legend>
+                    <p>
+                      One dedicated print-ready composition per artwork and tier. Standard/Silver:
+                      16 × 16 slim; Gold: 16 × 16 thick; Emerald/Sapphire/Prismatic: 16 × 20
+                      portrait framed. Use $49, $55 or $79 for ordinary later prints. Promotional
+                      free claims are not enabled by this mapping.
+                    </p>
+                    <label
+                      >Artwork ID<input
+                        name="edition_artwork_id"
+                        type="number"
+                        min="1"
+                        step="1" /></label
+                    ><label
+                      >Edition tier<select name="edition_tier">
+                        <option value="">Not an edition mapping</option>
+                        <option>Standard</option>
+                        <option>Silver</option>
+                        <option>Gold</option>
+                        <option>Emerald</option>
+                        <option>Sapphire</option>
+                        <option>Prismatic</option>
+                      </select></label
+                    >
+                  </fieldset>
                   <label>Product title<input name="title" maxlength="160" required="" /></label
                   ><label
                     >Category<select name="kind">
@@ -809,8 +839,10 @@
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=20261021-catalog-relaunch"></script>
+    <script type="module" src="/admin.js?v=20261022-loop"></script>
 
-    <script type="module" src="/gelato-admin.js?v=20261022-preflight"></script>
+    <script type="module" src="/gelato-admin.js?v=20261022-loop"></script>
+    <script type="module" src="/forge-print.js?v=20261022-loop"></script>
+    <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
   </body>
 </html>

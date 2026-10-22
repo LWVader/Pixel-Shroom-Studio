@@ -497,3 +497,129 @@ header .primary {
 .detail-preview-trigger:disabled {
   cursor: wait;
 }
+/* Forge & Print customer loop. Brand type and colors inherit from the studio. */
+.roll-paths .offer-state {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+.art-info .roll-paths {
+  margin-top: 12px;
+}
+.legacy-card-purchase {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.legacy-card-purchase summary,
+.legacy-detail summary {
+  cursor: pointer;
+  color: var(--gold);
+}
+.art-info > .artwork-provenance,
+.art-info > .verify-link {
+  display: none;
+}
+.current-listing .roll-paths {
+  display: none;
+}
+.current-listing .legacy-card-purchase {
+  display: contents;
+}
+.current-listing .legacy-card-purchase > summary {
+  display: none;
+}
+.tier-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.tier-preview {
+  border: 1px solid var(--line);
+  padding: 16px;
+  min-width: 0;
+}
+.tier-preview img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.vault-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 24px 0;
+}
+.vault-tabs button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--cream);
+  padding: 12px 18px;
+  font: inherit;
+  cursor: pointer;
+}
+.vault-tabs button[aria-pressed="true"] {
+  background: var(--gold);
+  color: var(--navy);
+}
+.forge-group {
+  border: 1px solid var(--line);
+  padding: 24px;
+  margin: 24px 0;
+}
+.forge-group fieldset {
+  display: grid;
+  gap: 12px;
+  max-height: 320px;
+  overflow: auto;
+}
+.forge-group label {
+  display: block;
+  margin: 12px 0;
+}
+.forge-group input[type="checkbox"] {
+  width: auto;
+  min-width: 20px;
+  height: 20px;
+  vertical-align: middle;
+}
+.forge-result {
+  min-height: 24px;
+}
+[data-vault-panel][hidden],
+.foil-purchase-actions[hidden] {
+  display: none !important;
+}
+@media (max-width: 760px) {
+  .tier-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vault-tabs {
+    gap: 6px;
+  }
+  .vault-tabs button {
+    padding: 12px;
+  }
+  .forge-group {
+    padding: 16px;
+  }
+}
+.art-detail-copy > h2 {
+  font-size: clamp(26px, 2.6vw, 38px);
+  line-height: 1.15;
+  margin: 20px 0;
+}
+.art-detail-copy > h1 {
+  font-size: clamp(36px, 4.5vw, 62px);
+  line-height: 1.08;
+  margin: 18px 0;
+}
+.art-detail-copy > p {
+  margin: 14px 0;
+}
+.vault-print-card {
+  border: 1px solid var(--line);
+  padding: 20px;
+}
+.vault-print-card h3 {
+  font-size: 24px;
+}

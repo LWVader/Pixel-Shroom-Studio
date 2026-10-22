@@ -5,6 +5,12 @@ test("identity section, artist story and verification FAQ stay connected", async
   request,
 }) => {
   test.slow(); // Multi-page accessibility scan plus verification navigation.
+  await page.route("**/*.supabase.co/**", (route) => {
+    const p = new URL(route.request().url()).pathname;
+    return p.endsWith("/articles") || p.endsWith("/foil_catalog")
+      ? route.fulfill({ json: [] })
+      : route.abort();
+  });
   await page.goto("/");
   const order = await page
     .locator("main > section[id]")
@@ -25,16 +31,17 @@ test("identity section, artist story and verification FAQ stay connected", async
   ).toEqual([]);
   expect((await request.get("/about", { maxRedirects: 0 })).status()).toBe(301);
   await page.goto("/faq.html");
-  await page.getByText("How do I verify my numbered edition?", { exact: true }).click();
+  await page.getByText("What does verification establish?", { exact: true }).click();
   await expect(page.locator("details[open]")).toContainText("SHA-256");
   await expect(page.locator("details[open]")).toContainText("exclusivity");
   const schema = await page
     .locator('script[type="application/ld+json"]')
     .evaluate((node) => JSON.parse(node.textContent));
   expect(
-    schema["@graph"]
-      .find((node) => node["@type"] === "FAQPage")
-      .mainEntity.find((question) => question.name === "How do I verify my numbered edition?")
+    (schema["@graph"]
+      ? schema["@graph"].find((node) => node["@type"] === "FAQPage")
+      : schema
+    ).mainEntity.find((question) => question.name === "What does verification establish?")
       .acceptedAnswer.text,
   ).toContain("SHA-256");
   await page.goto("/genre.html?genre=fantasy");

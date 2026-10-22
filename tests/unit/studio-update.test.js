@@ -73,7 +73,7 @@ it("uses protected featured previews and studio physical-product destinations", 
   const $ = load(renderFeatured(validRows([row])));
   expect($(".featured-card")).toHaveLength(1);
   expect($("img").attr("src")).toBe(row.preview_url);
-  expect($("a").attr("href")).toContain("genre=dark-fantasy#genre-gallery");
+  expect($("a").attr("href")).toBe("/art.html?id=47");
   const catalog = {
     products: [
       {
@@ -108,7 +108,7 @@ it("preserves the hero, latest gallery and honest hidden states", () => {
   const $ = load(fs.readFileSync("public/index.html", "utf8"));
   expect($(".loop-ribbon > li")).toHaveLength(3);
   expect($(".hero img").attr("src")).toBe("/assets/hero-1280.webp");
-  expect($("#journal").attr("hidden")).toBeDefined();
+  expect($("#journal")).toHaveLength(0);
   expect($("#customer-feedback").attr("hidden")).toBeDefined();
   expect($("#studio-updates-form [name=consent]").attr("required")).toBeDefined();
   expect($("#catalog").attr("data-mode")).toBe("latest");

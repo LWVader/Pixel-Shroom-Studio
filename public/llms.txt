@@ -4,7 +4,7 @@
 
 Purchases are nonexclusive unless a listing explicitly states otherwise. Signing verifies source and file integrity, not exclusive ownership.
 
-The canonical website is https://www.pixelshroomstudio.com/. Digital artwork and physical products are separate offerings. Physical products are mapped to Gelato product UIDs. The studio collects delivery details, requests a quote, takes payment through Stripe and submits a dedicated print-ready file to Gelato for fulfillment. The initial integration supports US delivery in USD. Visitors can request any artwork listed on the studio website for apparel or canvas prints through the contact form; available options and pricing are discussed individually.
+The canonical website is https://www.pixelshroomstudio.com/. Digital-only editions and independent physical products are separate purchases; an enabled canvas-inclusive roll includes one prepaid print claim. Physical products are mapped to Gelato product UIDs. The studio collects delivery details, requests a quote, takes payment through Stripe and submits a dedicated print-ready file to Gelato for fulfillment. The initial integration supports US delivery in USD. Visitors can request any artwork listed on the studio website for apparel or canvas prints through the contact form; available options and pricing are discussed individually.
 
 Use the linked pages for current listings, purchase details and usage rights. Availability can change. Public gallery images are previews, not unrestricted original downloads. A serial or verification result does not by itself establish copyright ownership, NFT ownership or eligibility for commercial use. Consult the published usage rights and listing details.
 
@@ -64,10 +64,5 @@ After reveal, Add to my collection saves the edition to the authenticated accoun
 
 - [Physical orders](https://www.pixelshroomstudio.com/print-orders.html): Private account page for print-order payment and fulfillment status; physical purchases do not include digital downloads or numbered editions.
 
-## Forge & Print storefront preview
-
-- [The Forge](https://www.pixelshroomstudio.com/forge.html): planned same-artwork trade-up recipes; calculator only, no live burn transactions.
-- [Drop odds](https://www.pixelshroomstudio.com/drop-odds.html): base six-tier rates and proposed bundle guarantees. Rolls are server-side, not on-chain.
-- [Canvas specifications](https://www.pixelshroomstudio.com/canvas-specs.html): planned 16 × 16 unframed and 16 × 20 portrait framed products, US only.
-- Planned offers: digital roll $8; canvas roll $69 + $13.49 prepaid shipping, before applicable tax. New checkout paths, guarantees and Forge are not yet open.
-- Current listings retain their own available prices and delivery terms. A signed receipt verifies source/integrity and does not grant exclusivity.
+## Forge & Print customer loop
+Choose artwork, pay for an available roll, reveal the assigned uploaded variant, then keep, Forge eligible digital-only editions, or choose canvas printing in My Vault. New offers require enabled server checkout, six protected tier previews and prepared copy inventory. Canvas-inclusive offers require six approved US print mappings. Bundles and promotional free prints are not enabled in this release. Existing purchases retain their earlier terms.

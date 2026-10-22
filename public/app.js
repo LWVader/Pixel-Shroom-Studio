@@ -1,4 +1,4 @@
-import { applyFoilListings } from "./foil-store.js?v=20261022-layout";
+import { applyFoilListings } from "./foil-store.js?v=20261022-loop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import {
   GENRES,
@@ -12,8 +12,8 @@ import {
   escapeHtml,
   checkoutUrl,
   cardMarkup,
-} from "./catalog-core.js?v=20261022-layout";
-import { updateArtworkFeatures } from "./studio-home.js?v=20261022-layout";
+} from "./catalog-core.js?v=20261022-loop";
+import { updateArtworkFeatures } from "./studio-home.js?v=20261022-loop";
 const catalog = document.querySelector("#catalog"),
   status = document.querySelector("#catalog-status");
 const mode = catalog?.dataset.mode,
@@ -76,6 +76,8 @@ function render() {
   updateArtworkFeatures(rows);
   enableActions();
   applyFoilListings();
+  if (mode === "detail")
+    catalog.querySelectorAll(".legacy-card-purchase").forEach((d) => (d.open = true));
   catalog.setAttribute("aria-busy", "false");
   const relevant =
     mode === "genre"

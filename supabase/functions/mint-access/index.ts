@@ -27,6 +27,7 @@ Deno.serve(async (request: Request) => {
         .eq("orders.status", "paid")
         .eq("state", "ready")
         .eq("market_frozen", false)
+        .is("forge_consumed_at", null)
         .not("collection_added_at", "is", null);
       if (error) throw error;
       return json({ count: count || 0 }, 200, request);
@@ -49,7 +50,7 @@ Deno.serve(async (request: Request) => {
     let query = db
       .from("mints")
       .select(
-        "id,order_id,owner_id,collection_added_at,ownership_version,market_frozen,listing_id,state,mint_number,tier,artifact_path,manifest,width,height,created_at,foil_listings(master_title,master_serial,max_supply)",
+        "id,order_id,owner_id,collection_added_at,ownership_version,market_frozen,forge_consumed_at,listing_id,state,mint_number,tier,artifact_path,manifest,width,height,created_at,foil_listings(master_title,master_serial,max_supply),canvas_claims(mint_id),gelato_orders!edition_mint_id(fulfillment_state)",
       );
     let orderCredentialAccess = false;
     if (body.orderId && body.accessToken && !["collection", "uncollected"].includes(body.action)) {
@@ -120,8 +121,14 @@ Deno.serve(async (request: Request) => {
         title: listing?.master_title,
         serial: listing?.master_serial,
         maxSupply: listing?.max_supply,
-        state: row.market_frozen ? "held" : row.state,
-        canList: row.state === "ready" && !row.market_frozen && order?.status === "paid",
+        state: row.forge_consumed_at ? "forged" : row.market_frozen ? "held" : row.state,
+        artworkId: row.listing_id,
+        canList:
+          row.state === "ready" &&
+          !row.market_frozen &&
+          order?.status === "paid" &&
+          !(Array.isArray(row.canvas_claims) ? row.canvas_claims.length : row.canvas_claims) &&
+          !(row.gelato_orders || []).some((o: any) => o.fulfillment_state !== "canceled"),
         mintNumber: row.mint_number,
         tier: row.tier,
         width: row.width,

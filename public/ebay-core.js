@@ -1,5 +1,5 @@
 // Public eBay previews only; shared by the Worker and browser.
-import { escapeHtml } from "./catalog-core.js";
+import { escapeHtml } from "./catalog-core.js?v=20261022-loop";
 export const SELLER = "lwvader";
 export const STORE_URL = "https://www.ebay.com/sch/i.html?_ssn=lwvader";
 export const CATEGORIES = ["canvas", "apparel"];

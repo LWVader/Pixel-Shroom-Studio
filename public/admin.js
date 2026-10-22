@@ -663,6 +663,7 @@ function updateTierUploadStatus() {
 }
 async function uploadTierImages(artworkId) {
   const assets = [];
+  const previews = [];
   for (const tier of FOIL_TIERS) {
     const file = artForm.elements.namedItem("tierImage" + tier).files[0];
     if (!file) continue;
@@ -683,6 +684,13 @@ async function uploadTierImages(artworkId) {
       .upload(path, file, { contentType: file.type, upsert: false });
     if (error) throw error;
     assets.push({ tier, path, sha256, mimeType: file.type, width, height });
+    const preview = await generatePreview(file, artForm.elements.serialNumber.value);
+    const previewPath = `foil-tiers/${artworkId}/${tier.toLowerCase()}/${crypto.randomUUID()}.webp`;
+    const { error: pe } = await supabase.storage
+      .from("previews")
+      .upload(previewPath, preview.blob, { contentType: "image/webp", upsert: false });
+    if (pe) throw pe;
+    previews.push({ target: artworkId, chosen_tier: tier, preview: previewPath });
   }
   if (assets.length) {
     const { error } = await supabase.rpc("set_foil_tier_assets", {
@@ -691,6 +699,10 @@ async function uploadTierImages(artworkId) {
     });
     if (error)
       throw new Error("Artwork saved, but tier images were not registered: " + error.message);
+    for (const preview of previews) {
+      const { error } = await supabase.rpc("set_foil_tier_preview", preview);
+      if (error) throw error;
+    }
   }
 }
 
@@ -1205,3 +1217,72 @@ document.querySelector("#dashboard-date").textContent = new Date().toLocaleDateS
 const requestedView = location.hash.slice(1);
 if (document.getElementById(requestedView)?.classList.contains("admin-view"))
   openAdminView(requestedView);
+
+// Catalog relaunch is a single admin-only transaction; no purchase history is deleted.
+document.querySelector("#archive-catalog")?.addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  const status = document.querySelector("#catalog-relaunch-status");
+  if (!items.length) {
+    status.textContent = "There are no current artwork listings to remove.";
+    return;
+  }
+  if (
+    !confirm(
+      `Remove all ${items.length} current artwork listings from public view for reloading? Stored files, orders, editions, receipts and eBay products will be preserved.`,
+    )
+  )
+    return;
+  button.disabled = true;
+  try {
+    await requireAdmin();
+    const { data, error } = await supabase.rpc("archive_catalog_for_relaunch", {
+      expected_count: items.length,
+    });
+    if (error) throw error;
+    resetArtworkForm();
+    await loadItems();
+    await loadDashboard();
+    status.textContent = `${data.archived} artwork listings removed from the public catalog. Public gallery refresh can take up to 60 seconds. Add a new image, upload all six tier variations, and prepare copy hashes before enabling checkout.`;
+  } catch (error) {
+    status.textContent = `Catalog reset did not complete: ${error.message}. If the action is unavailable, apply the catalog relaunch migration first.`;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+// Regenerate public previews for existing locked sources without replacing signed files.
+document.querySelector("#prepare-tier-previews")?.addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    await requireAdmin();
+    if (!editingArtworkId || savedTierAssets.length !== 6)
+      throw Error("Open an existing collection with all six saved tier images first.");
+    for (const asset of savedTierAssets) {
+      const { data, error } = await supabase.storage.from("originals").download(asset.path);
+      if (error) throw error;
+      const file = new File([data], "tier-image", { type: asset.mimeType });
+      const preview = await generatePreview(file, artForm.elements.serialNumber.value);
+      const path = `foil-tiers/${editingArtworkId}/${asset.tier.toLowerCase()}/${crypto.randomUUID()}.webp`;
+      const upload = await supabase.storage
+        .from("previews")
+        .upload(path, preview.blob, { contentType: "image/webp", upsert: false });
+      if (upload.error) throw upload.error;
+      const saved = await supabase.rpc("set_foil_tier_preview", {
+        target: editingArtworkId,
+        chosen_tier: asset.tier,
+        preview: path,
+      });
+      if (saved.error) throw saved.error;
+    }
+    showMessage(
+      "#form-message",
+      "Six protected previews prepared. Private tier sources and issued file hashes are unchanged.",
+      true,
+    );
+  } catch (error) {
+    showMessage("#form-message", error.message);
+  } finally {
+    button.disabled = false;
+  }
+});

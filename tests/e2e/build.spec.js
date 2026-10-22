@@ -37,6 +37,7 @@ test("compiled collections without search, keyboard preview and unsafe checkout"
   await expect(page.locator("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator("dialog")).not.toBeVisible();
+  await page.locator(".legacy-card-purchase > summary").first().click();
   await page.locator("[data-provider=stripe]").first().click();
   await expect(page.locator(".card-status").first()).toContainText("unsupported");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

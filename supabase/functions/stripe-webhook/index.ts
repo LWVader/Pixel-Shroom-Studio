@@ -95,6 +95,55 @@ Deno.serve(async (request: Request): Promise<Response> => {
       ].includes(event.type)
     ) {
       await handlePrintProblem(service(), event);
+      const object: any = event.data.object;
+      let charge: any = object;
+      if (event.type.startsWith("charge.dispute.") || event.type === "refund.updated") {
+        const chargeId = typeof object.charge === "string" ? object.charge : object.charge?.id;
+        if (chargeId) charge = await stripe.charges.retrieve(chargeId);
+      }
+      const intent =
+        typeof charge.payment_intent === "string"
+          ? charge.payment_intent
+          : charge.payment_intent?.id;
+      if (intent && (event.type !== "refund.updated" || object.status === "succeeded")) {
+        const db = service();
+        const { data: p, error: e } = await db
+          .from("forge_print_purchases")
+          .select("order_id")
+          .eq("stripe_payment_intent", intent);
+        if (e) throw e;
+        for (const purchase of p || []) {
+          const { error } = await db.rpc("hold_forge_print_purchase", {
+            target_order: purchase.order_id,
+          });
+          if (error) throw error;
+        }
+        // Older foil orders did not store their PaymentIntent locally. Recover only
+        // platform Checkout sessions whose provider ID matches an existing foil order.
+        if (!(p || []).length) {
+          const sessions = await stripe.checkout.sessions.list({
+            payment_intent: intent,
+            limit: 10,
+          });
+          for (const previous of sessions.data) {
+            if (previous.metadata?.kind !== "foil" || !previous.metadata?.order_id) continue;
+            const { data: order, error: oe } = await db
+              .from("orders")
+              .select("id")
+              .eq("id", previous.metadata.order_id)
+              .eq("provider_order_id", previous.id)
+              .eq("sale_kind", "foil")
+              .maybeSingle();
+            if (oe) throw oe;
+            if (order) {
+              const { error } = await db.rpc("hold_forge_print_purchase", {
+                target_order: order.id,
+              });
+              if (error) throw error;
+            }
+          }
+        }
+      }
       await handleMarketProblem(service(), stripe, event);
       return json({ received: true });
     }
@@ -127,7 +176,10 @@ Deno.serve(async (request: Request): Promise<Response> => {
       return json({ received: true, ...result });
     }
     if (event.type === "checkout.session.expired") {
-      if (session.metadata?.kind === "foil" && session.metadata?.order_id) {
+      if (
+        ["foil", "forgeprint"].includes(session.metadata?.kind || "") &&
+        session.metadata?.order_id
+      ) {
         const { error } = await service().rpc("release_foil_order", {
           target_order: session.metadata.order_id,
           checkout_session: session.id,
@@ -160,13 +212,41 @@ Deno.serve(async (request: Request): Promise<Response> => {
     }
 
     const database = service();
+    if (session.metadata?.kind === "forgeprint") {
+      if (session.livemode && session.automatic_tax?.status !== "complete")
+        throw new Error("Roll tax calculation incomplete");
+      const { data: p, error: e } = await database
+        .from("forge_print_purchases")
+        .select("test_mode")
+        .eq("order_id", orderId)
+        .single();
+      if (e || !p || p.test_mode === session.livemode)
+        throw new Error("Roll payment environment mismatch");
+    }
+
+    if (session.metadata?.kind === "forgeprint") {
+      const intent =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id;
+      if (intent) {
+        const { error } = await database
+          .from("forge_print_purchases")
+          .update({ stripe_payment_intent: intent })
+          .eq("order_id", orderId);
+        if (error) throw error;
+      }
+    }
 
     // SECTION: Atomically record the event and fulfill the order
     const { data, error } = await database.rpc("fulfill_stripe_checkout_verified", {
       payment_event_id: event.id,
       checkout_session_id: session.id,
       local_order_id: orderId,
-      paid_amount_cents: session.amount_total,
+      paid_amount_cents:
+        session.metadata?.kind === "forgeprint"
+          ? (session.amount_subtotal ?? 0) + (session.shipping_cost?.amount_subtotal ?? 0)
+          : session.amount_total,
       paid_currency: session.currency.toLowerCase(),
       customer_email: session.customer_details?.email ?? null,
     });
@@ -177,7 +257,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     // Best-effort wake-up after committing payment. Modal's minute recovery
     // schedule covers a lost request; a renderer outage must not undo payment.
-    if (session.metadata?.kind === "foil" && data?.fulfilled) {
+    if (["foil", "forgeprint"].includes(session.metadata?.kind || "") && data?.fulfilled) {
       const wakeUrl = Deno.env.get("MODAL_MINT_WAKE_URL");
       const wakeToken = Deno.env.get("MODAL_MINT_WAKE_TOKEN");
       if (wakeUrl && wakeToken) {

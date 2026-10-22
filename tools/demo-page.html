@@ -76,6 +76,8 @@
             <option>Sapphire</option>
             <option>Prismatic</option>
           </select></label
+        ><button data-screen="artwork">Roll options</button
+        ><button data-screen="forge">Forge five demo editions</button
         ><button data-screen="buy">Simulate mint purchase</button
         ><button data-screen="reveal">Replay reveal</button
         ><button data-screen="collection">My collection / sell</button
@@ -98,11 +100,21 @@
           return;
         document.body.classList.toggle("mystery-active", event.data.active === true);
       });
-      frame.addEventListener("load", () => document.body.classList.remove("mystery-active"));
+      frame.addEventListener("load", () => {
+        // An opening may start before iframe load completes. Keep the wrapper
+        // concealed when a same-origin reveal stage is already open.
+        let opening = false;
+        try {
+          opening = Boolean(frame.contentDocument?.querySelector(".foil-mystery-stage[open]"));
+        } catch {}
+        document.body.classList.toggle("mystery-active", opening);
+      });
       let active = "collection";
       function show(screen) {
         active = screen;
         const paths = {
+          artwork: "/art.html?id=1",
+          forge: "/collection.html?tab=forge",
           buy: "/collection.html?mint=1",
           reveal: "/checkout-success.html?order=demo&access=demo",
           collection: "/collection.html?",

@@ -34,7 +34,7 @@ Deno.serve(async (request: Request) => {
   try {
     const db = service();
     const body = await request.json();
-    if (body.action === "catalog") {
+    if (body.action === "catalog" && !body.mintId) {
       const { data, error } = await db.from("gelato_storefront_products").select("*").limit(100);
       if (error) throw error;
       return reply({
@@ -50,6 +50,42 @@ Deno.serve(async (request: Request) => {
       error: authError,
     } = await db.auth.getUser(bearer);
     if (authError || !user) return reply({ error: "Sign in to your studio account first." }, 401);
+    if (body.action === "catalog" && body.mintId) {
+      if (!uuid(body.mintId)) return reply({ error: "Invalid edition." }, 400);
+      const { data: m, error: me } = await db
+        .from("mints")
+        .select("listing_id,tier,state,market_frozen,forge_consumed_at,orders!inner(status)")
+        .eq("id", body.mintId)
+        .eq("owner_id", user.id)
+        .eq("orders.status", "paid")
+        .single();
+      if (me || !m || m.state !== "ready" || m.market_frozen || m.forge_consumed_at)
+        return reply({ error: "This edition is unavailable for printing." }, 409);
+      const { data: products, error } = await db
+        .from("gelato_products")
+        .select("id,title,kind,variant_label,preview_url,retail_cents")
+        .eq("edition_artwork_id", m.listing_id)
+        .eq("edition_tier", m.tier)
+        .eq("kind", "canvas")
+        .eq("active", true)
+        .eq("print_ready", true);
+      if (error) throw error;
+      const { data: claim } = await db
+        .from("canvas_claims")
+        .select("state")
+        .eq("mint_id", body.mintId)
+        .maybeSingle();
+      return reply({
+        products: (products || []).map((p: any) => ({
+          ...p,
+          retail_cents: claim?.state === "available" ? 0 : p.retail_cents,
+        })),
+        enabled: printsEnabled(),
+        testMode: printMode() === "sandbox",
+        canvasClaim: claim?.state || null,
+        countries: ["US"],
+      });
+    }
     if (body.action === "orders") {
       const { data, error } = await db
         .from("gelato_orders")
@@ -158,7 +194,29 @@ Deno.serve(async (request: Request) => {
         if (objectError || !objects?.some((o: any) => o.name === filename))
           throw new Error("Upload the private print-ready source first.");
         const { facts, report } = await validatePrintMapping(db, p);
+        if (p.edition_artwork_id != null) {
+          if (
+            !Number.isSafeInteger(p.edition_artwork_id) ||
+            p.edition_artwork_id < 1 ||
+            !["Standard", "Silver", "Gold", "Emerald", "Sapphire", "Prismatic"].includes(
+              p.edition_tier,
+            ) ||
+            p.kind !== "canvas"
+          )
+            return reply(
+              { error: "Choose a valid artwork ID and tier for this canvas mapping." },
+              400,
+            );
+          const framed = ["Emerald", "Sapphire", "Prismatic"].includes(p.edition_tier);
+          if (report.specs.width !== 16 || report.specs.height !== (framed ? 20 : 16))
+            return reply(
+              { error: "Edition canvases require 16 × 16, or 16 × 20 portrait for framed tiers." },
+              400,
+            );
+        }
         const row = {
+          edition_artwork_id: p.edition_artwork_id ?? null,
+          edition_tier: p.edition_artwork_id != null ? p.edition_tier : null,
           id: p.id,
           title: p.title.trim(),
           kind: p.kind,
@@ -213,7 +271,7 @@ Deno.serve(async (request: Request) => {
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10)
         return reply({ error: "Quantity must be 1–10." }, 400);
       const recipient = recipientFor(body.recipient, user.email || "");
-      const { data: product, error } = await db
+      let { data: product, error } = await db
         .from("gelato_products")
         .select("*")
         .eq("id", body.productId)
@@ -221,9 +279,44 @@ Deno.serve(async (request: Request) => {
         .eq("print_ready", true)
         .single();
       if (error || !product) throw new Error("Product unavailable.");
+      let claimMintId = null;
+      if (product.edition_artwork_id != null || body.mintId) {
+        if (!uuid(body.mintId) || quantity !== 1)
+          return reply({ error: "Choose one owned edition from My Vault." }, 400);
+        const { data: m, error: me } = await db
+          .from("mints")
+          .select("id,listing_id,tier,state,market_frozen,forge_consumed_at,orders!inner(status)")
+          .eq("id", body.mintId)
+          .eq("owner_id", user.id)
+          .eq("orders.status", "paid")
+          .single();
+        if (
+          me ||
+          !m ||
+          m.state !== "ready" ||
+          m.market_frozen ||
+          m.forge_consumed_at ||
+          m.listing_id !== product.edition_artwork_id ||
+          m.tier !== product.edition_tier
+        )
+          return reply({ error: "This product does not match an eligible edition you own." }, 409);
+        const { data: claim, error: ce } = await db
+          .from("canvas_claims")
+          .select("state")
+          .eq("mint_id", m.id)
+          .maybeSingle();
+        if (ce) throw ce;
+        if (claim && claim.state !== "available")
+          return reply({ error: "This included canvas is already used or held for review." }, 409);
+        if (claim?.state === "available") {
+          claimMintId = m.id;
+          product = { ...product, retail_cents: 0, claimMintId };
+        }
+      }
       const id = crypto.randomUUID();
       const { error: insertError } = await db.from("gelato_quotes").insert({
         id,
+        edition_mint_id: body.mintId || null,
         owner_id: user.id,
         product_id: product.id,
         product_snapshot: product,
@@ -238,15 +331,21 @@ Deno.serve(async (request: Request) => {
           "orders:quote",
           quotePayload(id, user.id, product, quantity, recipient, source),
         );
-        const options = shippingOptions(response, product, quantity);
+        let options = shippingOptions(response, product, quantity);
+        if (body.mintId) {
+          const providerShipping = Object.fromEntries(options.map((s: any) => [s.uid, s.cents]));
+          product = { ...product, providerShipping };
+          options = options.map((s: any) => ({ ...s, cents: claimMintId ? 0 : 1349 }));
+        }
         const { error: saveError } = await db
           .from("gelato_quotes")
-          .update({ shipping_options: options, state: "ready" })
+          .update({ shipping_options: options, state: "ready", product_snapshot: product })
           .eq("id", id);
         if (saveError) throw saveError;
         return reply({
           quoteId: id,
           productCents: product.retail_cents * quantity,
+          prepaid: Boolean(claimMintId),
           shipping: options,
           testMode: printMode() === "sandbox",
           expiresInSeconds: 900,
@@ -265,8 +364,24 @@ Deno.serve(async (request: Request) => {
         shipping_method: body.shippingMethod,
       });
       if (error) throw error;
-      if (order.payment_state !== "pending")
+      if (order.payment_state !== "pending" && !order.product_snapshot.claimMintId)
         return reply({ error: "This quote already has a paid order. View My print orders." }, 409);
+      if (order.product_snapshot.claimMintId) {
+        const { data: redeemed, error: re } = await db.rpc("redeem_canvas_claim", {
+          target_order: order.id,
+          holder: user.id,
+        });
+        if (re)
+          return reply(
+            { error: "This canvas claim cannot be redeemed. No second payment was requested." },
+            409,
+          );
+        await submitPaidPrint(db, redeemed.id);
+        return reply({
+          orderUrl: studioSiteUrl() + "/collection.html?tab=orders&order=" + redeemed.id,
+          redeemed: true,
+        });
+      }
       const test = order.test_mode;
       const key =
         Deno.env.get("GELATO_STRIPE_SECRET_KEY") ||
@@ -342,7 +457,12 @@ Deno.serve(async (request: Request) => {
               quantity: order.quantity,
             },
           ],
-          success_url: site + "/print-orders.html?order=" + order.id,
+          success_url:
+            site +
+            (order.edition_mint_id
+              ? "/collection.html?tab=orders&order="
+              : "/print-orders.html?order=") +
+            order.id,
           cancel_url:
             site +
             (order.product_snapshot.kind === "canvas" ? "/canvases.html" : "/apparel.html") +

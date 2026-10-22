@@ -1,5 +1,5 @@
 // Static-host fallback only. Production serves the genre-specific HTML in the Worker.
-import { GENRES, genreUrl } from "./catalog-core.js?v=20261022-layout";
+import { GENRES, genreUrl } from "./catalog-core.js?v=20261022-loop";
 const slug = new URLSearchParams(location.search).get("genre")?.toLowerCase();
 if (slug && Object.hasOwn(GENRES, slug)) {
   try {
@@ -27,7 +27,7 @@ if (slug && Object.hasOwn(GENRES, slug)) {
     for (const s of parsed.querySelectorAll('script[type="application/ld+json"]'))
       document.head.append(s.cloneNode(true));
     document.querySelector("#main").innerHTML = parsed.querySelector("#main").innerHTML;
-    await import("./app.js?v=20261021-gelato");
+    await import("./app.js?v=20261022-loop");
   } catch {
     document.querySelector("#static-genre-fallback").textContent =
       "This collection could not be loaded. Please try again shortly.";

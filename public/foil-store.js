@@ -1,5 +1,5 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { editionActionsMarkup } from "./catalog-core.js?v=20261022-layout";
+import { editionActionsMarkup } from "./catalog-core.js?v=20261022-loop";
 let editions = [];
 export function applyFoilListings() {
   for (const card of document.querySelectorAll(".art-card[data-artwork-id]")) {

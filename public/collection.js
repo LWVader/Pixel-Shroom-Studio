@@ -1,7 +1,7 @@
 import { setupMarketSelling } from "./market-sell.js";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
-import { escapeHtml, checkoutUrl } from "./catalog-core.js?v=20261022-layout";
+import { escapeHtml, checkoutUrl } from "./catalog-core.js?v=20261022-loop";
 import { editionDisclosure, safeMintImage } from "./mint-core.js?v=20261021-edition-language";
 const status = document.querySelector("#collection-status");
 const grid = document.querySelector("#mint-collection");
@@ -14,6 +14,7 @@ let session;
 let sellerReturnChecked = false;
 let busy = false;
 let offset = 0;
+let currentItems = [];
 const next = document.querySelector("#collection-next"),
   previous = document.querySelector("#collection-previous");
 next.onclick = () => {
@@ -79,12 +80,14 @@ async function load() {
     const { items, hasMore } = await call("collection", { offset });
     if (session?.access_token !== requestedToken) return;
     window.dispatchEvent(new Event("studio:collection-saved"));
+    currentItems = items;
+    renderPrintChoices();
     grid.innerHTML = items
       .map((item) => {
         const url = item.imageUrl ? safeMintImage(item.imageUrl, SUPABASE_URL) : "";
         const fresh = item.state === "ready" && !seen.has(item.id);
         if (item.state === "ready") seen.add(item.id);
-        return `<article class="foil-card${fresh ? " revealed" : ""}" data-tier="${escapeHtml(item.tier || "Standard")}"><h2>${escapeHtml(item.title)}</h2><p>${item.tier ? `${escapeHtml(item.tier)} · #${item.mintNumber} of ${item.maxSupply}` : "Awaiting verified payment"}</p>${url ? `<img src="${escapeHtml(url)}" alt="Your ${escapeHtml(item.tier)} variant of ${escapeHtml(item.title)}" loading="lazy"><p>${item.width} × ${item.height} px</p><button class="button" data-download="${escapeHtml(item.id)}">Download variant</button> <button class="button" data-receipt="${escapeHtml(item.id)}">Save signed receipt</button>${item.canList ? `<button class="button" data-sell="${escapeHtml(item.id)}">List on Market</button>` : ""}` : `<p>${item.state === "failed" ? "Processing needs studio attention; your number and tier are retained. Please contact us." : escapeHtml(item.state)}</p>`}</article>`;
+        return `<article class="foil-card${fresh ? " revealed" : ""}" data-tier="${escapeHtml(item.tier || "Standard")}"><h2>${escapeHtml(item.title)}</h2><p>${item.tier ? `${escapeHtml(item.tier)} · #${item.mintNumber} of ${item.maxSupply}` : "Awaiting verified payment"}</p>${url ? `<img src="${escapeHtml(url)}" alt="Your ${escapeHtml(item.tier)} variant of ${escapeHtml(item.title)}" loading="lazy"><p>${item.width} × ${item.height} px</p><button class="button" data-download="${escapeHtml(item.id)}">Download variant</button> <button class="button" data-receipt="${escapeHtml(item.id)}">Save signed receipt</button><a class="button secondary" href="/canvases.html?mint=${encodeURIComponent(item.id)}">Print this edition</a> <a class="text-link" href="/collection.html?tab=forge">Forge progress →</a>${item.canList ? `<button class="button" data-sell="${escapeHtml(item.id)}">List on Market</button>` : ""}` : `<p>${item.state === "failed" ? "Processing needs studio attention; your number and tier are retained. Please contact us." : escapeHtml(item.state === "forged" ? "Combined in the Forge. This consumed edition stays in your history." : item.state)}</p>`}</article>`;
       })
       .join("");
     await loadUncollected();
@@ -111,6 +114,11 @@ async function updateSession() {
     next.hidden = true;
     previous.hidden = true;
     grid.replaceChildren();
+    currentItems = [];
+    renderPrintChoices();
+    document.querySelector("#print-order-list")?.replaceChildren();
+    const forge = document.querySelector("#vault-forge");
+    if (forge) forge.textContent = "Sign in to see your eligible editions.";
     pending.replaceChildren();
     showStatus("Sign in to mint and view your private editions.");
   } else {
@@ -119,6 +127,16 @@ async function updateSession() {
       location.assign("/checkout-success.html?mint=" + encodeURIComponent(recover));
       return;
     }
+    const art = new URLSearchParams(location.search).get("art"),
+      offer = new URLSearchParams(location.search).get("offer");
+    if (art && /^\d{1,15}$/.test(art)) {
+      location.assign(
+        `/art.html?id=${encodeURIComponent(art)}&offer=${offer === "canvas" ? "canvas" : "digital"}`,
+      );
+      return;
+    }
+    if (new URLSearchParams(location.search).get("recovery") === "1")
+      document.querySelector("#recovery-password").hidden = false;
     await load();
     if (!sellerReturnChecked && new URLSearchParams(location.search).has("connect")) {
       sellerReturnChecked = true;
@@ -136,7 +154,7 @@ async function showMintOffer() {
     return;
   }
   mintPanel.hidden = false;
-  mintPanel.innerHTML = `<h2>Collect a numbered digital edition</h2><p>${edition.totalMinted}/${edition.maxSupply} allocated · ${edition.prismaticsRemaining} Prismatics remaining · ${edition.reserved} checkout reservations</p><p>${escapeHtml(editionDisclosure(edition))}</p><p>The gallery shows a protected artwork preview. Your server-assigned tier releases one of the studio’s finished uploaded images; no frames or overlays are generated at checkout. The private master is not delivered. After verified payment, one continuous spin reveals your edition. Select Add to my collection to save it and start the image and signed-receipt downloads. Usage rights stay as published; the underlying design remains nonexclusive.</p><p>Price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(edition.price))}</p><button class="button" id="start-mint" ${!session || edition.totalMinted + edition.reserved >= edition.maxSupply ? "disabled" : ""}>${session ? "Pay with Stripe and mint" : "Sign in below to mint"}</button>`;
+  mintPanel.innerHTML = `<h2>Collect a numbered digital edition</h2><p>${edition.totalMinted}/${edition.maxSupply} allocated · ${edition.prismaticsRemaining} Prismatics remaining · ${edition.reserved} checkout reservations</p><p>${escapeHtml(editionDisclosure(edition))}</p><p>The gallery shows a protected artwork preview. Your server-assigned tier releases one of the studio’s finished uploaded images; no frames or overlays are generated at checkout. The private master is not delivered. After verified payment, one continuous spin reveals your edition. The ready edition saves automatically in My Vault; download its image and signed receipt after reveal. Usage rights stay as published; the underlying design remains nonexclusive.</p><p>Price: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(edition.price))}</p><button class="button" id="start-mint" ${!session || edition.totalMinted + edition.reserved >= edition.maxSupply ? "disabled" : ""}>${session ? "Pay with Stripe and mint" : "Sign in below to mint"}</button>`;
   if (edition.tierImages?.length) {
     const sizes = document.createElement("p");
     sizes.textContent =
@@ -223,3 +241,66 @@ supabase.auth.onAuthStateChange(() =>
 setInterval(() => {
   if (!document.hidden && session) load();
 }, 15000);
+
+function renderPrintChoices() {
+  const root = document.querySelector("#vault-print-list");
+  if (!root) return;
+  const items = currentItems.filter((i) => i.state === "ready" && i.imageUrl);
+  root.innerHTML = items.length
+    ? items
+        .map(
+          (i) =>
+            `<article class="vault-print-card"><h3>${escapeHtml(i.title)}</h3><p>${escapeHtml(i.tier)} · #${Number(i.mintNumber)}</p><a class="button" href="/canvases.html?mint=${encodeURIComponent(i.id)}">Review canvas &amp; claim status →</a></article>`,
+        )
+        .join("")
+    : "<p>No ready printable editions on this collection page yet. Use My Artwork to load another page of editions.</p>";
+}
+window.addEventListener("studio:prints-requested", renderPrintChoices);
+const resetButton = document.querySelector("#password-reset");
+resetButton?.addEventListener("click", async () => {
+  const email = authForm.elements.email.value.trim();
+  if (!email || !authForm.elements.email.reportValidity()) return;
+  resetButton.disabled = true;
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: location.origin + "/collection.html?recovery=1",
+    });
+    if (error) throw error;
+    showStatus(
+      "If an account matches, a password-reset email has been requested. Check your inbox.",
+    );
+  } catch {
+    showStatus("The reset email could not be requested. Please retry or contact the studio.");
+  } finally {
+    resetButton.disabled = false;
+  }
+});
+const recovery = document.querySelector("#recovery-password");
+supabase.auth.onAuthStateChange((event) => {
+  if (event === "PASSWORD_RECOVERY" && recovery) {
+    recovery.hidden = false;
+    recovery.scrollIntoView({ block: "center" });
+  }
+});
+recovery?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (recovery.elements.password.value !== recovery.elements.confirmation.value) {
+    showStatus("Passwords must match.");
+    return;
+  }
+  const button = recovery.querySelector("button");
+  button.disabled = true;
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: recovery.elements.password.value,
+    });
+    if (error) throw error;
+    recovery.reset();
+    recovery.hidden = true;
+    showStatus("Your password has been updated.");
+  } catch (error) {
+    showStatus(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});

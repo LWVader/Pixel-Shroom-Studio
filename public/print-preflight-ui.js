@@ -4,7 +4,7 @@ import {
   normalizeSpecs,
   SIZE_PRESETS,
 } from "./print-preflight-core.js?v=20261022-preflight";
-import { escapeHtml } from "./catalog-core.js";
+import { escapeHtml } from "./catalog-core.js?v=20261022-loop";
 export function createPrintPreflight(form, loadStoredFacts) {
   const result = document.querySelector("#gelato-preflight-result"),
     button = document.querySelector("#gelato-safe-check"),

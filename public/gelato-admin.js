@@ -1,6 +1,6 @@
-import { createPrintPreflight } from "./print-preflight-ui.js?v=20261022-preflight";
+import { createPrintPreflight } from "./print-preflight-ui.js?v=20261022-loop";
 import { supabase, invoke } from "./supabase-client.js";
-import { escapeHtml } from "./catalog-core.js";
+import { escapeHtml } from "./catalog-core.js?v=20261022-loop";
 const form = document.querySelector("#gelato-product-form"),
   status = document.querySelector("#gelato-admin-status"),
   list = document.querySelector("#gelato-admin-list"),
@@ -63,6 +63,8 @@ list.onclick = (event) => {
     "stripe_tax_code",
   ])
     form.elements[key].value = p[key];
+  form.elements.edition_artwork_id.value = p.edition_artwork_id || "";
+  form.elements.edition_tier.value = p.edition_tier || "";
   form.elements.price.value = (p.retail_cents / 100).toFixed(2);
   form.elements.active.checked = p.active;
   form.elements.print_ready.checked = p.print_ready;
@@ -112,6 +114,10 @@ form.onsubmit = async (event) => {
       product: {
         ...check,
         id: currentId,
+        edition_artwork_id: form.elements.edition_artwork_id.value
+          ? Number(form.elements.edition_artwork_id.value)
+          : null,
+        edition_tier: form.elements.edition_tier.value || null,
         title: form.elements.title.value,
         kind: form.elements.kind.value,
         variant_label: form.elements.variant_label.value,
