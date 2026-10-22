@@ -19,11 +19,11 @@ test.beforeEach(async ({ page }) => {
     }),
   );
 });
-test("three shopping paths, featured previews, newest 14 and hidden empty sections", async ({
+test("three-step studio loop, featured previews, newest 14 and hidden empty sections", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.locator(".shop-path")).toHaveCount(3);
+  await expect(page.locator(".loop-ribbon > li")).toHaveCount(3);
   await expect(page.locator(".featured-card")).toHaveCount(3);
   await expect(page.locator("#catalog .art-card")).toHaveCount(14);
   await expect(page.locator("#journal")).toBeHidden();

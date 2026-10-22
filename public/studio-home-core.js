@@ -5,7 +5,7 @@ import {
   safePreviewUrl,
   latestArtworks,
   artworkDimensions,
-} from "./catalog-core.js";
+} from "./catalog-core.js?v=20261022-layout";
 import { FEATURED_SERIALS } from "./studio-catalog.js";
 export function featuredArtworks(rows) {
   const digital = rows.filter((row) => row.category !== "NFT");

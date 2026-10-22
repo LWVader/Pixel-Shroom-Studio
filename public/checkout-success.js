@@ -148,6 +148,7 @@ async function revealMint(order) {
         const result = await mintAccess("add_to_collection", item.id);
         if (!result.added) throw new Error("Could not add this edition. Please retry.");
         savedToCollection = true;
+        window.dispatchEvent(new Event("studio:collection-saved"));
       }
       add.textContent = "Preparing your files…";
       const delivery = await mintAccess("download", item.id);

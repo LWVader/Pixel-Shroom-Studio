@@ -106,7 +106,7 @@ it("requires purchase verification and publication consent for customer quotes",
 });
 it("preserves the hero, latest gallery and honest hidden states", () => {
   const $ = load(fs.readFileSync("public/index.html", "utf8"));
-  expect($(".shop-path")).toHaveLength(3);
+  expect($(".loop-ribbon > li")).toHaveLength(3);
   expect($(".hero img").attr("src")).toBe("/assets/hero-1280.webp");
   expect($("#journal").attr("hidden")).toBeDefined();
   expect($("#customer-feedback").attr("hidden")).toBeDefined();

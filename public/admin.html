@@ -11,7 +11,7 @@
     <title>Pixel Shroom Studio Admin</title>
     <link rel="stylesheet" href="/styles.css?v=20261014-size" />
     <link rel="stylesheet" href="/admin-dashboard.css?v=20261021-catalog-relaunch" />
-    <link rel="stylesheet" href="/print-store.css?v=20261021-gelato" />
+    <link rel="stylesheet" href="/print-store.css?v=20261022-preflight" />
   </head>
   <body class="admin-page">
     <!-- SECTION: Administrator sign-in gate -->
@@ -514,11 +514,194 @@
                     >Private print-ready PNG, JPEG or PDF<input
                       name="printFile"
                       type="file"
-                      accept="image/png,image/jpeg,application/pdf" /></label
-                  ><label class="full consent"
-                    ><input name="print_ready" type="checkbox" required="" /> I checked this file
-                    against the specific Gelato product’s dimensions, bleed, safe area, print
-                    placement and color requirements.</label
+                      accept="image/png,image/jpeg,application/pdf"
+                  /></label>
+                  <fieldset class="full print-preflight">
+                    <legend>Product artwork loader &amp; Safe check</legend>
+                    <p>
+                      Copy requirements from the exact Gelato product UID’s template. Presets are
+                      starting sizes, not product specifications. The check runs before upload and
+                      never sends an image or order to Gelato.
+                    </p>
+                    <div class="print-form">
+                      <label class="full"
+                        >Size starting point<select id="gelato-size-preset">
+                          <option value="">Custom / product template</option>
+                          <option value="card">5 × 7 in — card</option>
+                          <option value="small">8 × 10 in — print</option>
+                          <option value="medium">11 × 14 in — print</option>
+                          <option value="shirt">12 × 16 in — apparel area</option>
+                          <option value="poster">18 × 24 in — poster</option>
+                          <option value="large">24 × 36 in — poster</option>
+                          <option value="mug">8.5 × 3.5 in — approximate mug wrap</option>
+                        </select></label
+                      >
+                      <label class="full"
+                        >Gelato template / catalogue URL<input
+                          name="templateUrl"
+                          type="url"
+                          placeholder="https://dashboard.gelato.com/…"
+                          required
+                      /></label>
+                      <label
+                        >Finished width / design area (in)<input
+                          name="width"
+                          type="number"
+                          min="0.01"
+                          max="200"
+                          step="0.001"
+                          required
+                      /></label>
+                      <label
+                        >Finished height / design area (in)<input
+                          name="height"
+                          type="number"
+                          min="0.01"
+                          max="200"
+                          step="0.001"
+                          required
+                      /></label>
+                      <label
+                        >Bleed per side (mm)<input
+                          name="bleedMm"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value="0"
+                          required
+                      /></label>
+                      <label
+                        >Additional canvas wrap per side (mm)<input
+                          name="wrapMm"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value="0"
+                          required
+                      /></label>
+                      <label
+                        >Safe margin inside trim (mm)<input
+                          name="safeMm"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value="4"
+                          required
+                      /></label>
+                      <label
+                        >Product minimum PPI<select name="minimumDpi">
+                          <option value="150">150 (only if product permits)</option>
+                          <option value="300">300</option>
+                        </select></label
+                      >
+                      <label class="full consent"
+                        ><input name="transparent" type="checkbox" /> Product needs a transparent
+                        background (PNG)</label
+                      >
+                    </div>
+                    <p>
+                      Full file = finished size + bleed + any additional wrap on both sides. Enter 0
+                      for margins already included in the supplied full-area size. Gelato’s general
+                      PDF guidance uses 4 mm bleed and at least 4 mm safe margin; the exact product
+                      template takes precedence.
+                    </p>
+                    <div class="preflight-preview" id="gelato-file-preview" hidden>
+                      <img
+                        id="gelato-check-image"
+                        alt="Private artwork for edge and placement review"
+                      />
+                      <div id="gelato-safe-overlay" aria-hidden="true"></div>
+                    </div>
+                    <label
+                      >Preview zoom<select id="gelato-preview-zoom">
+                        <option value="fit">Fit</option>
+                        <option value="2">200% actual pixels</option>
+                        <option value="3">300% actual pixels</option>
+                      </select></label
+                    >
+                    <p>
+                      The dashed guide marks the requested safe zone. Inspect the exported file in
+                      your design application as well.
+                    </p>
+                    <div class="preflight-reviews">
+                      <label class="consent"
+                        ><input type="checkbox" data-preflight-review="template" /> I verified this
+                        UID, one default print area, orientation, full dimensions, bleed and wrap
+                        against its Gelato template.</label
+                      >
+                      <label class="consent"
+                        ><input type="checkbox" data-preflight-review="edges" /> I inspected edges
+                        at 200–300% for white halos, stray pixels and semi-transparent dust. For DTG
+                        I reviewed fades/underbase and used opaque elements or suitable halftones
+                        where needed.</label
+                      >
+                      <label class="consent"
+                        ><input type="checkbox" data-preflight-review="safeArea" /> Background
+                        covers the required bleed/wrap; text, signatures, faces and borders remain
+                        inside the safe zone, including frame coverage.</label
+                      >
+                      <label class="consent"
+                        ><input type="checkbox" data-preflight-review="type" /> Text is outlined or
+                        fonts embedded; linked artwork is embedded. I reviewed fine lines (0.5 pt
+                        positive / 1 pt reversed as review guides, subject to this product’s
+                        requirements).</label
+                      >
+                      <label class="consent"
+                        ><input type="checkbox" data-preflight-review="color" /> I checked the
+                        export color profile and soft proof. Raster artwork is sRGB; PDF output
+                        intent follows Gelato’s product guidance. Neon colors, blacks and ink
+                        coverage have been reviewed.</label
+                      >
+                      <label class="consent"
+                        ><input type="checkbox" data-preflight-review="original" /> The source has
+                        sufficient original pixel detail; changing DPI metadata or upscaling did not
+                        create print detail.</label
+                      >
+                      <label class="consent"
+                        ><input type="checkbox" data-preflight-review="quality" /> I reviewed every
+                        warning and accept the product-specific resolution and intended print
+                        quality.</label
+                      >
+                      <label class="consent"
+                        ><input type="checkbox" data-preflight-review="pdf" /> PDF only: external
+                        preflight confirms a single page/default area, exact page/bleed boxes,
+                        embedded image PPI, fonts, PDF/X-4/output intent, flattened effects and no
+                        password or crop marks.</label
+                      >
+                    </div>
+                    <button type="button" class="button" id="gelato-safe-check">
+                      Safe check selected product
+                    </button>
+                    <div id="gelato-preflight-result" role="status" aria-live="polite">
+                      Select an artwork file and enter the product template requirements.
+                    </div>
+                    <p>
+                      <a
+                        href="https://support.gelato.com/en/articles/8996349"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >Gelato PDF requirements</a
+                      >
+                      ·
+                      <a
+                        href="https://support.gelato.com/en/articles/9587707"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >Gelato apparel guidance</a
+                      >
+                    </p>
+                    <p>
+                      Safe check is a technical check plus your review, not a guarantee or Gelato
+                      production approval. It does not detect all halos, missing fonts, incorrect
+                      product UIDs, interpolation or out-of-gamut colors.
+                    </p>
+                  </fieldset>
+                  <label class="full consent"
+                    ><input name="print_ready" type="checkbox" /> Mark ready for production after
+                    Safe check and manual review.</label
                   ><label class="full consent"
                     ><input name="active" type="checkbox" /> Publish this mapped product (server
                     checkout settings still apply).</label
@@ -628,6 +811,6 @@
     </dialog>
     <script type="module" src="/admin.js?v=20261021-catalog-relaunch"></script>
 
-    <script type="module" src="/gelato-admin.js?v=20261021-gelato"></script>
+    <script type="module" src="/gelato-admin.js?v=20261022-preflight"></script>
   </body>
 </html>

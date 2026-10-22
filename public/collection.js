@@ -1,7 +1,7 @@
 import { setupMarketSelling } from "./market-sell.js";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
-import { escapeHtml, checkoutUrl } from "./catalog-core.js";
+import { escapeHtml, checkoutUrl } from "./catalog-core.js?v=20261022-layout";
 import { editionDisclosure, safeMintImage } from "./mint-core.js?v=20261021-edition-language";
 const status = document.querySelector("#collection-status");
 const grid = document.querySelector("#mint-collection");
@@ -78,6 +78,7 @@ async function load() {
   try {
     const { items, hasMore } = await call("collection", { offset });
     if (session?.access_token !== requestedToken) return;
+    window.dispatchEvent(new Event("studio:collection-saved"));
     grid.innerHTML = items
       .map((item) => {
         const url = item.imageUrl ? safeMintImage(item.imageUrl, SUPABASE_URL) : "";

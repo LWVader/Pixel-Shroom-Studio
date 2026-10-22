@@ -52,9 +52,7 @@
             "url": "https://www.pixelshroomstudio.com/faq.html",
             "name": "Digital Editions, Reveal & Purchase FAQ | Pixel Shroom Studio",
             "description": "Understand six-tier digital editions, payment-confirmed reveals, signed receipts, collection downloads, resale and Gelato physical products from Pixel Shroom Studio.",
-            "publisher": {
-              "@id": "https://www.pixelshroomstudio.com/#studio"
-            }
+            "publisher": { "@id": "https://www.pixelshroomstudio.com/#studio" }
           },
           {
             "@type": "FAQPage",
@@ -233,6 +231,7 @@
       }
     </script>
     <link rel="stylesheet" href="/print-nav.css?v=20261009" />
+    <link rel="stylesheet" href="/forge-print.css?v=20261022-layout" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -247,22 +246,35 @@
           /><span>Pixel Shroom <b>Studio</b></span></a
         >
         <nav class="primary" aria-label="Main navigation">
-          <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
-          ><a href="/apparel.html">Apparel &amp; gifts</a
-          ><a href="/how-it-works.html">How it works</a><a href="/usage-rights.html">Usage rights</a
-          ><a href="/verify-mint.html">Verify</a><a href="/contact.html">Contact</a>
-          <a href="/collection.html">My collection</a><a href="/market.html">Marketplace</a>
+          <a href="/all-artwork.html">Explore Gallery</a><a href="/forge.html">The Forge</a
+          ><a href="/how-it-works.html">How It Works</a><a href="/drop-odds.html">Drop Odds</a
+          ><a href="/verify.html">Verify Serial</a>
         </nav>
-        <a class="button small" href="/all-artwork.html">View collection ↗</a>
+        <div class="header-tools">
+          <a href="/collection.html">My Vault<span data-vault-count hidden></span></a
+          ><a href="/cart.html">Cart (<span data-cart-count>0</span>)</a>
+          <details class="header-search">
+            <summary>Search artworks</summary>
+            <form class="site-search" role="search" action="/all-artwork.html#gallery" method="get">
+              <label for="header-art-search">Search titles, genres or serials</label
+              ><input
+                id="header-art-search"
+                type="search"
+                name="q"
+                maxlength="160"
+                placeholder="Title, genre or LWV serial"
+              /><button type="submit">Search</button>
+            </form>
+          </details>
+        </div>
         <details class="mobile">
           <summary>Menu</summary>
           <nav aria-label="Mobile navigation">
-            <a href="/all-artwork.html">Artwork</a><a href="/canvases.html">Canvases</a
-            ><a href="/apparel.html">Apparel &amp; gifts</a
-            ><a href="/how-it-works.html">How it works</a
-            ><a href="/usage-rights.html">Usage rights</a><a href="/verify-mint.html">Verify</a
-            ><a href="/contact.html">Contact</a> <a href="/collection.html">My collection</a
-            ><a href="/market.html">Marketplace</a>
+            <a href="/all-artwork.html">Explore Gallery</a><a href="/forge.html">The Forge</a
+            ><a href="/how-it-works.html">How It Works</a><a href="/drop-odds.html">Drop Odds</a
+            ><a href="/verify.html">Verify Serial</a><a href="/canvases.html">Canvas shop</a
+            ><a href="/apparel.html">Apparel &amp; gifts</a><a href="/market.html">Marketplace</a
+            ><a href="/contact.html">Contact</a>
           </nav>
         </details>
       </div>
@@ -503,54 +515,107 @@
           <a href="/contact.html#contact-form">Ask the studio</a>
         </p>
       </section>
+      <section class="shell section">
+        <h2>Forge &amp; Print questions.</h2>
+        <div class="faq">
+          <details>
+            <summary>Are the new Canvas Roll, digital bundles and Forge open?</summary>
+            <p>
+              The new $8 digital roll, $69 canvas roll, digital bundles, Forge trade-ups and prepaid
+              canvas claims are in preview. Their detail pages and cart let you explore or save
+              planned selections. Current digital editions and mapped Gelato products keep their own
+              displayed prices and existing checkout paths.
+            </p>
+          </details>
+          <details>
+            <summary>Does the Canvas Roll ship immediately?</summary>
+            <p>
+              The planned $69 Canvas Roll includes one digital image and one canvas claim, plus
+              $13.49 prepaid shipping and applicable tax. Production is held until redemption. Its
+              product and shipping are paid once; a Prismatic result does not create an extra second
+              free canvas. This new entitlement flow is not open yet.
+            </p>
+          </details>
+          <details>
+            <summary>Are rolls on-chain or publicly provably fair?</summary>
+            <p>
+              Current edition rolls are assigned securely on the server after verified payment. They
+              are not on-chain. A cryptographic random-number generator is not, by itself, a
+              publicly verifiable fairness proof. Listing-specific rates and caps apply; guaranteed
+              bundles need their own disclosed rules.
+            </p>
+          </details>
+          <details>
+            <summary>Does every tier upgrade the physical canvas?</summary>
+            <p>
+              Under the planned mapping, Standard and Silver both use a 16 × 16 slim canvas. Gold
+              uses a 16 × 16 thick canvas. Emerald, Sapphire and Prismatic use 16 × 20 portrait
+              framed canvases in Black, Dark wood and Natural wood finishes. Only Gold and above
+              upgrade the physical format: 20% combined base odds.
+            </p>
+          </details>
+          <details>
+            <summary>Does a digital Forge upgrade include a free print?</summary>
+            <p>
+              A digital-only Forge upgrade changes the digital asset; it does not automatically
+              include a prepaid canvas. Planned later product prices are $49 for Standard/Silver,
+              $55 for Gold and $79 for Emerald/Sapphire, plus $13.49 shipping and applicable tax. An
+              eligible unused Prismatic promotion waives one product charge, with shipping and any
+              applicable tax still additional.
+            </p>
+          </details>
+        </div>
+      </section>
     </main>
     <footer>
-      <div class="shell footer-grid">
+      <div class="shell footer-grid forge-footer">
         <div>
           <a class="brand" href="/">Pixel Shroom <b>Studio</b></a>
-          <p>Serialized AI artwork by LWVader.<br />Find a world that stays with you.</p>
-          <a href="/verify-mint.html">Verify a numbered edition →</a>
+          <p>
+            Imagination by LWVader. Individually identified digital art, with a studio story you can
+            trace.
+          </p>
+          <p>
+            Forge &amp; Print offers are in preview. Current listings show their available purchase
+            paths.
+          </p>
         </div>
         <div>
-          <h2>Explore</h2>
-          <a href="/all-artwork.html">All artwork</a><a href="/faq.html">Buyer FAQ</a
-          ><a href="/usage-rights.html">Usage rights</a><a href="/canvases.html">Canvases</a
-          ><a href="/apparel.html">Apparel &amp; gifts</a
-          ><a href="/how-it-works.html">How it works</a> <a href="/collection.html">My collection</a
-          ><a href="/market.html">Marketplace</a>
+          <h2>Studio</h2>
+          <a href="/about.html">About LWVader</a
+          ><a href="/#journal" data-journal-link hidden>Studio Journal</a
+          ><a href="/about.html#sir-shroomalot">Sir Shroomalot’s story</a
+          ><a href="/contact.html">Contact</a><a href="/all-artwork.html">Explore gallery</a
+          ><a href="/apparel.html">Apparel &amp; gifts</a>
         </div>
         <div>
-          <h2>Genres</h2>
-          <div class="footer-genres">
-            <a href="/all-artwork.html">All artwork</a
-            ><a href="/genre.html?genre=portrait">Portrait</a
-            ><a href="/genre.html?genre=fantasy">Fantasy</a
-            ><a href="/genre.html?genre=landscape">Landscape</a
-            ><a href="/genre.html?genre=sci-fi">Sci-Fi</a
-            ><a href="/genre.html?genre=abstract">Abstract</a
-            ><a href="/genre.html?genre=dreamscape">Dreamscape</a
-            ><a href="/genre.html?genre=dark-fantasy">Dark Fantasy</a
-            ><a href="/genre.html?genre=horror">Horror</a><a href="/genre.html?genre=nft">NFT</a
-            ><a href="/faq.html">FAQ</a>
-          </div>
+          <h2>The mechanics</h2>
+          <a href="/drop-odds.html">Complete drop odds</a
+          ><a href="/forge.html#recipes">Forge trade-up rules</a
+          ><a href="/canvas-specs.html">Canvas specs &amp; sizing</a
+          ><a href="/how-it-works.html">How it works</a><a href="/collection.html">My Vault</a
+          ><a href="/print-orders.html">Physical orders</a
+          ><a href="/market.html">Secondary marketplace</a>
         </div>
         <div>
-          <h2>Let’s create something.</h2>
-          <a href="/contact.html">Request custom artwork ↗</a
-          ><a href="mailto:lwvader@pixelshroomstudio.com">lwvader@pixelshroomstudio.com</a>
+          <h2>Provenance &amp; legal</h2>
+          <a href="/verify-mint.html">Verify a delivered file</a
+          ><a href="/verify.html">Verify source artwork</a
+          ><a href="/usage-rights.html">Commercial usage rights</a
+          ><a href="/terms.html">Terms of sale</a><a href="/privacy.html">Privacy policy</a
+          ><a href="/faq.html">Buyer FAQ</a><a href="/canvases.html">Current canvas products</a>
         </div>
       </div>
       <div class="shell footer-bottom">
         <span>© 2026 Pixel Shroom Studio · LWVader</span>
         <div>
-          <a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a
-          ><a href="/cookies.html">Cookies</a
-          ><a class="owner-access" href="/admin.html" aria-label="Open owner access"
-            >Owner access</a
-          >
+          <a href="/cookies.html">Cookies</a
+          ><a class="owner-access" href="/admin.html">Owner access</a>
         </div>
       </div>
     </footer>
-    <script type="module" src="/app.js?v=20261021-gelato"></script>
+    <script type="module" src="/app.js?v=20261022-layout"></script>
+    <script type="module" src="/forge-print.js?v=20261022-layout"></script>
+    <script type="module" src="/storefront-shell.js?v=20261022-layout"></script>
   </body>
 </html>

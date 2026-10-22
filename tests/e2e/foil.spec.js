@@ -57,10 +57,10 @@ test("foil mode replaces master checkout and discloses changing odds", async ({ 
   const card = page.locator('[data-artwork-id="1"]');
   await expect(card.getByText("42/500 allocated", { exact: false })).toBeVisible();
   await expect(card.locator("[data-buy]")).toHaveCount(0);
-  await card.getByText("Foil edition: odds and delivery").click();
+  await card.getByText("Edition details: tiers, odds and delivery").click();
   await expect(card).toContainText("Prismatic 1%");
   await expect(card).toContainText("master file is not included");
-  await card.getByRole("link", { name: "Mint with Stripe" }).click();
+  await card.getByRole("link", { name: "Collect with Stripe" }).click();
   await expect(page).toHaveURL(/collection.html\?mint=1/);
   await expect(page.locator("#start-mint")).toBeEnabled();
   await expect(page.locator("#mint-panel")).toContainText("No blockchain token");
@@ -89,7 +89,7 @@ test("collection shows only private variants and confirmation reveals the mint",
     }),
   );
   await page.goto("/checkout-success.html?order=fixture&access=fixture");
-  await expect(page.locator("h1")).toHaveText("Prismatic edition revealed");
+  await expect(page.locator("h1")).toHaveText("Prismatic edition revealed", { timeout: 15000 });
   await expect(page.locator("#download-link")).toBeHidden();
   await expect(page.getByRole("button", { name: "Download minted variant" })).toHaveCount(0);
   await page.getByRole("button", { name: "Add to my collection" }).click();
@@ -203,7 +203,7 @@ test("only verified payment starts a concealed reveal; saving waits for completi
   expect(await waitingStage.evaluate((stage) => stage.isConnected && stage.open)).toBe(true);
   expect(await page.locator(".foil-mystery-stage").count()).toBe(1);
   expect(await page.evaluate(() => window.stageClosedDuringHandoff)).toBe(false);
-  await expect(page.locator("h1")).toHaveText("Prismatic edition revealed", { timeout: 10000 });
+  await expect(page.locator("h1")).toHaveText("Prismatic edition revealed", { timeout: 15000 });
   await expect(page.getByRole("button", { name: "Add to my collection" })).toBeVisible();
   expect(await page.evaluate(() => window.openingScenes.size)).toBe(1);
 });

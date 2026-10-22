@@ -1,5 +1,5 @@
 import { supabase, invoke } from "./supabase-client.js";
-import { escapeHtml } from "./catalog-core.js";
+import { escapeHtml } from "./catalog-core.js?v=20261022-layout";
 const status = document.querySelector("#print-order-status"),
   list = document.querySelector("#print-order-list");
 const selected = new URLSearchParams(location.search).get("order");

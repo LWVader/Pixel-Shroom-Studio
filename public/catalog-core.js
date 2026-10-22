@@ -1,3 +1,5 @@
+import { artUrl, rollPaths } from "./forge-print-core.js";
+import { editionDisclosure, FOIL_TIERS, SIX_TIER_RATES, LEGACY_FOIL_RATES } from "./mint-core.js";
 import { correctedArtwork } from "./studio-catalog.js";
 // Shared by the browser and the routing Worker: the only supported genres.
 export const GENRES = {
@@ -129,6 +131,27 @@ export function artworkInformation(row) {
   const dimensions = artworkDimensions(row);
   return `<details class="artwork-information"><summary>What you’ll receive</summary><dl><dt>File format</dt><dd>${escapeHtml(format)}</dd><dt>Original pixels</dt><dd>${escapeHtml(dimensions)}</dd><dt>Delivery</dt><dd>Watermark-free digital file after verified payment.</dd><dt>Included use</dt><dd>Personal and commercial use, including editing, redistribution and resale. Nonexclusive unless the listing says otherwise.</dd><dt>Suitable uses</dt><dd>Digital projects, design work and printing at a size appropriate to the recorded resolution.</dd></dl><p>Verification confirms the studio-issued file’s source and integrity; a serial number does not make ownership exclusive.</p><a href="/usage-rights.html">Read the full usage rights →</a></details>`;
 }
+// Shared card disclosure for server-rendered markup and live edition refreshes.
+export function editionActionsMarkup(edition) {
+  const active =
+    Boolean(edition.enabled) &&
+    Number(edition.totalMinted) + Number(edition.reserved || 0) < Number(edition.maxSupply);
+  const sizes = (edition.tierImages || [])
+    .map(
+      (image) =>
+        `<li><strong>${escapeHtml(image.tier)}</strong> ${Number(image.width)} × ${Number(image.height)} px</li>`,
+    )
+    .join("");
+  const rates =
+    edition.dropRates || (edition.rulesVersion === 2 ? SIX_TIER_RATES : LEGACY_FOIL_RATES);
+  const tiers = FOIL_TIERS.filter((tier) => Number(rates[tier]) > 0);
+  return `<div class="edition-availability"><span class="edition-state">${active ? "Numbered edition" : "Preparing or fully reserved"}</span><span>${Number(edition.totalMinted)}/${Number(edition.maxSupply)} allocated</span></div>
+  <div class="edition-tier-list" aria-label="Collection tiers">${tiers.map((tier) => `<span>${tier}</span>`).join("")}</div>
+  <progress value="${Number(edition.totalMinted)}" max="${Number(edition.maxSupply)}" aria-label="Paid edition allocations"></progress>
+  <details class="edition-details"><summary>Edition details: tiers, odds and delivery</summary><p>${escapeHtml(editionDisclosure(edition))}</p><p>One numbered copy of the studio-uploaded tier image (PNG, JPEG or WebP), with a prepared file fingerprint and individual signed receipt. The master file is not included. Visible pixels are preserved; copy-identification metadata makes each prepared copy distinct.</p>${sizes ? `<ul class="edition-dimensions">${sizes}</ul>` : "<p>Tier image dimensions are shown in the purchase details when recorded. Ask the studio if specifications are missing.</p>"}<p>After verified payment, one continuous spin reveals the server-assigned tier. Add to my collection saves it and starts both image and signed-receipt downloads. Personal and commercial permissions remain as published.</p><p>${Number(edition.prismaticsRemaining)} Prismatics remaining · ${Number(edition.reserved || 0)} checkout reservations. Effective odds change as caps fill.</p><a href="/usage-rights.html">Read usage rights →</a></details>
+  ${active ? `<a class="button edition-buy" href="/collection.html?mint=${encodeURIComponent(edition.artworkId)}">Collect with Stripe ↗</a>` : '<span class="button edition-buy" aria-disabled="true">Checkout unavailable</span>'}
+  <p class="edition-next">Choose artwork → Pay → Reveal → Save to your collection</p>`;
+}
 export function cardMarkup(row, { interactive = true } = {}) {
   const width = Math.min(1600, Math.max(160, Number(row.display_width) || 600)),
     height = Math.min(1600, Math.max(120, Number(row.display_height) || 600));
@@ -154,7 +177,7 @@ export function cardMarkup(row, { interactive = true } = {}) {
     : `<div class="art-image">${img}</div>`;
   const foil = row.foilEdition || null;
   const actions = foil
-    ? `<div class="payment-actions"><p class="foil-counter">${Number(foil.totalMinted)}/${Number(foil.maxSupply)} allocated · ${Number(foil.prismaticsRemaining)} Prismatics remaining</p><a class="button" href="/collection.html?mint=${encodeURIComponent(row.id)}">Explore foil edition ↗</a><p>One numbered copy of an uploaded tier image; master file not included. Review odds, sizes and delivery before checkout.</p></div>`
+    ? `<div class="payment-actions">${editionActionsMarkup(foil)}</div>`
     : row.category === "NFT"
       ? '<p class="muted">NFT release coming soon.</p><a class="text-link" href="/?updates=nft#studio-updates">Request release notifications →</a>'
       : `<div class="payment-actions" hidden>
@@ -162,20 +185,22 @@ export function cardMarkup(row, { interactive = true } = {}) {
     Buy with Stripe ↗
   </button>
 </div>`;
-  return `<article class="art-card" data-artwork-id="${escapeHtml(row.id)}">
-  <div>${preview}</div>
+  return `<article class="art-card edition-art-card" data-artwork-id="${escapeHtml(row.id)}">
+  <div class="artwork-visual"><span class="preview-label">Protected artwork preview</span>${preview}</div>
   <div class="art-info">
     <p>${escapeHtml(row.category)} · ${escapeHtml(row.serial_number)}</p>
     <div>
-      <h3>${escapeHtml(row.title)}</h3>
+      <h3><a href="${artUrl(row.id)}">${escapeHtml(row.title)}</a></h3>
       ${row.category === "NFT" ? "" : `<span class="price">${formatPrice(foil ? foil.price : row.price)}</span>`}
     </div>
     <p class="artist">by ${escapeHtml(row.artist || "LWVader")}</p>
-    <p class="artwork-size">Original image: ${escapeHtml(artworkDimensions(row))}</p>
+    <p class="artwork-size">${foil ? "Preview source" : "Original image"}: ${escapeHtml(artworkDimensions(row))}</p>
     ${row.category === "NFT" || foil ? "" : artworkInformation(row)}
+    ${rollPaths(row)}
+    <p class="listing-current-label">${row.category === "NFT" ? "Release information" : "Current listing purchase"}</p>
     ${actions}
     <p class="card-status muted" role="status"></p>
-    <p class="artwork-provenance"><strong>Individually Serialized. Cryptographically Fingerprinted.</strong><br>The source artwork has a registered LWV identity. Numbered editions also have an individual file fingerprint and signed receipt. Verification checks source and file integrity, not exclusivity.</p>
+    <details class="artwork-provenance"><summary>Studio identity &amp; verification</summary><p>The source artwork has a registered LWV identity. Numbered editions also have an individual file fingerprint and signed receipt. Verification checks source and file integrity, not exclusivity.</p></details>
     <a class="verify-link" href="/verify.html?serial=${encodeURIComponent(row.serial_number)}">Verify source artwork →</a>
   </div>
 </article>`;
@@ -244,7 +269,7 @@ export function latestArtworks(rows, limit = 14) {
 export function renderLatest(rows, { term = "" } = {}) {
   const list = matching(latestArtworks(rows), term);
   if (!list.length)
-    return `<div class="empty"><h2>${term ? "No matching recent artwork" : "No published listings yet"}</h2><p>Browse all artwork to explore every collection.</p><a class="text-link" href="/all-artwork.html">Explore all artwork →</a></div>`;
+    return `<div class="empty"><h2>${term ? "No matching recent artwork" : "New collections are being prepared"}</h2><p>New six-tier artwork collections will appear here when published. Join studio updates or explore the genre pages.</p><a class="text-link" href="/#studio-updates">Request studio updates →</a></div>`;
   return list.map((row) => cardMarkup(row)).join("");
 }
 export function renderGenre(rows, slug, { term = "" } = {}) {
@@ -254,7 +279,7 @@ export function renderGenre(rows, slug, { term = "" } = {}) {
   const list = matching(rows, term).filter((x) => x.category === name);
   if (!list.length)
     return `<div class="empty">
-  <h2>${term ? "No matching artwork" : slug === "nft" ? "Coming soon" : "No published listings yet"}</h2>
+  <h2>${term ? "No matching artwork" : slug === "nft" ? "Coming soon" : "New collections are being prepared"}</h2>
   <p>${term ? "Try another title, artist, or serial." : slug === "nft" ? "Explore digital artwork while NFT releases are prepared." : "Check back for additions or ask about custom artwork."}</p>
   <a class="text-link" href="/all-artwork.html">Explore all artwork →</a>
 </div>`;

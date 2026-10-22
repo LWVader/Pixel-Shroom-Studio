@@ -1,3 +1,4 @@
+import { inspectStoredPrint, validatePrintMapping } from "../_shared/print-preflight.ts";
 import Stripe from "npm:stripe@18";
 import { corsFor, json, service, studioSiteUrl } from "../_shared/common.ts";
 import {
@@ -101,6 +102,16 @@ Deno.serve(async (request: Request) => {
         if (error) throw error;
         return reply({ path, token: data.token });
       }
+      if (body.action === "admin_inspect") {
+        if (!uuid(body.productId)) return reply({ error: "Invalid product." }, 400);
+        const { data: product, error } = await db
+          .from("gelato_products")
+          .select("print_path")
+          .eq("id", body.productId)
+          .single();
+        if (error || !product) return reply({ error: "Product not found." }, 404);
+        return reply({ facts: await inspectStoredPrint(db, product.print_path) });
+      }
       if (body.action === "admin_save") {
         const p = body.product;
         const preview = new URL(String(p?.preview_url || ""));
@@ -130,7 +141,7 @@ Deno.serve(async (request: Request) => {
           preview.password ||
           !allowedPreview.has(preview.origin) ||
           !new RegExp(`^gelato/${p.id}/[0-9a-f-]{36}\\.(png|jpg|pdf)$`).test(p.print_path) ||
-          p.print_ready !== true
+          typeof p.active !== "boolean"
         )
           return reply(
             {
@@ -146,6 +157,7 @@ Deno.serve(async (request: Request) => {
           .list(folder, { search: filename });
         if (objectError || !objects?.some((o: any) => o.name === filename))
           throw new Error("Upload the private print-ready source first.");
+        const { facts, report } = await validatePrintMapping(db, p);
         const row = {
           id: p.id,
           title: p.title.trim(),
@@ -157,7 +169,17 @@ Deno.serve(async (request: Request) => {
           stripe_tax_code: p.stripe_tax_code,
           retail_cents: p.retail_cents,
           active: p.active === true,
-          print_ready: true,
+          print_ready: report.state === "ready" && p.print_ready === true,
+          print_specs: report.specs,
+          preflight_report: {
+            ...report,
+            facts,
+            productUid: p.product_uid,
+            printPath: p.print_path,
+            reviews: p.preflight_reviews,
+            checkedAt: new Date().toISOString(),
+            checkedBy: user.id,
+          },
         };
         const { error } = await db.from("gelato_products").upsert(row);
         if (error) throw error;

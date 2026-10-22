@@ -1,5 +1,5 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { validRows } from "./catalog-core.js";
+import { validRows } from "./catalog-core.js?v=20261022-layout";
 import {
   renderFeatured,
   renderProductExamples,

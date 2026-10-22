@@ -1,3 +1,4 @@
+import { createPrintPreflight } from "./print-preflight-ui.js?v=20261022-preflight";
 import { supabase, invoke } from "./supabase-client.js";
 import { escapeHtml } from "./catalog-core.js";
 const form = document.querySelector("#gelato-product-form"),
@@ -7,6 +8,10 @@ const form = document.querySelector("#gelato-product-form"),
 let currentId = crypto.randomUUID(),
   currentPath = "",
   products = [];
+const preflight = createPrintPreflight(
+  form,
+  async () => (await call({ action: "admin_inspect", productId: currentId })).facts,
+);
 async function call(body) {
   const { data } = await supabase.auth.getSession();
   if (!data.session) throw Error("Sign in as the studio owner.");
@@ -14,6 +19,7 @@ async function call(body) {
 }
 function reset() {
   form.reset();
+  preflight.reset();
   currentId = crypto.randomUUID();
   currentPath = "";
   status.textContent =
@@ -60,6 +66,7 @@ list.onclick = (event) => {
   form.elements.price.value = (p.retail_cents / 100).toFixed(2);
   form.elements.active.checked = p.active;
   form.elements.print_ready.checked = p.print_ready;
+  preflight.reset(p.print_specs);
   status.textContent =
     "Editing mapping. Upload a new source to revise artwork; existing paid snapshots retain the previous file.";
 };
@@ -84,6 +91,7 @@ form.onsubmit = async (event) => {
   const button = form.querySelector("button[type=submit]");
   button.disabled = true;
   try {
+    const check = preflight.submission(form.elements.active.checked);
     const file = form.elements.printFile.files[0];
     if (file) {
       const extension = { "image/png": "png", "image/jpeg": "jpg", "application/pdf": "pdf" }[
@@ -102,6 +110,7 @@ form.onsubmit = async (event) => {
     await call({
       action: "admin_save",
       product: {
+        ...check,
         id: currentId,
         title: form.elements.title.value,
         kind: form.elements.kind.value,

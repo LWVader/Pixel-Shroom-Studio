@@ -1,4 +1,4 @@
-import { applyFoilListings } from "./foil-store.js?v=20261021-edition-cards";
+import { applyFoilListings } from "./foil-store.js?v=20261022-layout";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import {
   GENRES,
@@ -11,8 +11,9 @@ import {
   validRows,
   escapeHtml,
   checkoutUrl,
-} from "./catalog-core.js?v=20261021-edition-cards";
-import { updateArtworkFeatures } from "./studio-home.js?v=20261021-gelato";
+  cardMarkup,
+} from "./catalog-core.js?v=20261022-layout";
+import { updateArtworkFeatures } from "./studio-home.js?v=20261022-layout";
 const catalog = document.querySelector("#catalog"),
   status = document.querySelector("#catalog-status");
 const mode = catalog?.dataset.mode,
@@ -37,13 +38,41 @@ function enableActions() {
 }
 function render() {
   if (!catalog) return;
-  const term = "";
+  const term = new URLSearchParams(location.search).get("q")?.slice(0, 160) || "";
+  const sort = document.querySelector("#gallery-sort")?.value || "newest";
+  const sorted = sort === "title" ? [...rows].sort((a, b) => a.title.localeCompare(b.title)) : rows;
   catalog.innerHTML =
-    mode === "compiled"
-      ? renderCompiled(rows, { term, sampleIds: term.trim() ? undefined : sampleIds })
-      : mode === "latest"
-        ? renderLatest(rows, { term })
-        : renderGenre(rows, slug, { term });
+    mode === "detail"
+      ? rows
+          .filter((row) => String(row.id) === catalog.dataset.artworkId)
+          .map((row) => cardMarkup(row))
+          .join("")
+      : mode === "compiled" && term.trim()
+        ? sorted
+            .filter((row) =>
+              `${row.title} ${row.artist} ${row.category} ${row.serial_number}`
+                .toLowerCase()
+                .includes(term.toLowerCase()),
+            )
+            .map((row) => cardMarkup(row))
+            .join("") || "<p>No artwork matches this search.</p>"
+        : mode === "compiled"
+          ? renderCompiled(sorted, { term, sampleIds: term.trim() ? undefined : sampleIds })
+          : mode === "latest"
+            ? renderLatest(sorted, { term })
+            : renderGenre(sorted, slug, { term });
+  if (mode === "compiled" && term.trim()) catalog.className = "art-grid";
+  if (sort === "title") {
+    const grids =
+      mode === "compiled" && !term.trim() ? catalog.querySelectorAll(".sample-grid") : [catalog];
+    for (const grid of grids)
+      [...grid.children]
+        .filter((el) => el.matches(".art-card"))
+        .sort((a, b) =>
+          a.querySelector("h3").textContent.localeCompare(b.querySelector("h3").textContent),
+        )
+        .forEach((el) => grid.append(el));
+  }
   updateArtworkFeatures(rows);
   enableActions();
   applyFoilListings();
@@ -60,7 +89,9 @@ function render() {
     );
   status.textContent =
     mode === "compiled"
-      ? `${matches.length} published listing${matches.length === 1 ? "" : "s"}${q ? " match your search" : ""}. Showing up to four per genre.`
+      ? term.trim()
+        ? `${matches.length} artworks match “${term}”.`
+        : `${matches.length} published listing${matches.length === 1 ? "" : "s"}${q ? " match your search" : ""}. Showing up to four per genre.`
       : mode === "latest"
         ? `${matches.length} recent artwork${matches.length === 1 ? "" : "s"}${q ? " match your search" : ""}. Newest first.`
         : `${matches.length} ${GENRES[slug]?.name || ""} listing${matches.length === 1 ? "" : "s"}${q ? " match your search" : ""}.`;
@@ -99,6 +130,7 @@ async function loadCatalog() {
     status.textContent = "The live collection could not be loaded. Please try again shortly.";
   }
 }
+document.querySelector("#gallery-sort")?.addEventListener("change", render);
 document.querySelector("#shuffle-samples")?.addEventListener("click", () => {
   chooseSamples();
   render();
@@ -150,6 +182,11 @@ catalog?.addEventListener("click", async (event) => {
     buttons.forEach((b) => (b.disabled = false));
   }
 });
+document.addEventListener("click", (event) => {
+  const preview = event.target.closest(".detail-preview-trigger");
+  if (preview) openPreview(preview);
+});
+document.querySelectorAll(".detail-preview-trigger").forEach((button) => (button.disabled = false));
 let dialog;
 function openPreview(trigger) {
   if (!dialog) {
@@ -202,6 +239,7 @@ async function loadArticles() {
       )
       .join("");
     if (journal) journal.hidden = !published.length;
+    document.querySelectorAll("[data-journal-link]").forEach((a) => (a.hidden = !published.length));
   } catch {
     articles.replaceChildren();
     if (journal) journal.hidden = true;

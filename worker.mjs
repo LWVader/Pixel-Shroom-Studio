@@ -1,3 +1,5 @@
+import { renderArtworkDetail } from "./public/artwork-page-core.js";
+import { safeArtworkId } from "./public/forge-print-core.js";
 import { readPrintProducts } from "./gelato-catalog.mjs";
 import {
   renderFeatured,
@@ -13,6 +15,7 @@ import {
   latestArtworks,
   renderGenre,
   escapeHtml,
+  cardMarkup,
 } from "./public/catalog-core.js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./public/config.js";
 const CANONICAL = "https://www.pixelshroomstudio.com";
@@ -22,6 +25,11 @@ const aliases = new Set([
 ]);
 const pages = new Set([
   "about",
+  "art",
+  "forge",
+  "drop-odds",
+  "canvas-specs",
+  "cart",
   "collection",
   "market",
   "verify-mint",
@@ -66,13 +74,13 @@ function headersFor(response, path) {
       "Cache-Control",
       response.status >= 400 ||
         path.startsWith("/checkout-") ||
-        ["/admin.html", "/collection.html", "/print-orders.html"].includes(path)
+        ["/admin.html", "/collection.html", "/print-orders.html", "/cart.html"].includes(path)
         ? "no-store"
         : "public,max-age=0,must-revalidate",
     );
   if (
     path.startsWith("/checkout-") ||
-    ["/admin.html", "/collection.html", "/print-orders.html"].includes(path)
+    ["/admin.html", "/collection.html", "/print-orders.html", "/cart.html"].includes(path)
   )
     result.headers.set("X-Robots-Tag", "noindex,nofollow");
   return result;
@@ -81,6 +89,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url),
       path = url.pathname;
+    if (["/vault", "/vault/", "/vault.html"].includes(path))
+      return redirect(new URL("/collection.html", url.origin));
+    if (
+      path === "/art.html" &&
+      (url.searchParams.getAll("id").length !== 1 || !safeArtworkId(url.searchParams.get("id")))
+    )
+      return this.notFound(request, env);
     if (path === "/physical-order.html" || path === "/physical-order") {
       return redirect(new URL("/canvases.html", url.origin));
     }
@@ -171,7 +186,14 @@ export default {
     }
     const assetHeaders = new Headers(request.headers);
     if (
-      ["/", "/all-artwork.html", "/genre.html", "/canvases.html", "/apparel.html"].includes(path)
+      [
+        "/",
+        "/all-artwork.html",
+        "/genre.html",
+        "/canvases.html",
+        "/apparel.html",
+        "/art.html",
+      ].includes(path)
     ) {
       assetHeaders.delete("if-none-match");
       assetHeaders.delete("if-modified-since");
@@ -181,6 +203,79 @@ export default {
     );
     if (response.status === 404) return this.notFound(request, env);
 
+    if (path === "/art.html" && response.ok) {
+      try {
+        const rows = await readPublishedArtworks(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          fetcher: env.CATALOG_FETCH || fetch,
+          signal: AbortSignal.timeout(6000),
+        });
+        const row = rows.find((x) => String(x.id) === url.searchParams.get("id"));
+        if (!row) return this.notFound(request, env);
+        let content = await response.text();
+        content = content.replace(/<section[^>]*id="art-detail-root"[\s\S]*?<\/section>/, () =>
+          renderArtworkDetail(row),
+        );
+        content = content.replace(
+          "<!--ART_BOOTSTRAP-->",
+          () =>
+            `<script id="catalog-bootstrap" type="application/json">${JSON.stringify({ rows: [row] }).replace(/</g, "\\u003c")}</script>`,
+        );
+        const title = escapeHtml(row.title + " | Pixel Shroom Studio"),
+          canonical = CANONICAL + "/art.html?id=" + row.id;
+        const description = escapeHtml(
+          `Explore ${row.title} by ${row.artist || "LWVader"}. View its protected preview, registered serial, file details and available purchase paths.`,
+        );
+        content = content
+          .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${title}</title>`)
+          .replace(/(<link rel="canonical" href=")[^"]+/, (_, a) => a + canonical);
+        content = content.replace(
+          /(<meta\s+(?:name="description"|property="og:description"|name="twitter:description")\s+content=")[^"]*/g,
+          (_, a) => a + description,
+        );
+        content = content.replace(
+          /(<meta\s+(?:property="og:title"|name="twitter:title")\s+content=")[^"]*/g,
+          (_, a) => a + title,
+        );
+        content = content.replace(
+          /(<meta\s+property="og:url"\s+content=")[^"]*/g,
+          (_, a) => a + canonical,
+        );
+        const schema = {
+          "@context": "https://schema.org",
+          "@type": "VisualArtwork",
+          name: row.title,
+          identifier: row.serial_number,
+          url: canonical,
+          image: row.preview_url,
+          genre: row.category,
+          creator: { "@type": "Person", name: row.artist || "LWVader" },
+        };
+        content = content
+          .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "")
+          .replace(
+            "</head>",
+            () =>
+              `<script type="application/ld+json">${JSON.stringify(schema).replace(/</g, "\\u003c")}</script></head>`,
+          );
+        const headers = new Headers(response.headers);
+        headers.delete("etag");
+        headers.delete("last-modified");
+        headers.delete("content-length");
+        return headersFor(new Response(content, { status: 200, headers }), path);
+      } catch {
+        return headersFor(
+          new Response("Artwork is temporarily unavailable. Please try again.", {
+            status: 503,
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Cache-Control": "no-store",
+              "X-Robots-Tag": "noindex",
+            },
+          }),
+          path,
+        );
+      }
+    }
     if ((path === "/" || path === "/all-artwork.html" || path === "/genre.html") && response.ok) {
       let content = await response.text();
       try {
@@ -197,11 +292,28 @@ export default {
           : path === "/"
             ? latestArtworks(cachedRows)
             : cachedRows;
-        const markup = slug
-          ? renderGenre(rows, slug)
-          : path === "/"
-            ? renderLatest(rows)
-            : renderCompiled(rows);
+        const term =
+          path === "/all-artwork.html"
+            ? (url.searchParams.get("q") || "").trim().slice(0, 160)
+            : "";
+        const matches = term
+          ? rows.filter((x) =>
+              `${x.title} ${x.artist} ${x.category} ${x.serial_number}`
+                .toLowerCase()
+                .includes(term.toLowerCase()),
+            )
+          : rows;
+        const markup = term
+          ? matches.map((x) => cardMarkup(x)).join("") || "<p>No artwork matches this search.</p>"
+          : slug
+            ? renderGenre(rows, slug)
+            : path === "/"
+              ? renderLatest(rows)
+              : renderCompiled(rows);
+        if (term)
+          content = content
+            .replace(/(<div id="catalog"[^>]*class=")[^"]*/, (_, a) => a + "art-grid")
+            .replace('content="index,follow,max-image-preview:large"', 'content="noindex,follow"');
         content = content.replace(
           /<!--CATALOG_START-->[\s\S]*?<!--CATALOG_END-->/,
           "<!--CATALOG_START-->" + markup + "<!--CATALOG_END-->",
@@ -231,7 +343,9 @@ export default {
             "Checking current published listings…",
             path === "/"
               ? `${rows.length} recent artworks. Newest first.`
-              : `${cachedRows.length} published listings. Showing up to four per genre.`,
+              : term
+                ? `${matches.length} artworks match your search.`
+                : `${cachedRows.length} published listings. Showing up to four per genre.`,
           )
           .replace(
             "Checking current listings…",
@@ -296,6 +410,8 @@ export default {
         CANONICAL +
         (slug ? genreUrl(slug) : path === "/all-artwork.html" ? "/all-artwork.html" : "/");
       h.set("Link", `<${canonical}>; rel="canonical"`);
+      if (path === "/all-artwork.html" && url.searchParams.get("q"))
+        h.set("X-Robots-Tag", "noindex,follow");
       return headersFor(
         new Response(request.method === "HEAD" ? null : content, { status: 200, headers: h }),
         path,

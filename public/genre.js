@@ -1,5 +1,5 @@
 // Static-host fallback only. Production serves the genre-specific HTML in the Worker.
-import { GENRES, genreUrl } from "./catalog-core.js";
+import { GENRES, genreUrl } from "./catalog-core.js?v=20261022-layout";
 const slug = new URLSearchParams(location.search).get("genre")?.toLowerCase();
 if (slug && Object.hasOwn(GENRES, slug)) {
   try {

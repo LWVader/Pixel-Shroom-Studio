@@ -18,6 +18,19 @@ Deno.serve(async (request: Request) => {
     const {
       data: { user },
     } = await db.auth.getUser(bearer);
+    if (body.action === "vault_count") {
+      if (!user) return json({ error: "Sign in to view your Vault count." }, 401, request);
+      const { count, error } = await db
+        .from("mints")
+        .select("id,orders!inner(status)", { count: "exact", head: true })
+        .eq("owner_id", user.id)
+        .eq("orders.status", "paid")
+        .eq("state", "ready")
+        .eq("market_frozen", false)
+        .not("collection_added_at", "is", null);
+      if (error) throw error;
+      return json({ count: count || 0 }, 200, request);
+    }
     if (body.action === "add_to_collection") {
       if (!user) return json({ error: "Sign in to add this edition." }, 401, request);
       if (!body.mintId) return json({ error: "Mint ID required." }, 400, request);

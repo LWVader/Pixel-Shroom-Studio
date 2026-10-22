@@ -4,6 +4,7 @@ test("identity section, artist story and verification FAQ stay connected", async
   page,
   request,
 }) => {
+  test.slow(); // Multi-page accessibility scan plus verification navigation.
   await page.goto("/");
   const order = await page
     .locator("main > section[id]")

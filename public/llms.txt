@@ -63,3 +63,11 @@ After reveal, Add to my collection saves the edition to the authenticated accoun
 - [Verify a direct-file original](https://www.pixelshroomstudio.com/verify.html): Earlier original-file verification using an LWV serial.
 
 - [Physical orders](https://www.pixelshroomstudio.com/print-orders.html): Private account page for print-order payment and fulfillment status; physical purchases do not include digital downloads or numbered editions.
+
+## Forge & Print storefront preview
+
+- [The Forge](https://www.pixelshroomstudio.com/forge.html): planned same-artwork trade-up recipes; calculator only, no live burn transactions.
+- [Drop odds](https://www.pixelshroomstudio.com/drop-odds.html): base six-tier rates and proposed bundle guarantees. Rolls are server-side, not on-chain.
+- [Canvas specifications](https://www.pixelshroomstudio.com/canvas-specs.html): planned 16 × 16 unframed and 16 × 20 portrait framed products, US only.
+- Planned offers: digital roll $8; canvas roll $69 + $13.49 prepaid shipping, before applicable tax. New checkout paths, guarantees and Forge are not yet open.
+- Current listings retain their own available prices and delivery terms. A signed receipt verifies source/integrity and does not grant exclusivity.
