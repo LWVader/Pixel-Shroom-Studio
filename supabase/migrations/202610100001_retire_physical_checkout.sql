@@ -1,5 +1,4 @@
 -- Disable the retired site's physical checkout. Preserve any historical order records.
--- The eBay storefront uses only public metadata and outgoing links, never these tables.
 drop function if exists public.claim_physical_payment(uuid,text,text,integer,integer,text);
 do $$
 begin

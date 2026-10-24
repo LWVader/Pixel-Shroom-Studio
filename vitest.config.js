@@ -7,10 +7,10 @@ export default defineConfig({
       provider: "v8",
       include: [
         "public/catalog-core.js",
-        "public/ebay-core.js",
+        "public/print-preflight-core.js",
+        "gelato-catalog.mjs",
         "public/studio-catalog.js",
         "public/studio-home-core.js",
-        "ebay-feed.mjs",
         "worker.mjs",
       ],
       reporter: ["text", "html", "lcov"],

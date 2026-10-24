@@ -1088,7 +1088,7 @@ document.querySelector("#admin-articles").addEventListener("click", async (event
   }
 });
 
-// SECTION: Five-view dashboard navigation
+// SECTION: Dashboard section navigation
 function openAdminView(viewId) {
   document.querySelectorAll(".admin-view").forEach((view) => {
     const active = view.id === viewId;
@@ -1228,7 +1228,7 @@ document.querySelector("#archive-catalog")?.addEventListener("click", async (eve
   }
   if (
     !confirm(
-      `Remove all ${items.length} current artwork listings from public view for reloading? Stored files, orders, editions, receipts and eBay products will be preserved.`,
+      `Remove all ${items.length} current artwork listings from public view for reloading? Stored files, orders, editions, receipts and Gelato products will be preserved.`,
     )
   )
     return;

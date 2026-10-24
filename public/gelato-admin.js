@@ -7,11 +7,75 @@ const form = document.querySelector("#gelato-product-form"),
   orders = document.querySelector("#gelato-admin-orders");
 let currentId = crypto.randomUUID(),
   currentPath = "",
-  products = [];
+  products = [],
+  artworks = [];
+const picker = document.querySelector("#gelato-artwork-picker");
+const tierHint = document.querySelector("#gelato-tier-hint");
+const tierSuggestions = {
+  Standard: [16, 16, "Slim canvas, unframed", 49],
+  Silver: [16, 16, "Slim canvas, unframed", 49],
+  Gold: [16, 16, "Thick canvas, unframed", 55],
+  Emerald: [16, 20, "Black wood floater frame, portrait", 79],
+  Sapphire: [16, 20, "Dark wood floater frame, portrait", 79],
+  Prismatic: [16, 20, "Natural wood floater frame, portrait", null],
+};
+function showTierHint() {
+  const suggestion = tierSuggestions[form.elements.edition_tier.value];
+  tierHint.textContent = suggestion
+    ? `${suggestion[0]} × ${suggestion[1]} in · ${suggestion[2]}. Confirm the exact UID, bleed and wrap in Gelato.${suggestion[3] === null ? " Set a paid print price; no free claim is configured." : " Suggested later-print price: $" + suggestion[3] + "."}`
+    : "Standalone product: enter its size, finish and price.";
+}
+picker.onchange = () => {
+  const artwork = artworks.find((item) => String(item.id) === picker.value);
+  form.elements.edition_artwork_id.value = artwork?.id || "";
+  if (artwork) {
+    form.elements.title.value = artwork.title;
+    form.elements.preview_url.value = artwork.preview_url || "";
+  }
+  form.elements.width.dispatchEvent(new Event("input", { bubbles: true }));
+};
+form.elements.edition_tier.addEventListener("change", () => {
+  const suggestion = tierSuggestions[form.elements.edition_tier.value];
+  if (suggestion) {
+    const [width, height, finish, price] = suggestion;
+    form.elements.kind.value = "canvas";
+    form.elements.width.value = width;
+    form.elements.height.value = height;
+    form.elements.variant_label.value = `${width} × ${height} in · ${finish}`;
+    form.elements.price.value = price ?? "";
+    // A changed tier must never retain approval or the previous product's UID.
+    form.elements.product_uid.value = "";
+    form.elements.templateUrl.value = "";
+  }
+  form.elements.width.dispatchEvent(new Event("input", { bubbles: true }));
+  showTierHint();
+});
+form.elements.edition_artwork_id.addEventListener("input", () => {
+  picker.value = form.elements.edition_artwork_id.value;
+  form.elements.width.dispatchEvent(new Event("input", { bubbles: true }));
+});
+// Reveal any required field inside a collapsed technical section on validation.
+form.addEventListener(
+  "invalid",
+  (event) => {
+    let parent = event.target.parentElement;
+    while (parent && parent !== form) {
+      if (parent.tagName === "DETAILS") parent.open = true;
+      parent = parent.parentElement;
+    }
+  },
+  true,
+);
 const preflight = createPrintPreflight(
   form,
   async () => (await call({ action: "admin_inspect", productId: currentId })).facts,
 );
+document.querySelector("#gelato-safe-check").addEventListener("click", () => {
+  const settings = form.querySelector(".print-preflight details");
+  if ([...settings.querySelectorAll("input, select")].some((input) => !input.checkValidity())) {
+    settings.open = true;
+  }
+});
 async function call(body) {
   const { data } = await supabase.auth.getSession();
   if (!data.session) throw Error("Sign in as the studio owner.");
@@ -22,13 +86,34 @@ function reset() {
   preflight.reset();
   currentId = crypto.randomUUID();
   currentPath = "";
-  status.textContent =
-    "New physical product variation. Map each size/color to its exact Gelato product UID.";
+  status.textContent = "New product: choose artwork and tier, then connect its Gelato product.";
+  picker.value = "";
+  showTierHint();
 }
 document.querySelector("#gelato-new").onclick = reset;
 async function refresh() {
   const data = await call({ action: "admin_list" });
   products = data.products || [];
+  const artworkResult = await supabase
+    .from("artworks")
+    .select("id,title,preview_url")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  if (!artworkResult.error) {
+    artworks = artworkResult.data || [];
+    picker.innerHTML =
+      '<option value="">Choose a studio artwork…</option>' +
+      artworks
+        .map(
+          (artwork) =>
+            `<option value="${escapeHtml(String(artwork.id))}">${escapeHtml(artwork.title)} · #${escapeHtml(String(artwork.id))}</option>`,
+        )
+        .join("");
+    picker.value = form.elements.edition_artwork_id.value;
+  }
+  document.querySelector("#gelato-artwork-help").textContent = artworkResult.error
+    ? "Artwork list unavailable. You can enter its ID below; saved products and orders remain accessible."
+    : "Select artwork to fill its title and protected preview. Select a tier for size and price suggestions.";
   list.innerHTML =
     products
       .map(
@@ -65,6 +150,8 @@ list.onclick = (event) => {
     form.elements[key].value = p[key];
   form.elements.edition_artwork_id.value = p.edition_artwork_id || "";
   form.elements.edition_tier.value = p.edition_tier || "";
+  picker.value = p.edition_artwork_id || "";
+  showTierHint();
   form.elements.price.value = (p.retail_cents / 100).toFixed(2);
   form.elements.active.checked = p.active;
   form.elements.print_ready.checked = p.print_ready;
@@ -93,6 +180,13 @@ form.onsubmit = async (event) => {
   const button = form.querySelector("button[type=submit]");
   button.disabled = true;
   try {
+    if (
+      Boolean(form.elements.edition_artwork_id.value) !== Boolean(form.elements.edition_tier.value)
+    ) {
+      throw Error(
+        "Choose both an artwork and print tier for a Vault mapping, or leave both empty for a standalone product.",
+      );
+    }
     const check = preflight.submission(form.elements.active.checked);
     const file = form.elements.printFile.files[0];
     if (file) {

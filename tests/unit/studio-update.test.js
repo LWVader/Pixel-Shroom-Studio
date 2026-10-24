@@ -87,7 +87,6 @@ it("uses protected featured previews and studio physical-product destinations", 
   };
   expect(renderProductExamples(catalog)).toContain("/canvases.html");
   expect(renderProductExamples(catalog)).toContain("canvas.webp");
-  expect(renderProductExamples(catalog)).not.toContain("ebay.com");
 });
 it("requires purchase verification and publication consent for customer quotes", () => {
   expect(renderFeedback([])).toBe("");

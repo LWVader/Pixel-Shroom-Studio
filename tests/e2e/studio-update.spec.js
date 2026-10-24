@@ -12,12 +12,6 @@ test.beforeEach(async ({ page }) => {
       });
     return route.abort();
   });
-  await page.route("https://i.ebayimg.com/**", (route) =>
-    route.fulfill({
-      contentType: "image/svg+xml",
-      body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"/>',
-    }),
-  );
 });
 test("three-step studio loop, featured previews, newest 14 and hidden empty sections", async ({
   page,

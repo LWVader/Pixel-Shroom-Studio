@@ -1,0 +1,49 @@
+GELATO ADMIN TAB UPDATE
+
+1. Extract this ZIP into your project root, replacing the included files.
+2. From PowerShell in that project root, run:
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\cleanup-retired-products.ps1
+   This removes only the 14 retired source/test/guide files listed in DELETED-FILES.txt.
+3. Run npm.cmd ci
+4. Run npm.cmd run build
+5. Deploy using your normal Cloudflare deployment command (for example npx.cmd wrangler deploy).
+6. Open Admin, then Gelato. Hard-refresh if the old admin page was cached.
+
+No new database migration, secret update or Edge Function deployment is needed.
+Two historical migration files have comment-only edits; their SQL statements and migration IDs are unchanged. Do not rerun them.
+Existing stored products, artwork, paid orders, accounts and payment paths are preserved.
+The old physical-product form was removed from Images and moved to Admin > Gelato.
+The Gelato storefront and print checkout remain the physical-product path.
+
+Validation: 79 unit/integration tests passed; syntax checks, physical storefront checks, production build and admin tab/form structure checks passed. Playwright discovers all 118 browser tests, but browser execution was unavailable because the browser binary download failed in this environment.
+
+FILES TO REPLACE / ADD
+docs/ARTIST-STATEMENT-UPDATE.md
+docs/BUY-OPENING-FLOW.md
+docs/CATALOG-RELAUNCH-AND-CARDS.md
+docs/FOIL-MINT-ENGINE.md
+docs/GELATO-INTEGRATION.md
+docs/HOMEPAGE-BUYER-UPDATE.md
+docs/LOCAL-DEMO.md
+docs/MINIFIED-DEPLOYMENT.md
+docs/MODAL-SETUP.md
+docs/PAID-REVEAL-PROFILE-UPDATE.md
+docs/SECONDARY-MARKETPLACE.md
+docs/SITE-LANGUAGE-UPDATE.md
+package-lock.json
+package.json
+public/admin.html
+public/admin.js
+public/gelato-admin.js
+public/print-store.css
+supabase/migrations/202610090001_physical_print_orders.sql
+supabase/migrations/202610100001_retire_physical_checkout.sql
+tests/e2e/gelato.spec.js
+tests/e2e/print-preflight.spec.js
+tests/e2e/studio-update.spec.js
+tests/local-server.mjs
+tests/unit/physical-history.test.js
+tests/unit/studio-update.test.js
+tools/check-print-pages.mjs
+vitest.config.js
+worker.mjs

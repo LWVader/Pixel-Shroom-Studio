@@ -3,6 +3,7 @@ import sharp from "sharp";
 test("owner checks actual artwork, invalidates stale checks, and saves bound product evidence", async ({
   page,
 }) => {
+  test.slow(); // Full owner upload/review workflow includes many mobile scroll/focus steps.
   const png = await sharp({
     create: {
       width: 600,
@@ -44,15 +45,35 @@ test("owner checks actual artwork, invalidates stale checks, and saves bound pro
       gelatoRequests.push(request.url());
   });
   await page.goto("/admin.html#images-view");
-  const form = page.locator("#gelato-product-form");
+  await page.locator("[data-admin-view=images-view]").click();
+  await expect(page.locator("#images-view #gelato-product-form")).toHaveCount(0);
+  await page.getByRole("button", { name: "Gelato", exact: true }).click();
+  await expect(page).toHaveURL(/#gelato-view$/);
+  await expect(page.locator("#view-heading")).toHaveText("Gelato");
+  const form = page.locator("#gelato-view #gelato-product-form");
+  await form.locator("[name=edition_tier]").selectOption("Gold");
+  await expect(form.locator("[name=width]")).toHaveValue("16");
+  await expect(form.locator("[name=height]")).toHaveValue("16");
+  await expect(form.locator("[name=price]")).toHaveValue("55");
+  await form.locator("[name=product_uid]").fill("old_uid");
+  await form.locator("[name=edition_tier]").selectOption("Prismatic");
+  await expect(form.locator("[name=height]")).toHaveValue("20");
+  await expect(form.locator("[name=price]")).toHaveValue("");
+  await expect(form.locator("[name=product_uid]")).toHaveValue("");
+  await expect(page.locator("#gelato-tier-hint")).toContainText("no free claim");
+  await page.locator("#gelato-new").click();
   await form.locator("[name=title]").fill("Canvas preflight fixture");
   await form.locator("[name=variant_label]").fill("2 × 2 inch test area");
   await form.locator("[name=product_uid]").fill("canvas_fixture_uid");
   await form.locator("[name=price]").fill("30");
+  await form.getByText("Listing details & tax", { exact: true }).click();
   await form.locator("[name=stripe_tax_code]").fill("txcd_99999999");
   await form
     .locator("[name=preview_url]")
     .fill("https://www.pixelshroomstudio.com/assets/art-fantasy.png");
+  await form
+    .getByText("Technical settings — confirm against the Gelato template", { exact: true })
+    .click();
   await form
     .locator("[name=templateUrl]")
     .fill("https://dashboard.gelato.com/catalogue/categories");
@@ -81,7 +102,7 @@ test("owner checks actual artwork, invalidates stale checks, and saves bound pro
   await expect(page.locator("#gelato-preflight-result")).toHaveAttribute("data-state", "ready");
   await form.locator("[name=print_ready]").check();
   await form.locator("[name=active]").check();
-  await form.getByRole("button", { name: "Save physical product mapping" }).click();
+  await form.getByRole("button", { name: "Save product" }).click();
   await expect(page.locator("#gelato-admin-status")).toContainText("Product mapping saved");
   const saved = calls.find((c) => c.action === "admin_save").product;
   expect(saved.preflight_hash).toMatch(/^[a-f0-9]{64}$/);

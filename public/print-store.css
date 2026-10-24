@@ -159,3 +159,41 @@
   border-left: 3px solid var(--accent, #96d8a2);
   padding-left: 12px;
 }
+
+/* Owner product setup: four compact groups, with technical detail on demand. */
+.gelato-management .gelato-step {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin: 0;
+}
+.gelato-management legend {
+  font-size: 1.2rem;
+  padding-inline: 8px;
+}
+.gelato-management .gelato-details {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-block: 8px;
+}
+.gelato-management summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+.gelato-management .gelato-details[open] > summary {
+  margin-bottom: 14px;
+}
+.gelato-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.gelato-management p {
+  overflow-wrap: anywhere;
+}
+.gelato-management .print-form > p {
+  margin-block: 0 8px;
+}

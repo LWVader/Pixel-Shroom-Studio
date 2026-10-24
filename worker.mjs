@@ -112,14 +112,6 @@ export default {
         new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } }),
         path,
       );
-    if (path === "/api/ebay-listings")
-      return headersFor(
-        Response.json(
-          { error: "This catalog endpoint is retired." },
-          { status: 410, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } },
-        ),
-        path,
-      );
     if (path === "/api/print-products") {
       try {
         return headersFor(
