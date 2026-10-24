@@ -39,21 +39,27 @@ The initial physical checkout supports **US delivery, USD, one mapped product va
 
 Open Admin → **Gelato** → Refresh products & orders.
 
-In Admin → Images, upload the six finished tier images once. Artist defaults to **LWVader**; roll pricing remains centrally configured. The compact upload grid includes local thumbnails. Native file inputs open your computer’s file browser.
+In Admin → Images, upload the six finished tier images once. Artist defaults to **LWVader** and roll prices remain central. Admin → Gelato has no Product template settings / technical-check panel.
 
-In Admin → Gelato, use **Browse site artwork** to select an existing artwork and tier, or **Choose from computer** to load a dedicated PNG/JPEG print composition linked to that artwork. The native chooser is visible and enabled. Site sources are read from private tier storage; computer sources are kept private as well. Existing digital masters and issued copies are never modified by this print editor.
+Choose the artwork, tier and physical frame, then enter the exact Gelato product UID and click **Load Gelato product**. A server-side GET reads the supplier’s catalog attributes, checks printability and US support, and rejects known size/frame/thickness mismatches. No artwork or order is sent to Gelato during product loading. The API key stays on the server. Unknown attributes are displayed without being certified or invented.
 
-The positioning editor supports mouse/touch dragging, corner resize handles, Zoom, horizontal/vertical position sliders and Reset. Arrow keys and +/- also work on the focused editor. It shows the full print area, entered bleed/wrap and safe-zone guide. The only canvas size presets are **16 × 16 unframed** and **16 × 20 portrait framed**, with each tier selecting its promised size and finish. Product-specific bleed/wrap must still match the exact Gelato UID’s template; the tool does not invent those specifications.
+Current physical formats:
 
-**Preview canvas** opens a studio mockup with angled, front and wall views. These are illustrative previews of placement and finish, not official Gelato photography or a production guarantee.
+| Tier                     | Canvas                  | Frame                              |
+| ------------------------ | ----------------------- | ---------------------------------- |
+| Standard / Silver / Gold | 16 × 16 thick canvas    | Unframed                           |
+| Emerald / Sapphire       | 16 × 24 portrait canvas | Choose Black, Natural or Dark Wood |
+| Prismatic                | 24 × 24 canvas          | Choose Black, Natural or Dark Wood |
 
-**Save image position** exports the actual positioned print PNG, saves the raw source privately when needed, creates a protected 720px preview, and fills the print path, preview URL, dimensions and print hash automatically. The original artwork ID and tier remain linked throughout the site, Vault and print mapping. The positioned print has its own hash; the original tier file and its hash remain unchanged. Changing the source, positioning or print-area requirements invalidates the saved position and requires saving again. Server validation re-reads the raw private source and recomputes effective cropped PPI, so enlarging an export cannot pass off inadequate source detail as sufficient resolution.
+Browse site artwork or choose a PNG/JPEG from your computer. Position the image using dragging, corner handles, zoom or sliders. Preview canvas opens front, angled and wall views with the selected finish. These studio mockups are illustrative; the loaded catalog data identifies the actual Gelato product. Saved product cards let you reload and preview a prepared product before fulfillment.
 
-Enter the exact Gelato Product UID and applicable Stripe tax code once for the product. When another saved mapping for that same tier exists, the editor can reuse its UID, tax code and template settings. Unknown product UIDs and tax codes are not guessed. There are no manual review checklists, readiness/publication checkboxes or per-artwork price inputs.
+Save image position prepares the private print file and protected preview automatically. Its source association, crop and hashes remain recorded; source pixels and output bytes are validated automatically without a manual review form. Publishing saves the mapped product to the studio catalog after confirmation. Gelato fulfillment happens only after paid checkout or prepaid redemption.
 
-**Publish product** reruns technical checks and opens a Confirm/Cancel prompt with results and warnings. Cancel retains the editing setup. Server-side checks independently validate the stored print hash, source association, crop, dimensions and confirmation. Existing later-print prices and already-paid order snapshots are preserved; newly configured later-print defaults remain Standard/Silver $49, Gold $55 and Emerald/Sapphire/Prismatic $79. Roll prices remain separate and unchanged. No free print promotion is enabled.
+Frame choice requires 12 current mappings per artwork: one unframed mapping for each of Standard/Silver/Gold, plus Black/Natural/Dark Wood mappings for each of Emerald/Sapphire/Prismatic. Every physical finish must use its own exact product UID. The new checkout guard opens canvas rolls only when all 12 current mappings are active and ready. Existing later-print prices and fixed roll prices are unchanged; supplier quotes still apply and no margin estimate is invented for the larger canvas.
 
-Deploy the updated `print-api` function and storefront together. No database migration or secret change is needed. No order or artwork is submitted to Gelato while browsing, editing, previewing or saving a position.
+Apply `202610240001_canvas_frame_choices.sql`, deploy `print-api`, then build/deploy the storefront. It versions mappings rather than overwriting earlier promised products. Previously paid orders and prepaid claims retain their original product version. New-format products coexist with legacy mappings; the Vault shows the correct version and available frame options for the purchase. Earlier independent physical listings are closed to new orders, while existing paid fulfillment remains intact.
+
+The product lookup uses Gelato’s documented read-only endpoint: https://dashboard.gelato.com/docs/products/product/get/ . It is separate from the order submission API.
 
 ## Sandbox test
 
@@ -98,14 +104,8 @@ Live payment and live fulfillment incur real charges and ship goods. A small end
 
 Run `npm.cmd run check`, `npm.cmd test`, `npm.cmd run prints:check`, `npm.cmd run test:e2e`, and `npm.cmd run demo:test`. The existing demo remains a digital edition/reveal demo; physical sandbox testing uses mapped Gelato products and separate test credentials as described above.
 
-## Owner artwork preflight update (22 October 2026)
+## Current rollout
 
-Apply `supabase/migrations/202610220001_gelato_preflight.sql`, deploy `print-api` again, and rebuild/redeploy the supplied storefront files. No new credentials or packages are required. The private product table gains template requirements and check evidence; the public catalog view still excludes private source information.
+Run `supabase db push --dry-run`, then `supabase db push` to apply the new frame/version migration. Deploy `print-api`, build and deploy the storefront, then configure the 12 current-format mappings per artwork before opening canvas rolls. This keeps old paid commitments separate from new product promises. Existing payment keys and Gelato secrets are reused.
 
-Use Admin → Gelato. The automatic checker measures the selected uploaded PNG/JPEG, hash, dimensions, aspect ratio, effective resolution, transparent-background compatibility and configured margins. It has no manual review checklist. The final Publish confirmation records the administrator’s decision, without fabricating individual inspection attestations. PDF properties and visual/color quality are not certified.
-
-Deploy the updated `print-api` function together with the storefront files. No new migration or secret is needed. Existing product mappings are not automatically unpublished, and paid order snapshots are preserved.
-
-## Planned canvas rolls, digital bundles and Forge
-
-See `CANVAS-DIGITAL-FORGE-WORKFLOW.md` for the October 22 offer specification: US-only 16 × 16 unframed and 16 × 20 portrait framed mappings, $69 canvas rolls plus $13.49 shipping, digital bundles, later print pricing, one-time Prismatic promotions and corrected economics. It preserves hold-until-redeemed production for the canvas bundle. This document addition does not implement or enable those new commerce paths; the existing physical-product checkout is still the flow described above.
+The corrected formats use canvas mapping version 3. Republish the 12 mappings per artwork using the correct UIDs and dedicated 16 × 24 portrait compositions for Emerald and Sapphire. Earlier paid-order mappings remain unchanged.

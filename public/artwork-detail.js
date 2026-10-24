@@ -1,6 +1,6 @@
 import { readPublishedArtworks, validRows } from "./catalog-core.js?v=20261022-loop";
-import { renderArtworkDetail } from "./artwork-page-core.js?v=20261022-loop";
-import { safeArtworkId } from "./forge-print-core.js?v=20261022-loop";
+import { renderArtworkDetail } from "./artwork-page-core.js?v=20261024-portrait-v2";
+import { safeArtworkId } from "./forge-print-core.js?v=20261024-portrait-v2";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 const params = new URLSearchParams(location.search),
   ids = params.getAll("id"),

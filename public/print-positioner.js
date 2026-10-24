@@ -12,7 +12,7 @@ const canvasBlob = (canvas, type = "image/png", quality) =>
       quality,
     ),
   );
-export function createPrintPositioner(form, changed) {
+export function createPrintPositioner(form, changed, productSpecs) {
   const canvas = document.querySelector("#gelato-position-canvas");
   const ctx = canvas.getContext("2d");
   const zoom = document.querySelector("#gelato-position-zoom");
@@ -26,12 +26,14 @@ export function createPrintPositioner(form, changed) {
     drag = null,
     loadRevision = 0;
   const specs = () =>
-    Object.fromEntries(
-      ["width", "height", "bleedMm", "wrapMm", "safeMm", "minimumDpi"].map((name) => [
-        name,
-        Number(form.elements[name].value),
-      ]),
-    );
+    productSpecs
+      ? productSpecs()
+      : Object.fromEntries(
+          ["width", "height", "bleedMm", "wrapMm", "safeMm", "minimumDpi"].map((name) => [
+            name,
+            Number(form.elements[name].value),
+          ]),
+        );
   function draw() {
     const s = specs(),
       area = fullPrintArea(s);
@@ -254,6 +256,7 @@ export function createPrintPositioner(form, changed) {
       );
     mockup.src = thumb.toDataURL();
     document.querySelector("#gelato-mockup").dataset.tier = form.elements.edition_tier.value;
+    document.querySelector("#gelato-mockup").dataset.frame = form.elements.frame_finish.value;
     modal.showModal();
   };
   document.querySelector("#gelato-close-product-preview").onclick = () => modal.close();
@@ -262,7 +265,7 @@ export function createPrintPositioner(form, changed) {
       document.querySelector("#gelato-preview-scene").dataset.view = button.dataset.productView;
     };
   for (const name of ["width", "height", "bleedMm", "wrapMm", "safeMm", "minimumDpi"])
-    form.elements[name].addEventListener("input", update);
+    form.elements[name]?.addEventListener("input", update);
   draw();
   return {
     async load(blob, savedPosition) {

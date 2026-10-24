@@ -481,7 +481,7 @@ header .primary {
   }
 }
 .finish-preview[data-preview-finish="framed"] {
-  aspect-ratio: 4/5;
+  aspect-ratio: 2/3;
   display: grid;
   align-items: center;
 }
@@ -622,4 +622,8 @@ header .primary {
 }
 .vault-print-card h3 {
   font-size: 24px;
+}
+.finish-preview[data-preview-finish="jumbo"] {
+  border: 12px solid #c1a67d;
+  box-shadow: 0 20px 45px #0004;
 }

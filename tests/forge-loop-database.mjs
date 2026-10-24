@@ -35,6 +35,7 @@ await db.exec(
 await db.exec(
   await fs.readFile("supabase/migrations/202610210002_gelato_print_orders.sql", "utf8"),
 );
+await db.exec(await fs.readFile("supabase/migrations/202610220001_gelato_preflight.sql", "utf8"));
 await db.exec(await fs.readFile("supabase/migrations/202610220002_forge_print_loop.sql", "utf8"));
 const owner = "11111111-1111-4111-8111-111111111111",
   other = "22222222-2222-4222-8222-222222222222";
@@ -226,5 +227,68 @@ await assert.rejects(() => db.query("select * from canvas_claims"), /permission/
 await db.exec("reset role");
 console.log(
   "PASS Forge replay, caps, consumed-input privacy, ownership, canvas claims, exact-once redemption and reversal lineage",
+);
+// Current-size/frame migration preserves existing paid claims while gating new rolls.
+await db.exec(
+  await fs.readFile("supabase/migrations/202610240001_canvas_frame_choices.sql", "utf8"),
+);
+assert.equal(
+  (await db.query("select canvas_version_for_mint($1) v", [canvas.mintId])).rows[0].v,
+  1,
+);
+await assert.rejects(() => paid("canvas"), /12 current/);
+await db.exec(
+  await fs.readFile("supabase/migrations/202610240002_portrait_canvas_sizes.sql", "utf8"),
+);
+const currentProducts = [];
+for (const tier of tiers) {
+  const frames = ["Standard", "Silver", "Gold"].includes(tier)
+    ? ["none"]
+    : ["black", "natural", "dark-wood"];
+  for (const frame of frames) {
+    const size = tier === "Prismatic" ? 24 : 16;
+    const id = crypto.randomUUID();
+    currentProducts.push(id);
+    await db.query(
+      "insert into gelato_products(id,title,kind,variant_label,product_uid,preview_url,print_path,stripe_tax_code,retail_cents,active,print_ready,edition_artwork_id,edition_tier,canvas_version,frame_finish,print_specs) values($1,'Current canvas','canvas',$2,'canvas-fixture','https://example.com/p.webp','gelato/file.png','txcd_99999999',7900,true,true,1,$3,3,$4,$5)",
+      [
+        id,
+        `${size} x ${size} ${frame}`,
+        tier,
+        frame,
+        { width: size, height: ["Emerald", "Sapphire"].includes(tier) ? 24 : size },
+      ],
+    );
+  }
+}
+assert.equal(currentProducts.length, 12);
+assert.equal((await db.query("select canvas_options_ready(1) ready")).rows[0].ready, true);
+await assert.rejects(
+  () =>
+    db.query(
+      "insert into gelato_products select (jsonb_populate_record(null::gelato_products,to_jsonb(p)||jsonb_build_object('id',$1::uuid))).* from gelato_products p where id=$2",
+      [crypto.randomUUID(), currentProducts[0]],
+    ),
+  /unique/,
+);
+await db.query("update gelato_products set active=false where id=$1", [currentProducts[11]]);
+await assert.rejects(() => paid("canvas"), /12 current/);
+await db.query("update gelato_products set active=true where id=$1", [currentProducts[11]]);
+const currentCanvas = await paid("canvas");
+assert.equal(
+  (await db.query("select canvas_version_for_mint($1) v", [currentCanvas.mintId])).rows[0].v,
+  3,
+);
+assert.equal(
+  (await db.query("select count(*)::int n from gelato_products where canvas_version=1")).rows[0].n,
+  6,
+);
+assert.equal(
+  (await db.query("select payment_state from gelato_orders where id=$1", [order.id])).rows[0]
+    .payment_state,
+  "paid",
+);
+console.log(
+  "PASS current canvas sizes, three frame choices, versioned claims, complete-setup gate and legacy preservation",
 );
 await db.close();

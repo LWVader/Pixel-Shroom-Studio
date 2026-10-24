@@ -1,44 +1,13 @@
-ADMIN IMAGE LOADING / POSITIONING EDITOR UPDATE
+Corrected canvas sizing update
 
-Extract this ZIP into the project root and replace/add all included files.
+Standard/Silver/Gold: 16 x 16 thick unframed.
+Emerald/Sapphire: dedicated 16 x 24 portrait artwork, Black/Natural/Dark Wood frame.
+Prismatic: 24 x 24, Black/Natural/Dark Wood frame. US only. Prices unchanged.
 
-Deploy the updated private print API first:
+Extract over your project. Then run:
+npx.cmd supabase db push
 npx.cmd supabase functions deploy print-api --project-ref decizwtgsqhjdgjiqbui
-
-Build and deploy the storefront:
 npm.cmd run build
 npx.cmd wrangler deploy
 
-Hard-refresh Admin after deployment. No migration, secret, or dependency changes required.
-
-ADMIN WORKFLOW
-Images: native computer file browsing, compact full-width tier settings, a six-card upload grid and local preview thumbnails. The LWVader default, fixed roll pricing, six-tier requirement, signing and private source workflow are preserved.
-
-Gelato: Browse site artwork opens a thumbnail picker. Choose from computer opens the native file chooser. Select the artwork/tier, then drag, resize, zoom or use sliders to position the image. Arrow keys and +/- work on the focused positioning canvas. Only 16x16 unframed and 16x20 portrait framed formats are loaded, mapped to the promised tiers.
-
-Preview canvas opens angled, front and wall views, styled after the supplied recording. These are studio mockups, not official Gelato photography. Exact finish and product template still come from the chosen Product UID.
-
-Save image position generates the actual private positioned print PNG and a protected 720px preview; it automatically fills the print path, preview URL, dimensions and print-file hash. Source identity and position metadata are retained. The source tier file and issued digital editions remain unchanged. Editing the position or print-area settings requires saving again.
-
-Product UID, tax code and template settings are reused when a compatible saved tier mapping exists. Unknown values are not guessed. Enter exact product-specific bleed/wrap if not already configured. Roll prices and existing later-print prices are unchanged.
-
-Publish product runs the technical check and asks for Confirm/Cancel. The server re-reads the source and print files, checks hashes and verifies actual cropped source resolution. Low-resolution crops cannot pass by enlarging the export. No image or order is sent to Gelato while preparing, previewing or saving a position.
-
-VERIFICATION
-84 unit/integration tests passed. Production build and syntax checks passed. Targeted desktop/mobile browser checks passed for the editor, actual computer chooser, site artwork browser, automatic field filling, product preview, confirm/cancel publication, crop quality guards, six-tier private uploads and responsive layout. Visual previews were inspected locally; screenshots are not included in this update.
-
-FILES TO ADD / REPLACE
-docs/GELATO-INTEGRATION.md
-public/admin-image-editor.css
-public/admin-upload-previews.js
-public/admin.html
-public/gelato-admin.js
-public/print-position-core.js
-public/print-positioner.js
-public/print-preflight-core.js
-public/print-preflight-ui.js
-supabase/functions/_shared/print-preflight.ts
-supabase/functions/print-api/index.ts
-tests/e2e/print-preflight.spec.js
-tests/e2e/tiers.spec.js
-tests/unit/print-position.test.js
+Publish the corrected version-3 product mappings in Admin (12 per artwork). Earlier paid-order mappings remain intact. Do not reuse square artwork positioning for portrait products; save the dedicated portrait composition and exact Gelato UID.

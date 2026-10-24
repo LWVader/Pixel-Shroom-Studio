@@ -56,6 +56,16 @@ async function setup(page) {
   await page.route("**/functions/v1/print-api", (route) => {
     const body = route.request().postDataJSON();
     calls.push(body);
+    if (body.action === "admin_product")
+      return route.fulfill({
+        json: {
+          product: {
+            productUid: body.productUid,
+            attributes: { CanvasFormat: "square", FrameColor: "selected" },
+            supportedCountries: ["US"],
+          },
+        },
+      });
     if (body.action === "admin_source")
       return route.fulfill({
         json: {
@@ -102,10 +112,13 @@ test("site browser, position preview, saved composition and confirmed publishing
   await expect(
     form.locator("[name=price], [data-preflight-review], [name=active], [name=print_ready]"),
   ).toHaveCount(0);
-  await expect(page.locator("#gelato-size-preset option")).toHaveCount(2);
-  await expect(form.locator("[name=width]")).toHaveValue("16");
-  await expect(form.locator("[name=height]")).toHaveValue("16");
+  await expect(
+    form.locator(".print-preflight, #gelato-size-preset, [name=width], [name=height]"),
+  ).toHaveCount(0);
+  await expect(page.locator("#gelato-product-size")).toContainText("16 × 16 thick");
   await form.locator("[name=product_uid]").fill("canvas_fixture_uid");
+  await page.getByRole("button", { name: "Load Gelato product", exact: true }).click();
+  await expect(page.locator("#gelato-product-summary")).toContainText("Loaded from Gelato");
   await form.getByText("Listing details & tax", { exact: true }).click();
   await form.locator("[name=stripe_tax_code]").fill("txcd_99999999");
   await page.getByRole("button", { name: "Preview canvas", exact: true }).click();
@@ -155,6 +168,9 @@ test("computer file chooser opens, supports positioned upload and rejects resolu
   test.slow();
   const { bytes, calls, errors, form } = await setup(page);
   await selectSiteArtwork(page);
+  await form.locator("[name=product_uid]").fill("canvas_fixture_uid");
+  await page.getByRole("button", { name: "Load Gelato product", exact: true }).click();
+  await expect(page.locator("#gelato-product-summary")).toContainText("Loaded from Gelato");
   const [chooser] = await Promise.all([
     page.waitForEvent("filechooser"),
     form.locator("[name=printFile]").click(),
@@ -170,8 +186,15 @@ test("computer file chooser opens, supports positioned upload and rejects resolu
   await expect(page.locator("#gelato-position-status")).toContainText("Position saved:");
   expect(calls.filter((c) => c.action === "admin_upload")).toHaveLength(2);
   await form.locator("[name=edition_tier]").selectOption("Emerald");
-  await expect(form.locator("[name=width]")).toHaveValue("16");
-  await expect(form.locator("[name=height]")).toHaveValue("20");
-  await expect(page.locator("#gelato-size-preset")).toHaveValue("canvasPortrait");
+  await expect(page.locator("#gelato-product-size")).toContainText("16 × 24 portrait canvas");
+  await form.locator("[name=frame_finish]").selectOption("natural");
+  await expect(page.locator("#gelato-product-size")).toContainText("Natural frame");
+  await form.locator("[name=edition_tier]").selectOption("Prismatic");
+  await expect(page.locator("#gelato-product-size")).toContainText("24 × 24");
+  await form.locator("[name=product_uid]").fill("canvas_prismatic_natural");
+  await page.getByRole("button", { name: "Load Gelato product", exact: true }).click();
+  await expect(page.locator("#gelato-product-summary")).toContainText("Loaded from Gelato");
+  await page.getByRole("button", { name: "Save image position", exact: true }).click();
+  await expect(page.locator("#gelato-position-status")).toContainText("125.0 PPI");
   expect(errors).toEqual([]);
 });

@@ -25,7 +25,7 @@ Digital-only editions can be forged. Editions with any canvas claim, print order
 
 The release does not implement 3/5/10-roll paid bundles, bundle guarantees, promotional free Prismatic prints, or combining prepaid canvas benefits. These are not advertised as live purchasing options. The old saved-ideas list remains recoverable at cart.html; it is not presented as a payment cart. Do not enable older unreleased bundle promises separately.
 
-Printing is US-only. Standard/Silver map to 16 × 16 slim unframed; Gold to 16 × 16 thick unframed; Emerald/Sapphire/Prismatic to 16 × 20 portrait framed in Black/Dark wood/Natural wood. Product UIDs, depth, material and composition are verified by the owner against Gelato; the preflight checker cannot infer those attributes from a UID. Never substitute a generic product or the wrong artwork's file.
+Printing is US-only. Standard/Silver map to 16 × 16 slim unframed; Gold to 16 × 16 thick unframed; Emerald/Sapphire/Prismatic to 16 × 24 portrait framed in Black/Dark wood/Natural wood. Product UIDs, depth, material and composition are verified by the owner against Gelato; the preflight checker cannot infer those attributes from a UID. Never substitute a generic product or the wrong artwork's file.
 
 ## Install the update
 

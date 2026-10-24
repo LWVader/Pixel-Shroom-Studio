@@ -62,7 +62,7 @@
           ><a href="/verify.html">Verify Serial</a>
         </nav>
         <div class="header-tools">
-          <a href="/collection.html">My Vault<span data-vault-count hidden></span></a>
+          <a href="/collection.html">My Vault<span data-vault-count="" hidden=""></span></a>
           <details class="header-search">
             <summary>Search artworks</summary>
             <form class="site-search" role="search" action="/all-artwork.html#gallery" method="get">
@@ -121,15 +121,22 @@
         <h2>Five recipes. One tier at a time.</h2>
         <ol class="forge-ladder">
           <li>
-            <strong>5 Standard → 1 Silver</strong> · digital variant changes; both map to 16 × 16
-            slim canvas.
+            <strong>5 Standard → 1 Silver</strong> · New digital variant; both use 16 × 16 thick
+            canvas.
           </li>
-          <li><strong>3 Silver → 1 Gold</strong> · Gold maps to 16 × 16 thick canvas.</li>
+          <li><strong>3 Silver → 1 Gold</strong> · Gold uses the same 16 × 16 thick canvas.</li>
           <li>
-            <strong>3 Gold → 1 Emerald</strong> · Emerald maps to 16 × 20 portrait, Black frame.
+            <strong>3 Gold → 1 Emerald</strong> · 16 × 16 canvas with a choice of Black, Natural or
+            Dark Wood frame.
           </li>
-          <li><strong>2 Emerald → 1 Sapphire</strong> · Dark wood frame mapping.</li>
-          <li><strong>2 Sapphire → 1 Prismatic</strong> · Natural wood frame mapping.</li>
+          <li>
+            <strong>2 Emerald → 1 Sapphire</strong> · Sapphire digital variant, with the same 16 ×
+            16 frame choices.
+          </li>
+          <li>
+            <strong>2 Sapphire → 1 Prismatic</strong> · Larger 24 × 24 canvas with a choice of
+            frame.
+          </li>
         </ol>
         <h2>Try the recipe.</h2>
         <form id="forge-calculator" class="forge-form">
@@ -149,8 +156,8 @@
               max="100000"
               step="1"
               value="5"
-              required /></label
-          ><button class="button" type="submit" disabled>Preview upgrade quantities</button
+              required="" /></label
+          ><button class="button" type="submit" disabled="">Preview upgrade quantities</button
           ><output id="forge-estimate" aria-live="polite"
             >5 Standard images can become 1 Silver. Preview only.</output
           >
@@ -193,7 +200,7 @@
         <div>
           <h2>Studio</h2>
           <a href="/about.html">About LWVader</a
-          ><a href="/about.html#journal" data-journal-link hidden>Studio Journal</a
+          ><a href="/about.html#journal" data-journal-link="" hidden="">Studio Journal</a
           ><a href="/about.html#sir-shroomalot">Sir Shroomalot’s story</a
           ><a href="/contact.html">Contact</a><a href="/all-artwork.html">Explore gallery</a
           ><a href="/apparel.html">Apparel &amp; gifts</a>
@@ -225,7 +232,7 @@
       </div>
     </footer>
 
-    <script type="module" src="/forge-print.js?v=20261022-loop"></script>
+    <script type="module" src="/forge-print.js?v=20261024-portrait-v2"></script>
     <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
   </body>
 </html>

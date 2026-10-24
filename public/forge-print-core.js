@@ -10,39 +10,39 @@ export const TIER_FINISHES = [
   {
     tier: "Standard",
     odds: 60,
-    finish: "16 × 16 slim canvas, unframed",
-    detail: "The Standard studio-uploaded image. Slim canvas profile.",
+    finish: "16 × 16 thick canvas, unframed",
+    detail: "The Standard studio-uploaded image. Thick gallery canvas profile.",
   },
   {
     tier: "Silver",
     odds: 20,
-    finish: "16 × 16 slim canvas, unframed",
+    finish: "16 × 16 thick canvas, unframed",
     detail: "The Silver studio-uploaded image. Same physical format as Standard.",
   },
   {
     tier: "Gold",
     odds: 10,
     finish: "16 × 16 thick canvas, unframed",
-    detail: "The Gold image and a deeper gallery canvas profile.",
+    detail: "The Gold image on the same thick gallery canvas format as Standard and Silver.",
   },
   {
     tier: "Emerald",
     odds: 6,
-    finish: "16 × 20 portrait canvas · Black wood frame",
-    detail: "The Emerald image in its approved portrait print composition.",
+    finish: "16 × 24 portrait canvas · Black, Natural or Dark Wood frame",
+    detail: "The Emerald image with your choice of Black, Natural or Dark Wood framing.",
   },
   {
     tier: "Sapphire",
     odds: 3,
-    finish: "16 × 20 portrait canvas · Dark wood frame",
-    detail: "The Sapphire image and dark wood finish; no walnut-species claim.",
+    finish: "16 × 24 portrait canvas · Black, Natural or Dark Wood frame",
+    detail: "The Sapphire image with your choice of Black, Natural or Dark Wood framing.",
   },
   {
     tier: "Prismatic",
     odds: 1,
-    finish: "16 × 20 portrait canvas · Natural wood frame",
+    finish: "24 × 24 canvas · Black, Natural or Dark Wood frame",
     detail:
-      "The Prismatic image and natural wood finish. Not a larger canvas or exclusive ownership.",
+      "The Prismatic image on a larger 24 × 24 canvas, with your choice of Black, Natural or Dark Wood framing.",
   },
 ];
 export const FORGE_RECIPES = [

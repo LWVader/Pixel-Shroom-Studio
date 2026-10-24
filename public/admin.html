@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/admin-dashboard.css?v=20261021-catalog-relaunch" />
     <link rel="stylesheet" href="/print-store.css?v=20261024-simple" />
     <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
-    <link rel="stylesheet" href="/admin-image-editor.css?v=20261024-editor" />
+    <link rel="stylesheet" href="/admin-image-editor.css?v=20261024-portrait-v2" />
   </head>
   <body class="admin-page">
     <!-- SECTION: Administrator sign-in gate -->
@@ -583,7 +583,15 @@
                             <option>Sapphire</option>
                             <option>Prismatic</option>
                           </select></label
+                        ><label id="gelato-frame-label"
+                          >Frame finish<select name="frame_finish">
+                            <option value="none">Unframed thick canvas</option>
+                            <option value="black">Black</option>
+                            <option value="natural">Natural</option>
+                            <option value="dark-wood">Dark Wood</option>
+                          </select></label
                         >
+                        <p id="gelato-product-size" class="full">16 × 16 thick canvas, unframed</p>
                         <p id="gelato-source-status" role="status">
                           Choose artwork and tier to load the same private source.
                         </p>
@@ -668,7 +676,12 @@
                         name="product_uid"
                         maxlength="500"
                         required="" /></label
-                    ><label
+                    ><button type="button" id="gelato-load-product">Load Gelato product</button>
+                    <p id="gelato-product-summary" class="full" role="status">
+                      Load the exact product UID to view its Gelato catalog details. Loading does
+                      not place an order.
+                    </p>
+                    <label
                       >Size &amp; finish<input name="variant_label" maxlength="160" required=""
                     /></label>
                     <p class="full">
@@ -711,155 +724,10 @@
                   </div>
                 </fieldset>
 
-                <fieldset class="full print-preflight">
-                  <legend>Product template settings &amp; technical check</legend>
-                  <p>
-                    The uploaded tier image is reused for printing. Check it against the product
-                    template. No image or order is sent to Gelato during this check.
-                  </p>
-                  <p>Image source: the selected artwork’s uploaded tier file.</p>
-
-                  <details class="gelato-details">
-                    <summary>Technical settings — confirm against the Gelato template</summary>
-                    <div class="print-form">
-                      <label class="full"
-                        >Size starting point<select id="gelato-size-preset">
-                          <option value="canvasSquare">16 × 16 in — unframed canvas</option>
-                          <option value="canvasPortrait">
-                            16 × 20 in — portrait framed canvas
-                          </option>
-                        </select></label
-                      >
-                      <label class="full"
-                        >Gelato template / catalogue URL<input
-                          name="templateUrl"
-                          type="url"
-                          placeholder="https://dashboard.gelato.com/…"
-                          required=""
-                          value="https://dashboard.gelato.com/catalogue/categories"
-                      /></label>
-                      <label
-                        >Finished width / design area (in)<input
-                          name="width"
-                          type="number"
-                          min="0.01"
-                          max="200"
-                          step="0.001"
-                          required=""
-                          value="16"
-                          readonly=""
-                      /></label>
-                      <label
-                        >Finished height / design area (in)<input
-                          name="height"
-                          type="number"
-                          min="0.01"
-                          max="200"
-                          step="0.001"
-                          required=""
-                          value="16"
-                          readonly=""
-                      /></label>
-                      <label
-                        >Bleed per side (mm)<input
-                          name="bleedMm"
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          value="0"
-                          required=""
-                      /></label>
-                      <label
-                        >Additional canvas wrap per side (mm)<input
-                          name="wrapMm"
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          value="0"
-                          required=""
-                      /></label>
-                      <label
-                        >Safe margin inside trim (mm)<input
-                          name="safeMm"
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          value="4"
-                          required=""
-                      /></label>
-                      <label
-                        >Product minimum PPI<select name="minimumDpi">
-                          <option value="150">150 (only if product permits)</option>
-                          <option value="300">300</option>
-                        </select></label
-                      >
-                      <label class="full consent"
-                        ><input name="transparent" type="checkbox" /> Product needs a transparent
-                        background (PNG)</label
-                      >
-                    </div>
-                    <p>
-                      Full file = finished size + bleed + any additional wrap on both sides. Enter 0
-                      for margins already included in the supplied full-area size. Gelato’s general
-                      PDF guidance uses 4 mm bleed and at least 4 mm safe margin; the exact product
-                      template takes precedence.
-                    </p>
-                  </details>
-                  <div
-                    class="preflight-preview gelato-inspector-preview"
-                    id="gelato-file-preview"
-                    hidden=""
-                  >
-                    <img
-                      id="gelato-check-image"
-                      alt="Private artwork for edge and placement review"
-                    />
-                    <div id="gelato-safe-overlay" aria-hidden="true"></div>
-                  </div>
-                  <label hidden=""
-                    >Preview zoom<select id="gelato-preview-zoom">
-                      <option value="fit">Fit</option>
-                      <option value="2">200% actual pixels</option>
-                      <option value="3">300% actual pixels</option>
-                    </select></label
-                  >
-                  <p>
-                    The dashed guide marks the requested safe zone. Inspect the exported file in
-                    your design application as well.
-                  </p>
-                  <button type="button" class="button" id="gelato-safe-check">
-                    Check print file
-                  </button>
-                  <div id="gelato-preflight-result" role="status" aria-live="polite">
-                    Choose artwork and tier, then enter the product template requirements.
-                  </div>
-                  <p>
-                    <a
-                      href="https://support.gelato.com/en/articles/8996349"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      >Gelato PDF requirements</a
-                    >
-                    ·
-                    <a
-                      href="https://support.gelato.com/en/articles/9587707"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      >Gelato apparel guidance</a
-                    >
-                  </p>
-                  <p>
-                    Checks cover file format, dimensions and resolution. They do not certify color
-                    accuracy, visual quality or Gelato production approval.
-                  </p>
-                </fieldset>
                 <button type="submit" class="button full">Publish product</button>
                 <p class="full">
-                  Publishing checks the image and product setup, then asks you to confirm. If it
-                  cannot publish, the message explains what to fix.
+                  Publish saves this prepared product to your studio catalog. Fulfillment is sent to
+                  Gelato only after the customer’s paid order or prepaid redemption.
                 </p>
               </form>
               <details class="gelato-details gelato-orders">
@@ -955,8 +823,8 @@
     </dialog>
     <script type="module" src="/admin.js?v=20261024-editor"></script>
 
-    <script type="module" src="/gelato-admin.js?v=20261024-editor"></script>
-    <script type="module" src="/forge-print.js?v=20261022-loop"></script>
+    <script type="module" src="/gelato-admin.js?v=20261024-portrait-v2"></script>
+    <script type="module" src="/forge-print.js?v=20261024-portrait-v2"></script>
     <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
 
     <dialog id="gelato-site-art-dialog" class="gelato-editor-dialog">

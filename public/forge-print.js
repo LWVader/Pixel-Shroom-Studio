@@ -7,7 +7,7 @@ import {
   writeSelections,
   artUrl,
   money,
-} from "./forge-print-core.js?v=20261022-loop";
+} from "./forge-print-core.js?v=20261024-portrait-v2";
 import { readPublishedArtworks, validRows, escapeHtml } from "./catalog-core.js?v=20261022-loop";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 const searchInput = document.querySelector("#header-art-search");

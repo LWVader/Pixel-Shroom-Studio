@@ -1,3 +1,5 @@
+import { loadGelatoProduct, validateCatalogSelection } from "../_shared/gelato-product.ts";
+import { canvasProduct } from "../../../public/canvas-products-core.js";
 import { reuseTierPrintSource } from "../_shared/gelato-admin-source.ts";
 import {
   inspectStoredPrint,
@@ -59,16 +61,23 @@ Deno.serve(async (request: Request) => {
       if (!uuid(body.mintId)) return reply({ error: "Invalid edition." }, 400);
       const { data: m, error: me } = await db
         .from("mints")
-        .select("listing_id,tier,state,market_frozen,forge_consumed_at,orders!inner(status)")
+        .select(
+          "order_id,order_id,listing_id,tier,state,market_frozen,forge_consumed_at,orders!inner(status)",
+        )
         .eq("id", body.mintId)
         .eq("owner_id", user.id)
         .eq("orders.status", "paid")
         .single();
       if (me || !m || m.state !== "ready" || m.market_frozen || m.forge_consumed_at)
         return reply({ error: "This edition is unavailable for printing." }, 409);
+      const { data: version, error: versionError } = await db.rpc("canvas_version_for_mint", {
+        target_mint: body.mintId,
+      });
+      if (versionError) throw versionError;
       const { data: products, error } = await db
         .from("gelato_products")
-        .select("id,title,kind,variant_label,preview_url,retail_cents")
+        .select("id,title,kind,variant_label,preview_url,retail_cents,frame_finish,canvas_version")
+        .eq("canvas_version", version)
         .eq("edition_artwork_id", m.listing_id)
         .eq("edition_tier", m.tier)
         .eq("kind", "canvas")
@@ -121,6 +130,14 @@ Deno.serve(async (request: Request) => {
         .eq("user_id", user.id)
         .maybeSingle();
       if (!admin) return reply({ error: "Admin access required." }, 403);
+      if (body.action === "admin_product") {
+        const product = await loadGelatoProduct(
+          String(body.productUid || ""),
+          Deno.env.get("GELATO_API_KEY") || "",
+        );
+        if (body.tier) validateCatalogSelection(product, canvasProduct(body.tier, body.frame));
+        return reply({ product });
+      }
       if (body.action === "admin_list") {
         const products = await db
           .from("gelato_products")
@@ -201,6 +218,13 @@ Deno.serve(async (request: Request) => {
         };
         p.retail_cents = existing?.retail_cents ?? laterPrintCents[p.edition_tier] ?? 6900;
 
+        const profile =
+          p.edition_artwork_id != null ? canvasProduct(p.edition_tier, p.frame_finish) : null;
+        const catalog = await loadGelatoProduct(
+          p.product_uid,
+          Deno.env.get("GELATO_API_KEY") || "",
+        );
+        validateCatalogSelection(catalog, profile);
         const preview = new URL(String(p?.preview_url || ""));
         const allowedPreview = new Set([
           new URL(studioSiteUrl()).origin,
@@ -279,10 +303,16 @@ Deno.serve(async (request: Request) => {
               { error: "Choose a valid artwork ID and tier for this canvas mapping." },
               400,
             );
-          const framed = ["Emerald", "Sapphire", "Prismatic"].includes(p.edition_tier);
-          if (report.specs.width !== 16 || report.specs.height !== (framed ? 20 : 16))
+          if (
+            !profile ||
+            report.specs.width !== profile.width ||
+            report.specs.height !== profile.height
+          )
             return reply(
-              { error: "Edition canvases require 16 × 16, or 16 × 20 portrait for framed tiers." },
+              {
+                error:
+                  "Use 16 × 16 thick for Standard–Gold, 16 × 24 portrait framed for Emerald/Sapphire, or 24 × 24 framed for Prismatic.",
+              },
               400,
             );
         }
@@ -290,6 +320,8 @@ Deno.serve(async (request: Request) => {
           edition_artwork_id: p.edition_artwork_id ?? null,
           edition_tier: p.edition_artwork_id != null ? p.edition_tier : null,
           id: p.id,
+          canvas_version: 3,
+          frame_finish: profile?.frame || "none",
           title: p.title.trim(),
           kind: p.kind,
           variant_label: p.variant_label,
@@ -307,6 +339,7 @@ Deno.serve(async (request: Request) => {
             productUid: p.product_uid,
             printPath: p.print_path,
             publishConfirmed: p.publish_confirmed === true,
+            catalog,
             position: savedPosition,
             sourceArtworkId: p.use_tier_source ? p.edition_artwork_id : null,
             sourceTier: p.use_tier_source ? p.edition_tier : null,
@@ -354,13 +387,20 @@ Deno.serve(async (request: Request) => {
         .eq("print_ready", true)
         .single();
       if (error || !product) throw new Error("Product unavailable.");
+      if (product.edition_artwork_id == null && product.canvas_version !== 3)
+        return reply(
+          { error: "This earlier physical product is no longer open for new orders." },
+          409,
+        );
       let claimMintId = null;
       if (product.edition_artwork_id != null || body.mintId) {
         if (!uuid(body.mintId) || quantity !== 1)
           return reply({ error: "Choose one owned edition from My Vault." }, 400);
         const { data: m, error: me } = await db
           .from("mints")
-          .select("id,listing_id,tier,state,market_frozen,forge_consumed_at,orders!inner(status)")
+          .select(
+            "id,order_id,order_id,listing_id,tier,state,market_frozen,forge_consumed_at,orders!inner(status)",
+          )
           .eq("id", body.mintId)
           .eq("owner_id", user.id)
           .eq("orders.status", "paid")
@@ -381,6 +421,15 @@ Deno.serve(async (request: Request) => {
           .eq("mint_id", m.id)
           .maybeSingle();
         if (ce) throw ce;
+        const { data: version, error: versionError } = await db.rpc("canvas_version_for_mint", {
+          target_mint: m.id,
+        });
+        if (versionError) throw versionError;
+        if (product.canvas_version !== version)
+          return reply(
+            { error: "Select a canvas option matching this purchase’s promised product version." },
+            409,
+          );
         if (claim && claim.state !== "available")
           return reply({ error: "This included canvas is already used or held for review." }, 409);
         if (claim?.state === "available") {

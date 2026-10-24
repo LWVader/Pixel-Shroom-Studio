@@ -330,3 +330,37 @@
   width: auto;
   margin: 0 6px 0 0;
 }
+.gelato-mockup[data-tier="Standard"],
+.gelato-mockup[data-tier="Silver"],
+.gelato-mockup[data-tier="Gold"] {
+  border-right-width: 16px;
+}
+.gelato-mockup[data-frame="black"] {
+  border: 12px solid #242424;
+}
+.gelato-mockup[data-frame="natural"] {
+  border: 12px solid #c1a67d;
+}
+.gelato-mockup[data-frame="dark-wood"] {
+  border: 12px solid #503323;
+}
+#gelato-preview-scene[data-view="wall"] .gelato-mockup[data-tier="Prismatic"] {
+  width: min(64%, 390px);
+}
+#gelato-admin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-block: 16px;
+}
+.gelato-loaded-product {
+  padding: 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  background: var(--admin-paper);
+}
+.gelato-loaded-product img {
+  width: 100%;
+  height: 160px;
+  object-fit: contain;
+}

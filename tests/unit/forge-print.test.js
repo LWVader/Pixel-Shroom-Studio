@@ -34,11 +34,11 @@ it("keeps new roll selection separate from existing checkout and protects public
   expect(PLANNED_OFFERS.canvas.price + PLANNED_OFFERS.canvas.shipping).toBe(82.49);
   expect(TIER_FINISHES.reduce((n, t) => n + t.odds, 0)).toBe(100);
   expect(
-    TIER_FINISHES.filter((t) => !["Standard", "Silver"].includes(t.tier)).reduce(
+    TIER_FINISHES.filter((t) => !["Standard", "Silver", "Gold"].includes(t.tier)).reduce(
       (n, t) => n + t.odds,
       0,
     ),
-  ).toBe(20);
+  ).toBe(10);
 });
 it("calculates whole same-tier upgrades without manufacturing partial outputs", () => {
   expect(forgeEstimate("Standard", 30)).toMatchObject({ to: "Silver", outputs: 6, remaining: 0 });

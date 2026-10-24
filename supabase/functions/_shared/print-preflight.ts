@@ -22,7 +22,7 @@ export async function validatePrintMapping(db: any, product: any) {
   if (!product.print_path.endsWith("." + facts.format))
     throw Error("File contents do not match the uploaded format.");
   if (!product.preflight_hash || facts.sha256 !== product.preflight_hash)
-    throw Error("Run Safe check on this exact file before saving. The file has changed.");
+    throw Error("Save the image position again before publishing. The file has changed.");
   const report = evaluatePrint(facts, product.print_specs);
   if (product.active && (report.state !== "ready" || product.publish_confirmed !== true))
     throw Error("Cannot publish: technical checks must pass and publishing must be confirmed.");
