@@ -55,7 +55,7 @@
     </script>
     <link rel="stylesheet" href="/print-nav.css?v=20261009" />
     <link rel="stylesheet" href="/foil.css?v=20261019-copy-inventory" />
-    <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
+    <link rel="stylesheet" href="/forge-print.css?v=20261024-account" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -119,8 +119,15 @@
         Your artwork, upgrades and canvas orders in one place. Ready paid editions save
         automatically; printing is your choice.
       </p>
+      <p>
+        <a class="text-link" href="/collection.html?tab=account"
+          >Account, password &amp; shipping →</a
+        >
+      </p>
       <nav class="vault-tabs" aria-label="My Vault sections">
-        <button type="button" data-vault-tab="artwork" aria-pressed="true">My Artwork</button
+        <button type="button" data-vault-tab="account" aria-pressed="false">
+          Account &amp; Shipping</button
+        ><button type="button" data-vault-tab="artwork" aria-pressed="true">My Artwork</button
         ><button type="button" data-vault-tab="forge" aria-pressed="false">Forge</button
         ><button type="button" data-vault-tab="print" aria-pressed="false">Print</button
         ><button type="button" data-vault-tab="orders" aria-pressed="false">Orders</button
@@ -135,10 +142,19 @@
             >Password<input
               name="password"
               type="password"
-              minlength="12"
               autocomplete="current-password"
               required=""
           /></label>
+          <label
+            >Confirm password (new accounts only)<input
+              name="confirmation"
+              type="password"
+              autocomplete="new-password"
+          /></label>
+          <p>
+            New accounts: use at least 12 characters. Your collection and Forge progress belong to
+            this account.
+          </p>
           <div class="buttons">
             <button class="button" value="signin">Sign in</button
             ><button class="button" value="signup">Create account</button>
@@ -190,6 +206,72 @@
           ><button class="button" id="sell-close" type="button">Cancel</button>
         </form>
       </dialog>
+      <section data-vault-panel="account" id="vault-panel-account" hidden>
+        <h2>Account &amp; Shipping</h2>
+        <p id="account-status" role="status"></p>
+        <div id="account-signed-in" hidden>
+          <p>Signed in as <strong id="account-email"></strong></p>
+          <button class="button secondary" id="account-reset-password" type="button">
+            Change password by email
+          </button>
+          <h3>Default canvas delivery address</h3>
+          <p>
+            US delivery only. These details are private to your account. Review the address before
+            every order; editing this address does not change orders already placed.
+          </p>
+          <form id="vault-shipping-form" class="collection-auth account-shipping">
+            <label
+              >First name<input
+                name="firstName"
+                autocomplete="given-name"
+                maxlength="25"
+                required /></label
+            ><label
+              >Last name<input
+                name="lastName"
+                autocomplete="family-name"
+                maxlength="25"
+                required /></label
+            ><label
+              >Street address<input
+                name="addressLine1"
+                autocomplete="address-line1"
+                maxlength="35"
+                required /></label
+            ><label
+              >Apartment / suite (optional)<input
+                name="addressLine2"
+                autocomplete="address-line2"
+                maxlength="35" /></label
+            ><label
+              >City<input
+                name="city"
+                autocomplete="address-level2"
+                maxlength="30"
+                required /></label
+            ><label
+              >State (2 letters)<input
+                name="state"
+                autocomplete="address-level1"
+                maxlength="2"
+                required
+                pattern="[A-Za-z]{2}" /></label
+            ><label
+              >ZIP code<input
+                name="postCode"
+                autocomplete="postal-code"
+                maxlength="10"
+                required
+                pattern="[0-9]{5}(-[0-9]{4})?" /></label
+            ><label>Phone (optional)<input name="phone" autocomplete="tel" maxlength="25" /></label>
+            <p>Country: United States · Order notifications use your account email.</p>
+            <button class="button" type="submit">Save delivery address</button
+            ><button class="button secondary" type="button" id="remove-shipping">
+              Remove saved address
+            </button>
+          </form>
+        </div>
+      </section>
       <section id="vault-panel-artwork" data-vault-panel="artwork">
         <div class="art-grid" id="mint-collection"></div>
         <p>
@@ -286,10 +368,10 @@
       </div>
     </footer>
     <script type="module" src="/app.js?v=20261022-loop"></script>
-    <script type="module" src="/collection.js?v=20261022-loop"></script>
+    <script type="module" src="/collection.js?v=20261024-account"></script>
     <script type="module" src="/forge-print.js?v=20261022-loop"></script>
     <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
-    <script type="module" src="/vault-tabs.js?v=20261022-loop"></script>
+    <script type="module" src="/vault-tabs.js?v=20261024-account"></script>
     <script type="module" src="/print-orders.js?v=20261022-loop"></script>
   </body>
 </html>

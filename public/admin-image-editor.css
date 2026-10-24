@@ -364,3 +364,13 @@
   height: 160px;
   object-fit: contain;
 }
+/* Product setup stays beside the editor; one canvas choice controls size and frame. */
+.gelato-editor-sidebar > .gelato-product-settings {
+  margin-top: 0;
+}
+.gelato-editor-sidebar .gelato-product-settings > .print-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+.gelato-editor-sidebar details > summary {
+  cursor: pointer;
+}

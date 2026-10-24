@@ -1,17 +1,16 @@
-Dropdown fix and Gelato draft order test
+Vault accounts, shipping and streamlined Gelato admin
 
-Extract over your project. Deploy dropdown fix:
+Extract over your current project. Deploy in this order:
+npx.cmd supabase db push
 npm.cmd run build
 npx.cmd wrangler deploy
 
-All 7 products are always visible. Choosing a different size updates to a compatible tier; Standard/Silver/Gold share one unframed product, Emerald/Sapphire share the portrait products, Prismatic uses 24x24. Changing tier reloads its site source; manually chosen computer artwork is retained and needs positioning again.
+One new migration: 202610240003_vault_profiles.sql. No Edge Function redeployment required for this patch.
 
-To create one supplier DRAFT (not production):
-1. Copy tools/gelato-test-recipient.example.json to a private file OUTSIDE the project and replace every REPLACE value with your own valid US address/email.
-2. Have an HTTPS URL for a print-ready file that Gelato can download. Use a dedicated print file; do not use the watermarked preview. A short-lived private signed URL is suitable if valid long enough for Gelato processing.
-3. Run from the project root:
-.\tools\test-gelato-draft.ps1 -PrintFileUrl 'YOUR_HTTPS_PRINT_URL' -RecipientJsonFile 'C:\private\gelato-recipient.json'
+See docs/VAULT-ACCOUNT-SETUP.md for required Supabase Auth email/signup settings, confirmation/reset redirect URLs and production SMTP setup. These hosted settings must be checked in your dashboard; saving a RESEND_API_KEY alone does not configure Supabase Auth mail delivery.
 
-The script securely prompts for the API key locally (not stored), obtains a USD quote/shipping method, and creates exactly one 16x16 thick-canvas draft. It never converts to production. Optional -ProductUid selects one of your other product UIDs; match the file composition to that product.
-Do not repeat a timed-out submission: search Gelato Orders for the printed PSS-DRAFT reference first.
-No order has been sent by this update. A real provider test requires your credentials, print URL and address locally. No Stripe charge/payment/ledger change occurs.
+My Vault: account signup/password confirmation, existing password login, reset links, private Account & Shipping tab, save/remove US delivery address. Existing private collection and Forge ownership remain unchanged. Print delivery forms use the saved address and still require review and consent. Existing paid order addresses and mappings are not changed.
+
+Gelato: artwork/tier, canvas selection, positioning/preview, confirmed Publish. Frame/size follow the single canvas choice. Duplicate editable size/frame controls removed from the main flow; technical details sit in Advanced product details & tax.
+
+Validated: 89 unit/integration tests, including profile RLS isolation, and 8 targeted desktop/mobile browser tests with mocked services. Production email delivery and live supplier ordering are not claimed by these tests.

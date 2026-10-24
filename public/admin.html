@@ -12,8 +12,8 @@
     <link rel="stylesheet" href="/styles.css?v=20261014-size" />
     <link rel="stylesheet" href="/admin-dashboard.css?v=20261021-catalog-relaunch" />
     <link rel="stylesheet" href="/print-store.css?v=20261024-simple" />
-    <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
-    <link rel="stylesheet" href="/admin-image-editor.css?v=20261024-all-products-v1" />
+    <link rel="stylesheet" href="/forge-print.css?v=20261024-account" />
+    <link rel="stylesheet" href="/admin-image-editor.css?v=20261024-account-admin" />
   </head>
   <body class="admin-page">
     <!-- SECTION: Administrator sign-in gate -->
@@ -537,20 +537,16 @@
                 <span class="eyebrow">PHYSICAL PRODUCTS</span>
                 <h2>Gelato products &amp; orders</h2>
                 <p>
-                  Load your artwork, connect its canvas or frame, and review the preview before
-                  saving.
+                  Choose artwork and canvas, position the print, then publish. US shipping only.
                 </p>
               </div>
             </div>
             <section class="gelato-management">
-              <p>
-                Select artwork, position the image, then publish its Gelato canvas mapping. US
-                shipping only.
-              </p>
               <div class="gelato-toolbar">
                 <button type="button" id="gelato-refresh">Refresh products &amp; orders</button
                 ><button type="button" id="gelato-new">Add product</button>
               </div>
+
               <p id="gelato-admin-status" role="status"></p>
               <div id="gelato-admin-list"></div>
               <form id="gelato-product-form" class="print-form">
@@ -559,9 +555,14 @@
                     <fieldset class="full gelato-step">
                       <legend>1. Choose artwork &amp; tier</legend>
                       <div class="print-form">
-                        <div class="gelato-source-actions">
-                          <button type="button" id="gelato-browse-site">Browse site artwork</button>
-                        </div>
+                        <details class="full gelato-details">
+                          <summary>Browse artwork thumbnails</summary>
+                          <div class="gelato-source-actions">
+                            <button type="button" id="gelato-browse-site">
+                              Browse site artwork
+                            </button>
+                          </div>
+                        </details>
                         <label class="full"
                           >Artwork<select id="gelato-artwork-picker">
                             <option value="">Choose a studio artwork…</option>
@@ -583,7 +584,7 @@
                             <option>Sapphire</option>
                             <option>Prismatic</option>
                           </select></label
-                        ><label id="gelato-frame-label"
+                        ><label id="gelato-frame-label" hidden=""
                           >Frame finish<select name="frame_finish">
                             <option value="none">Unframed thick canvas</option>
                             <option value="black">Black</option>
@@ -591,35 +592,101 @@
                             <option value="dark-wood">Dark Wood</option>
                           </select></label
                         >
-                        <p id="gelato-product-size" class="full">16 × 16 thick canvas, unframed</p>
+                        <p id="gelato-product-size" class="full" hidden="">
+                          16 × 16 thick canvas, unframed
+                        </p>
                         <p id="gelato-source-status" role="status">
                           Choose artwork and tier to load the same private source.
                         </p>
-                        <button type="button" id="gelato-use-tier-source">
-                          Reload site tier image
-                        </button>
+                      </div>
+                    </fieldset>
+                    <fieldset class="full gelato-step gelato-product-settings">
+                      <legend>2. Choose canvas product</legend>
+                      <div class="print-form">
+                        <label
+                          >Canvas product<select
+                            id="gelato-product-choice"
+                            aria-label="Canvas product"
+                          ></select></label
+                        ><button type="button" id="gelato-load-product">Load Gelato product</button>
+
+                        <p id="gelato-product-summary" class="full" role="status">
+                          Choose a canvas, then load its Gelato details. This does not create an
+                          order.
+                        </p>
+
+                        <p class="full" id="gelato-tier-hint" role="status" hidden="">
+                          Choose a tier for its canvas size and finish. Roll prices are set
+                          centrally.
+                        </p>
+                        <label
+                          >Product title<input name="title" maxlength="160" required=""
+                        /></label>
                         <details class="full gelato-details">
-                          <summary>Shared artwork ID</summary>
+                          <summary>Advanced product details &amp; tax</summary>
+                          <div class="print-form">
+                            <label
+                              >Gelato Product UID<input
+                                name="product_uid"
+                                maxlength="500"
+                                required=""
+                            /></label>
+                            <label
+                              >Category<select name="kind">
+                                <option value="canvas">Canvas</option>
+                              </select></label
+                            ><label
+                              >Public studio preview URL<input
+                                name="preview_url"
+                                type="url"
+                                required=""
+                                readonly="" /></label
+                            ><label
+                              >Stripe product tax code<input
+                                name="stripe_tax_code"
+                                value="txcd_99999999"
+                                pattern="txcd_[0-9]{8}"
+                                required=""
+                            /></label>
+                            <label
+                              >Size &amp; finish<input
+                                name="variant_label"
+                                maxlength="160"
+                                required=""
+                                readonly=""
+                            /></label>
+                          </div>
                           <p>
-                            Same artwork ID across Images, Vault and printing. Product UID
-                            identifies the canvas/frame.
+                            Physical canvases default to Stripe’s General - Tangible Goods code. You
+                            can change it here if your Stripe tax configuration requires a different
+                            classification.
                           </p>
-                          <label
-                            >Artwork ID<input
-                              name="edition_artwork_id"
-                              type="number"
-                              min="1"
-                              step="1"
-                          /></label>
+                          <details class="full gelato-details">
+                            <summary>Shared artwork ID</summary>
+                            <p>
+                              Same artwork ID across Images, Vault and printing. Product UID
+                              identifies the canvas/frame.
+                            </p>
+                            <label
+                              >Artwork ID<input
+                                name="edition_artwork_id"
+                                type="number"
+                                min="1"
+                                step="1"
+                            /></label>
+                          </details>
+                          <button type="button" id="gelato-use-tier-source">
+                            Reload site tier image
+                          </button>
                         </details>
                       </div>
                     </fieldset>
                   </div>
                   <section class="gelato-position-panel" aria-labelledby="gelato-position-heading">
-                    <h3 id="gelato-position-heading">Position your artwork</h3>
+                    <h3 id="gelato-position-heading">3. Position &amp; preview</h3>
                     <p>
-                      Drag the image to position it. Drag a corner or use Zoom to resize. The yellow
-                      guide marks the safe area; the shaded edge is bleed/wrap.
+                      Drag to position; use the corner handles or Zoom to resize. Preview before
+                      saving.
                     </p>
                     <div class="gelato-position-stage">
                       <canvas
@@ -668,69 +735,6 @@
                     </p>
                   </section>
                 </div>
-                <fieldset class="full gelato-step gelato-product-settings">
-                  <legend>2. Connect the Gelato product</legend>
-                  <div class="print-form">
-                    <label
-                      >Canvas product<select
-                        id="gelato-product-choice"
-                        aria-label="Canvas product"
-                      ></select
-                    ></label>
-                    <label
-                      >Gelato Product UID<input
-                        name="product_uid"
-                        maxlength="500"
-                        required="" /></label
-                    ><button type="button" id="gelato-load-product">Load Gelato product</button>
-                    <p id="gelato-product-summary" class="full" role="status">
-                      Load the exact product UID to view its Gelato catalog details. Loading does
-                      not place an order.
-                    </p>
-                    <label
-                      >Size &amp; finish<input name="variant_label" maxlength="160" required=""
-                    /></label>
-                    <p class="full">
-                      <a
-                        href="https://dashboard.gelato.com/catalogue/categories"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        >Find the exact Product UID in Gelato’s catalog ↗</a
-                      >
-                    </p>
-                    <p class="full" id="gelato-tier-hint" role="status">
-                      Choose a tier for its canvas size and finish. Roll prices are set centrally.
-                    </p>
-                    <label>Product title<input name="title" maxlength="160" required="" /></label>
-                    <details class="full gelato-details">
-                      <summary>Listing details &amp; tax</summary>
-                      <div class="print-form">
-                        <label
-                          >Category<select name="kind">
-                            <option value="canvas">Canvas</option>
-                          </select></label
-                        ><label
-                          >Public studio preview URL<input
-                            name="preview_url"
-                            type="url"
-                            required=""
-                            readonly="" /></label
-                        ><label
-                          >Stripe product tax code<input
-                            name="stripe_tax_code"
-                            value="txcd_99999999"
-                            pattern="txcd_[0-9]{8}"
-                            required=""
-                        /></label>
-                      </div>
-                      <p>
-                        Physical canvases default to Stripe’s General - Tangible Goods code. You can
-                        change it here if your Stripe tax configuration requires a different
-                        classification.
-                      </p>
-                    </details>
-                  </div>
-                </fieldset>
 
                 <button type="submit" class="button full">Publish product</button>
                 <p class="full">
@@ -831,8 +835,8 @@
     </dialog>
     <script type="module" src="/admin.js?v=20261024-editor"></script>
 
-    <script type="module" src="/gelato-admin.js?v=20261024-all-products-v1"></script>
-    <script type="module" src="/forge-print.js?v=20261024-all-products-v1"></script>
+    <script type="module" src="/gelato-admin.js?v=20261024-account-admin"></script>
+    <script type="module" src="/forge-print.js?v=20261024-account-admin"></script>
     <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
 
     <dialog id="gelato-site-art-dialog" class="gelato-editor-dialog">

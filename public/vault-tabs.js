@@ -1,7 +1,8 @@
 import { loadForge } from "./vault-forge.js?v=20261022-loop";
 const buttons = [...document.querySelectorAll("[data-vault-tab]")];
 function openTab(name) {
-  if (!["artwork", "forge", "print", "orders", "selling"].includes(name)) name = "artwork";
+  if (!["artwork", "forge", "print", "orders", "selling", "account"].includes(name))
+    name = "artwork";
   buttons.forEach((b) => {
     const active = b.dataset.vaultTab === name;
     b.setAttribute("aria-pressed", String(active));

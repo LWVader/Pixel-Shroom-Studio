@@ -627,3 +627,20 @@ header .primary {
   border: 12px solid #c1a67d;
   box-shadow: 0 20px 45px #0004;
 }
+.account-shipping {
+  max-width: 680px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.account-shipping input {
+  width: 100%;
+}
+.account-shipping p {
+  grid-column: 1 / -1;
+}
+@media (max-width: 600px) {
+  .account-shipping {
+    grid-template-columns: 1fr;
+  }
+}

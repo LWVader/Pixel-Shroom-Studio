@@ -1,3 +1,4 @@
+import { getShippingProfile, fillShipping } from "./account-profile.js?v=20261024-account";
 import { supabase, invoke } from "./supabase-client.js";
 import { escapeHtml, safePreviewUrl } from "./catalog-core.js?v=20261022-loop";
 const status = document.querySelector("#print-status"),
@@ -22,9 +23,21 @@ function resetQuote() {
   quote = null;
   result.replaceChildren();
 }
-form.addEventListener("input", resetQuote);
+form.addEventListener("input", () => {
+  deliveryRevision++;
+  resetQuote();
+});
+supabase.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT") {
+    deliveryRevision++;
+    form.reset();
+    resetQuote();
+    dialog.close();
+  }
+});
 document.querySelector("#print-close").onclick = () => dialog.close();
-grid.addEventListener("click", (event) => {
+let deliveryRevision = 0;
+grid.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-print-product]");
   if (!button) return;
   selected = products.find((p) => p.id === button.dataset.printProduct);
@@ -36,7 +49,19 @@ grid.addEventListener("click", (event) => {
   document.querySelector("#print-form-status").textContent = testMode
     ? "Test mode: no physical product will be shipped."
     : "Delivery is currently available to US addresses.";
+  const revision = ++deliveryRevision;
   dialog.showModal();
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) return;
+    const userId = data.session.user.id;
+    const recipient = await getShippingProfile(userId);
+    const current = await supabase.auth.getSession();
+    if (revision === deliveryRevision && dialog.open && current.data.session?.user.id === userId)
+      fillShipping(form, recipient);
+  } catch {
+    /* Manual address entry remains available if no saved profile can be loaded. */
+  }
 });
 form.addEventListener("submit", async (event) => {
   event.preventDefault();

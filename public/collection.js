@@ -1,3 +1,4 @@
+import { setupAccountProfile } from "./account-profile.js?v=20261024-account";
 import { setupMarketSelling } from "./market-sell.js";
 import { supabase, invoke } from "./supabase-client.js";
 import { SUPABASE_URL } from "./config.js";
@@ -10,6 +11,7 @@ const authForm = document.querySelector("#collection-auth");
 const signOut = document.querySelector("#collection-signout");
 const mintPanel = document.querySelector("#mint-panel");
 const target = new URLSearchParams(location.search).get("mint");
+setupAccountProfile();
 let session;
 let sellerReturnChecked = false;
 let busy = false;
@@ -113,6 +115,8 @@ async function updateSession() {
     offset = 0;
     next.hidden = true;
     previous.hidden = true;
+    document.querySelector("#recovery-password").hidden = true;
+    document.querySelector("#recovery-password").reset();
     grid.replaceChildren();
     currentItems = [];
     renderPrintChoices();
@@ -185,9 +189,18 @@ authForm.addEventListener("submit", async (event) => {
       email: String(values.get("email")),
       password: String(values.get("password")),
     };
+    if (
+      button.value === "signup" &&
+      (credentials.password.length < 12 ||
+        credentials.password !== String(values.get("confirmation")))
+    )
+      throw Error("New accounts need at least 12 characters and matching passwords.");
     const result =
       button.value === "signup"
-        ? await supabase.auth.signUp(credentials)
+        ? await supabase.auth.signUp({
+            ...credentials,
+            options: { emailRedirectTo: location.origin + "/collection.html?tab=account" },
+          })
         : await supabase.auth.signInWithPassword(credentials);
     if (result.error) throw result.error;
     authForm.reset();
