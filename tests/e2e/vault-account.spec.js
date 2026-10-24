@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "@playwright/test";
 test("Vault signup, password login, private shipping save and sign-out", async ({ page }) => {
   await page.route("https://esm.sh/@supabase/supabase-js@2.57.4", (route) =>
@@ -42,16 +43,28 @@ test("Vault signup, password login, private shipping save and sign-out", async (
     lastName: "Collector",
     addressLine1: "123 Main St",
     city: "Boston",
-    state: "ma",
     postCode: "02108",
   }))
     await shipping.locator("[name=" + key + "]").fill(value);
+  await shipping.locator("[name=state]").selectOption("MA");
+  await expect(shipping.locator("[name=state] option")).toHaveCount(52);
+  await expect(shipping.locator("[name=country]")).toHaveValue("US");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const accessibility = await new AxeBuilder({ page })
+    .include("#vault-panel-account")
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
   await shipping.getByRole("button", { name: "Save delivery address" }).click();
   await expect(page.locator("#account-status")).toContainText("Delivery address saved");
   expect(await page.evaluate(() => window.savedProfile.recipient.state)).toBe("MA");
   expect(await page.evaluate(() => window.savedProfile.user_id)).toBe(
     "11111111-1111-4111-8111-111111111111",
   );
+  if (process.env.ACCOUNT_VISUAL_CHECK)
+    await page
+      .locator("#vault-panel-account")
+      .screenshot({ path: `/tmp/account-glass-${page.viewportSize().width}.png` });
   await page.getByRole("button", { name: "Change password by email" }).click();
   await expect(page.locator("#account-status")).toContainText("Password-reset email requested");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();

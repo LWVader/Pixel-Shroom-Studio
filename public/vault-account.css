@@ -1,0 +1,434 @@
+/* Frosted glass within the studio's existing forest, cream and gold palette. */
+#vault-panel-account {
+  margin-top: 32px;
+}
+.account-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.account-heading h2 {
+  font-size: clamp(30px, 4vw, 44px);
+  margin: 8px 0;
+  line-height: 1.12;
+}
+.account-heading p {
+  margin: 8px 0;
+  max-width: 52ch;
+}
+.account-pill {
+  border: 1px solid #17634f40;
+  background: #ffffff95;
+  color: #174d3c;
+  border-radius: 999px;
+  padding: 10px 18px;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.account-notice {
+  padding: 14px 18px;
+  border: 1px solid #1b674b26;
+  border-left: 3px solid #b58a3b;
+  border-radius: 12px;
+  background: #ffffffa8;
+  color: #214d3e;
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+.account-notice:empty {
+  display: none;
+}
+.account-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.72fr) minmax(0, 1.8fr);
+  gap: 24px;
+  align-items: start;
+}
+.glass-card {
+  border: 1px solid #fff;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #ffffffdf, #fffaf0aa);
+  box-shadow:
+    0 16px 44px #173e2e0c,
+    inset 0 1px 0 #fff;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.account-identity {
+  padding: 28px;
+  position: sticky;
+  top: 24px;
+  overflow-wrap: anywhere;
+}
+.account-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid #b9964755;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #255d49, #10392c);
+  color: #efd28e;
+  font-size: 28px;
+  box-shadow:
+    inset 0 1px 0 #ffffff30,
+    0 7px 16px #10392c16;
+  margin-bottom: 24px;
+}
+.account-identity h3 {
+  font-size: 30px;
+  margin: 8px 0 24px;
+}
+.account-identity .eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+.account-email-label {
+  font-size: 13px;
+  color: #4f665b;
+  margin-bottom: 6px;
+}
+#account-email {
+  display: block;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.account-identity p {
+  line-height: 1.6;
+}
+.account-identity .button {
+  width: 100%;
+  white-space: normal;
+  text-align: center;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.account-private {
+  border-top: 1px solid #174e3420;
+  margin-top: 28px;
+  padding-top: 24px;
+  font-size: 14px;
+  color: #425f50;
+}
+.account-private p {
+  margin-bottom: 0;
+}
+#vault-shipping-form.account-shipping {
+  display: block;
+  max-width: none;
+  margin: 0;
+  padding: clamp(22px, 3vw, 40px);
+}
+.shipping-heading {
+  margin-bottom: 28px;
+}
+.shipping-heading h3 {
+  font-size: clamp(24px, 3vw, 32px);
+  margin: 8px 0 12px;
+  line-height: 1.2;
+}
+.shipping-heading p {
+  color: #496052;
+  line-height: 1.5;
+}
+.account-fieldset {
+  border: 0;
+  border-top: 1px solid #1f513526;
+  margin: 0 0 28px;
+  padding: 22px 0 0;
+  min-width: 0;
+}
+.account-fieldset legend {
+  padding: 0 14px 0 0;
+  color: #987228;
+  font-size: 13px;
+}
+.account-fieldset legend span {
+  color: #234a38;
+  font-size: 17px;
+  margin-left: 10px;
+}
+.account-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 18px;
+}
+#vault-shipping-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 15px;
+  color: #214a37;
+  min-width: 0;
+}
+#vault-shipping-form .field-wide {
+  grid-column: 1/-1;
+}
+.field-optional {
+  display: inline;
+  font-size: 12px;
+  font-weight: normal;
+  color: #5d6d61;
+}
+#vault-shipping-form input,
+#vault-shipping-form select,
+#collection-auth input,
+#recovery-password input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 54px;
+  padding: 14px 16px;
+  border: 1px solid #315a3e45;
+  border-radius: 12px;
+  background: linear-gradient(150deg, #ffffffed, #fffaf0b8);
+  color: #143d2d;
+  box-shadow:
+    inset 0 2px 4px #123c2910,
+    0 1px 0 #fff;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s,
+    background 0.18s;
+}
+#vault-shipping-form select {
+  cursor: pointer;
+  appearance: auto;
+  padding-right: 12px;
+}
+#vault-shipping-form select option {
+  background: #fffcf5;
+  color: #143d2d;
+}
+#vault-shipping-form input::placeholder,
+#collection-auth input::placeholder {
+  color: #65786c;
+  opacity: 1;
+}
+#vault-shipping-form input:hover,
+#vault-shipping-form select:hover {
+  border-color: #2b674b85;
+}
+#vault-shipping-form input:focus-visible,
+#vault-shipping-form select:focus-visible,
+#collection-auth input:focus-visible,
+#recovery-password input:focus-visible {
+  outline: 2px solid #1c7053;
+  outline-offset: 3px;
+  border-color: #1c7053;
+  background: #fffef9;
+  box-shadow: 0 0 0 5px #1c705312;
+}
+#vault-shipping-form .shipping-note {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #496052;
+  margin: 0 0 24px;
+}
+.account-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 24px;
+  border-top: 1px solid #1f513526;
+}
+.account-actions .button {
+  border-radius: 12px;
+  min-height: 50px;
+  padding: 14px 24px;
+  box-shadow: 0 6px 18px #154c3020;
+}
+.account-remove {
+  font: inherit;
+  font-size: 14px;
+  color: #654630;
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  min-height: 44px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+#collection-login,
+#recovery-password {
+  max-width: 640px;
+  margin: 28px 0;
+  padding: clamp(22px, 4vw, 36px);
+  border: 1px solid #ffffffcf;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #ffffffe8, #fffaf0b5);
+  box-shadow: 0 12px 32px #173e2e0b;
+}
+#collection-auth {
+  max-width: none;
+}
+@media (max-width: 850px) {
+  .account-layout {
+    grid-template-columns: 1fr;
+  }
+  .account-identity {
+    position: static;
+  }
+  .account-private {
+    margin-top: 20px;
+    padding-top: 16px;
+  }
+  .account-icon {
+    float: right;
+    margin-left: 20px;
+  }
+  .account-identity h3 {
+    margin-bottom: 16px;
+  }
+}
+@media (max-width: 540px) {
+  .account-heading {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .account-pill {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  .account-fields {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .account-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .account-actions .button {
+    width: 100%;
+  }
+  .account-remove {
+    align-self: center;
+  }
+  .account-layout {
+    gap: 18px;
+  }
+  .glass-card {
+    border-radius: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #vault-shipping-form input,
+  #vault-shipping-form select,
+  #collection-auth input,
+  #recovery-password input {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  .glass-card {
+    border: 1px solid CanvasText;
+  }
+}
+/* Match the live site's dark forest surfaces and gold highlights. */
+#vault-panel-account .glass-card {
+  background: linear-gradient(140deg, #214437ed, #10271fe8);
+  border-color: #d4b56c45;
+  color: #f3ead3;
+  box-shadow:
+    0 18px 48px #0004,
+    inset 0 1px 0 #ffffff17;
+}
+.account-identity {
+  position: static;
+}
+.account-identity h3,
+.shipping-heading h3,
+#account-email {
+  color: #fff0bc;
+}
+.account-identity p,
+.account-private,
+.shipping-heading p,
+#vault-shipping-form .shipping-note {
+  color: #c3d2c6;
+}
+.account-identity .eyebrow,
+.shipping-heading .eyebrow {
+  color: #e7bc6f;
+}
+.account-private {
+  border-color: #d4b56c35;
+}
+.account-private strong,
+.account-fieldset legend span {
+  color: #f3ead3;
+}
+.account-fieldset {
+  border-color: #d4b56c35;
+}
+.account-fieldset legend {
+  color: #e7bc6f;
+}
+#vault-shipping-form label {
+  color: #f3ead3;
+}
+#vault-shipping-form .field-optional {
+  color: #bfcec3;
+}
+#vault-shipping-form input,
+#vault-shipping-form select,
+#collection-auth input,
+#recovery-password input {
+  background: linear-gradient(135deg, #ffffff12, #03190f38);
+  border-color: #d4d9c74d;
+  color: #fff4d9;
+  box-shadow:
+    inset 0 2px 5px #0003,
+    0 1px 0 #ffffff0d;
+}
+#vault-shipping-form input::placeholder,
+#collection-auth input::placeholder {
+  color: #b8c8bb;
+}
+#vault-shipping-form select option {
+  background: #16372a;
+  color: #fff4d9;
+}
+#vault-shipping-form input:hover,
+#vault-shipping-form select:hover {
+  border-color: #dfbf7a;
+}
+#vault-shipping-form input:focus-visible,
+#vault-shipping-form select:focus-visible,
+#collection-auth input:focus-visible,
+#recovery-password input:focus-visible {
+  outline-color: #edc478;
+  border-color: #edc478;
+  background: #193d2e;
+  box-shadow: 0 0 0 5px #edc47818;
+}
+.account-actions {
+  border-color: #d4b56c35;
+}
+.account-remove {
+  color: #edd8b6;
+}
+.account-notice {
+  color: #e3eadb;
+  background: #244437cc;
+  border-color: #a6c1a333;
+  border-left-color: #dcb264;
+}
+.account-pill {
+  color: #efd9a1;
+  background: #244437b8;
+  border-color: #cba45355;
+}
+#collection-login,
+#recovery-password {
+  color: #f3ead3;
+  background: linear-gradient(140deg, #214437ed, #10271fe8);
+  border-color: #d4b56c45;
+}

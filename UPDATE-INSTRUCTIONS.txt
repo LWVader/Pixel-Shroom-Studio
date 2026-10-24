@@ -1,13 +1,13 @@
-Cloudflare CSP and Vault recovery form fix
+Account & Shipping visual update
 
-Replace the included files, then run:
+Changed files: public/collection.html, public/vault-account.css and the Vault browser test.
+
+Extract over your project, then run:
 npm.cmd run build
 npx.cmd wrangler deploy
 
-Deploy worker.mjs as well as the assets. Updating only HTML will not update the response-header CSP. No Supabase migration or function redeployment required.
+No new Supabase migration or API changes for this styling update. The earlier vault_profiles migration remains required for saving addresses.
 
-The analytics script origin and beacon endpoint are allowed. HTML responses receive a fresh cryptographic CSP nonce that Cloudflare can propagate onto its injected scripts. Arbitrary inline JavaScript remains blocked; unsafe-inline is not added to script-src. Static _headers carries the matching analytics allowlist; dynamic nonces require the Worker deployment. HTML validators are removed so old injected-script nonces are not reused via 304 validation.
+Includes forest/gold glass styling, responsive account summary and delivery form, clear recipient/address groups, 50-state plus DC dropdown, US-only country dropdown, browser address autocomplete, numeric ZIP keyboard, telephone input, keyboard focus styling and reduced-motion support.
 
-Recovery forms have a readonly account email with autocomplete=username; it is filled from the authenticated account and cleared on sign-out.
-
-After deploying, hard-refresh My Vault and recheck Console. If a Cloudflare Transform Rule adds another CSP, that policy must permit the same resources; multiple policies all apply. The source HTML contains no executable inline script. If a different inline script remains blocked, inspect that script before adding an allowance. Do not use unsafe-inline to suppress errors.
+Validated on desktop and mobile: signup/login, saving state/address, sign-out clearing, delivery autofill, horizontal overflow and a scoped WCAG accessibility scan. Four browser tests passed. Existing ownership, Forge, pricing and order fulfillment are unchanged.
