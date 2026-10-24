@@ -116,6 +116,25 @@ test("site browser, position preview, saved composition and confirmed publishing
     form.locator(".print-preflight, #gelato-size-preset, [name=width], [name=height]"),
   ).toHaveCount(0);
   await expect(page.locator("#gelato-product-size")).toContainText("16 × 16 thick");
+  await expect(page.locator("#gelato-product-choice option")).toHaveCount(7);
+  await expect(form.locator("[name=product_uid]")).toHaveValue(
+    "canvas_400x400-mm-16x16-inch_canvas_wood-fsc-thick_4-0_ver",
+  );
+  await expect(form.locator("[name=stripe_tax_code]")).toHaveValue("txcd_99999999");
+  await page.locator("#gelato-product-choice").selectOption({ label: "24 × 24 · Natural frame" });
+  await expect(form.locator("[name=edition_tier]")).toHaveValue("Prismatic");
+  await expect(form.locator("[name=frame_finish]")).toHaveValue("natural");
+  await expect(page.locator("#gelato-product-size")).toContainText("24 × 24");
+  await page
+    .locator("#gelato-product-choice")
+    .selectOption({ label: "16 × 24 portrait · Black frame" });
+  await expect(form.locator("[name=edition_tier]")).toHaveValue("Emerald");
+  await expect(page.locator("#gelato-product-size")).toContainText("16 × 24");
+  await page
+    .locator("#gelato-product-choice")
+    .selectOption({ label: "16 × 16 · Thick canvas · Unframed" });
+  await expect(form.locator("[name=edition_tier]")).toHaveValue("Standard");
+  await selectSiteArtwork(page);
   await form.locator("[name=product_uid]").fill("canvas_fixture_uid");
   await page.getByRole("button", { name: "Load Gelato product", exact: true }).click();
   await expect(page.locator("#gelato-product-summary")).toContainText("Loaded from Gelato");
@@ -187,6 +206,14 @@ test("computer file chooser opens, supports positioned upload and rejects resolu
   expect(calls.filter((c) => c.action === "admin_upload")).toHaveLength(2);
   await form.locator("[name=edition_tier]").selectOption("Emerald");
   await expect(page.locator("#gelato-product-size")).toContainText("16 × 24 portrait canvas");
+  await expect(page.locator("#gelato-product-choice option")).toHaveCount(7);
+  await page
+    .locator("#gelato-product-choice")
+    .selectOption({ label: "16 × 24 portrait · Dark Wood frame" });
+  await expect(form.locator("[name=frame_finish]")).toHaveValue("dark-wood");
+  await expect(form.locator("[name=product_uid]")).toHaveValue(
+    "framed_canvas_geo_simplified_400x600-mm-16x24-inch_dark-wood_452x652-mm-18x26-inch_wood-fsc-slim_ver_wood_w14xt42-mm_canvas_4-0",
+  );
   await form.locator("[name=frame_finish]").selectOption("natural");
   await expect(page.locator("#gelato-product-size")).toContainText("Natural frame");
   await form.locator("[name=edition_tier]").selectOption("Prismatic");

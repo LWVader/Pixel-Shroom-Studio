@@ -1,13 +1,17 @@
-Corrected canvas sizing update
+Dropdown fix and Gelato draft order test
 
-Standard/Silver/Gold: 16 x 16 thick unframed.
-Emerald/Sapphire: dedicated 16 x 24 portrait artwork, Black/Natural/Dark Wood frame.
-Prismatic: 24 x 24, Black/Natural/Dark Wood frame. US only. Prices unchanged.
-
-Extract over your project. Then run:
-npx.cmd supabase db push
-npx.cmd supabase functions deploy print-api --project-ref decizwtgsqhjdgjiqbui
+Extract over your project. Deploy dropdown fix:
 npm.cmd run build
 npx.cmd wrangler deploy
 
-Publish the corrected version-3 product mappings in Admin (12 per artwork). Earlier paid-order mappings remain intact. Do not reuse square artwork positioning for portrait products; save the dedicated portrait composition and exact Gelato UID.
+All 7 products are always visible. Choosing a different size updates to a compatible tier; Standard/Silver/Gold share one unframed product, Emerald/Sapphire share the portrait products, Prismatic uses 24x24. Changing tier reloads its site source; manually chosen computer artwork is retained and needs positioning again.
+
+To create one supplier DRAFT (not production):
+1. Copy tools/gelato-test-recipient.example.json to a private file OUTSIDE the project and replace every REPLACE value with your own valid US address/email.
+2. Have an HTTPS URL for a print-ready file that Gelato can download. Use a dedicated print file; do not use the watermarked preview. A short-lived private signed URL is suitable if valid long enough for Gelato processing.
+3. Run from the project root:
+.\tools\test-gelato-draft.ps1 -PrintFileUrl 'YOUR_HTTPS_PRINT_URL' -RecipientJsonFile 'C:\private\gelato-recipient.json'
+
+The script securely prompts for the API key locally (not stored), obtains a USD quote/shipping method, and creates exactly one 16x16 thick-canvas draft. It never converts to production. Optional -ProductUid selects one of your other product UIDs; match the file composition to that product.
+Do not repeat a timed-out submission: search Gelato Orders for the printed PSS-DRAFT reference first.
+No order has been sent by this update. A real provider test requires your credentials, print URL and address locally. No Stripe charge/payment/ledger change occurs.

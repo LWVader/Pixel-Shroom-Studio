@@ -1,3 +1,7 @@
+import {
+  CANVAS_TAX_CODE,
+  GELATO_PRODUCT_OPTIONS,
+} from "./gelato-product-options.js?v=20261024-uids-v1";
 import { canvasProduct } from "./canvas-products-core.js?v=20261024-portrait-v2";
 import { createPrintPositioner } from "./print-positioner.js?v=20261024-portrait-v2";
 import { inspectPrintBytes } from "./print-preflight-core.js?v=20261024-editor";
@@ -80,6 +84,35 @@ function reuseProductProfile() {
   if (previous.product_uid === form.elements.product_uid.value && previous.print_specs)
     productSpecs = { ...previous.print_specs, width: profile().width, height: profile().height };
 }
+const productChoice = document.querySelector("#gelato-product-choice");
+function updateProductChoices(preserveUid = false) {
+  const tier = form.elements.edition_tier.value || "Standard";
+  const choices = GELATO_PRODUCT_OPTIONS;
+  productChoice.replaceChildren(...choices.map((p) => new Option(p.label, p.uid)));
+  const existing = form.elements.product_uid.value;
+  if (preserveUid && existing && !choices.some((p) => p.uid === existing))
+    productChoice.add(new Option("Saved product UID · custom/previous mapping", existing));
+  const selected =
+    preserveUid && existing
+      ? existing
+      : choices.find((p) => p.tiers.includes(tier) && p.frame === profile().frame)?.uid ||
+        choices[0].uid;
+  productChoice.value = selected;
+  if (!preserveUid) form.elements.product_uid.value = selected;
+  if (!form.elements.stripe_tax_code.value) form.elements.stripe_tax_code.value = CANVAS_TAX_CODE;
+}
+productChoice.addEventListener("change", () => {
+  const choice = GELATO_PRODUCT_OPTIONS.find((p) => p.uid === productChoice.value);
+  if (!choice) return;
+  const previousTier = form.elements.edition_tier.value;
+  if (!choice.tiers.includes(previousTier)) form.elements.edition_tier.value = choice.tiers[0];
+  form.elements.frame_finish.value = choice.frame;
+  applyProduct();
+  if (previousTier !== form.elements.edition_tier.value) {
+    if (source && !source.fromTier) invalidatePosition();
+    else loadSource();
+  }
+});
 function showTierHint() {
   const p = profile();
   document.querySelector("#gelato-tier-hint").textContent =
@@ -100,6 +133,7 @@ function applyProduct() {
   form.elements.product_uid.value = "";
   loadedCatalog = null;
   reuseProductProfile();
+  updateProductChoices();
   showTierHint();
   invalidatePosition();
   editor.redraw();
@@ -401,10 +435,11 @@ list.onclick = async (event) => {
   productSpecs = product.canvas_version === 3 ? product.print_specs : profile().specs;
   loadedCatalog = null;
   savedHash = "";
+  updateProductChoices(true);
   showTierHint();
   try {
     if (product.canvas_version !== 3) {
-      form.elements.product_uid.value = "";
+      updateProductChoices();
       await loadSource();
       status.textContent =
         "Previous format preserved. Load the new product UID and save a current-format mapping.";

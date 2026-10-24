@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/admin-dashboard.css?v=20261021-catalog-relaunch" />
     <link rel="stylesheet" href="/print-store.css?v=20261024-simple" />
     <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
-    <link rel="stylesheet" href="/admin-image-editor.css?v=20261024-portrait-v2" />
+    <link rel="stylesheet" href="/admin-image-editor.css?v=20261024-all-products-v1" />
   </head>
   <body class="admin-page">
     <!-- SECTION: Administrator sign-in gate -->
@@ -672,6 +672,12 @@
                   <legend>2. Connect the Gelato product</legend>
                   <div class="print-form">
                     <label
+                      >Canvas product<select
+                        id="gelato-product-choice"
+                        aria-label="Canvas product"
+                      ></select
+                    ></label>
+                    <label
                       >Gelato Product UID<input
                         name="product_uid"
                         maxlength="500"
@@ -712,13 +718,15 @@
                         ><label
                           >Stripe product tax code<input
                             name="stripe_tax_code"
+                            value="txcd_99999999"
                             pattern="txcd_[0-9]{8}"
                             required=""
                         /></label>
                       </div>
                       <p>
-                        A protected preview is used on your site. Select the correct Stripe tax code
-                        for this product; it is required to save.
+                        Physical canvases default to Stripe’s General - Tangible Goods code. You can
+                        change it here if your Stripe tax configuration requires a different
+                        classification.
                       </p>
                     </details>
                   </div>
@@ -823,8 +831,8 @@
     </dialog>
     <script type="module" src="/admin.js?v=20261024-editor"></script>
 
-    <script type="module" src="/gelato-admin.js?v=20261024-portrait-v2"></script>
-    <script type="module" src="/forge-print.js?v=20261024-portrait-v2"></script>
+    <script type="module" src="/gelato-admin.js?v=20261024-all-products-v1"></script>
+    <script type="module" src="/forge-print.js?v=20261024-all-products-v1"></script>
     <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
 
     <dialog id="gelato-site-art-dialog" class="gelato-editor-dialog">
