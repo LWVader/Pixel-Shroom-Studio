@@ -1,10 +1,10 @@
 {
-  "firstName": "REPLACE",
-  "lastName": "REPLACE",
-  "addressLine1": "REPLACE",
-  "city": "REPLACE",
-  "state": "REPLACE",
-  "postCode": "REPLACE",
+  "firstName": "Loren",
+  "lastName": "Weirich",
+  "addressLine1": "1715 W Creek Way Apt 4",
+  "city": "Louisville",
+  "state": "KY",
+  "postCode": "40242",
   "country": "US",
-  "email": "REPLACE"
+  "email": "llweirich@yahoo.com"
 }
