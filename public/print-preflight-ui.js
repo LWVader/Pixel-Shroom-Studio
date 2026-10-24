@@ -3,7 +3,7 @@ import {
   evaluatePrint,
   normalizeSpecs,
   SIZE_PRESETS,
-} from "./print-preflight-core.js?v=20261022-preflight";
+} from "./print-preflight-core.js?v=20261024-one-upload";
 import { escapeHtml } from "./catalog-core.js?v=20261022-loop";
 export function createPrintPreflight(form, loadStoredFacts) {
   const result = document.querySelector("#gelato-preflight-result"),
@@ -37,27 +37,15 @@ export function createPrintPreflight(form, loadStoredFacts) {
         ]),
       ),
     );
-  const reviews = () =>
-    Object.fromEntries(
-      [...form.querySelectorAll("[data-preflight-review]")].map((el) => [
-        el.dataset.preflightReview,
-        el.checked,
-      ]),
-    );
-  function invalidate(requireReview = false) {
-    if (requireReview) {
-      for (const el of form.querySelectorAll("[data-preflight-review]")) el.checked = false;
-      form.elements.print_ready.checked = false;
-    }
+  function invalidate() {
     overlay.hidden = true;
     revision++;
     report = null;
     result.dataset.state = "stale";
     result.textContent =
-      "Not checked. Run Safe check after the file, product requirements or review changes.";
+      "Not checked. Check the image after changing the source or product settings.";
   }
   const affectsCheck = (target) =>
-    target.matches("[data-preflight-review]") ||
     [
       "printFile",
       "product_uid",
@@ -73,7 +61,7 @@ export function createPrintPreflight(form, loadStoredFacts) {
       "transparent",
     ].includes(target.name);
   form.addEventListener("input", (event) => {
-    if (affectsCheck(event.target)) invalidate(!event.target.matches("[data-preflight-review]"));
+    if (affectsCheck(event.target)) invalidate();
   });
   form.addEventListener("change", (event) => {
     if (event.target.name === "printFile") {
@@ -83,7 +71,7 @@ export function createPrintPreflight(form, loadStoredFacts) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       objectUrl = "";
     }
-    if (affectsCheck(event.target)) invalidate(!event.target.matches("[data-preflight-review]"));
+    if (affectsCheck(event.target)) invalidate();
   });
   document.querySelector("#gelato-size-preset").onchange = (event) => {
     const size = SIZE_PRESETS[event.target.value];
@@ -156,9 +144,9 @@ export function createPrintPreflight(form, loadStoredFacts) {
       }
       if (!facts) throw Error("Choose a dedicated print artwork file first.");
       if (ticket !== revision) throw Error("Selection changed; run Safe check again.");
-      report = evaluatePrint(facts, input, reviews());
+      report = evaluatePrint(facts, input);
       result.dataset.state = report.state;
-      result.innerHTML = `<p><strong>${report.state === "ready" ? "Ready after owner review" : "Check blocked — review required"}</strong></p>
+      result.innerHTML = `<p><strong>${report.state === "ready" ? "Technical checks passed" : "Cannot publish — fix the following"}</strong></p>
         <p>${escapeHtml(facts.format.toUpperCase())} · ${(facts.bytes / 1048576).toFixed(2)} MB${facts.format !== "pdf" ? ` · ${facts.width} × ${facts.height} px · ${report.dpi.toFixed(1)} effective PPI` : " · PDF technical properties require external preflight"}</p>
         <p>Minimum: ${report.minimum.join(" × ")} px. Recommended at 300 PPI: ${report.target.join(" × ")} px, including the entered bleed/wrap.</p>
         <p>Profile: ${escapeHtml(facts.profile)}. SHA-256: ${escapeHtml(facts.sha256)}</p>
@@ -174,6 +162,17 @@ export function createPrintPreflight(form, loadStoredFacts) {
     }
   };
   return {
+    check: () => button.onclick(),
+    useStoredSource(sourceFacts, url) {
+      invalidate();
+      facts = sourceFacts;
+      cachedFile = null;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = "";
+      image.src = url;
+      image.style.width = "100%";
+      preview.hidden = false;
+    },
     reset(savedSpecs) {
       invalidate();
       facts = null;
@@ -184,7 +183,6 @@ export function createPrintPreflight(form, loadStoredFacts) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       objectUrl = "";
       image.removeAttribute("src");
-      for (const el of form.querySelectorAll("[data-preflight-review]")) el.checked = false;
       if (savedSpecs)
         for (const [key, value] of Object.entries(savedSpecs)) {
           const el = form.elements[key];
@@ -194,12 +192,10 @@ export function createPrintPreflight(form, loadStoredFacts) {
         }
     },
     submission(active) {
-      if (!report || !facts) throw Error("Run Safe check on this file and product before saving.");
+      if (!report || !facts) throw Error("Check this image and product before publishing.");
       if (active && report.state !== "ready")
-        throw Error(
-          "Resolve Safe check blockers before publishing. You can save it as a hidden draft.",
-        );
-      return { preflight_hash: facts.sha256, print_specs: specs(), preflight_reviews: reviews() };
+        throw Error("Cannot publish: fix the listed technical issues first.");
+      return { preflight_hash: facts.sha256, print_specs: specs() };
     },
   };
 }

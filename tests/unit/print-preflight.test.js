@@ -1,10 +1,6 @@
 import { it, expect } from "vitest";
 import sharp from "sharp";
-import {
-  inspectPrintBytes,
-  evaluatePrint,
-  REVIEW_KEYS,
-} from "../../public/print-preflight-core.js";
+import { inspectPrintBytes, evaluatePrint } from "../../public/print-preflight-core.js";
 const specs = {
   width: 8,
   height: 10,
@@ -15,7 +11,7 @@ const specs = {
   transparent: false,
   templateUrl: "https://dashboard.gelato.com/catalogue/categories",
 };
-const reviews = Object.fromEntries(REVIEW_KEYS.map((k) => [k, true]));
+const reviews = {};
 const raw = (buffer) =>
   buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 it("reads actual PNG/JPEG headers and ignores fake MIME types/extensions", async () => {
@@ -48,7 +44,7 @@ it("reads actual PNG/JPEG headers and ignores fake MIME types/extensions", async
   ).toThrow();
   expect(() => inspectPrintBytes(raw(png.subarray(0, png.length - 15)))).toThrow();
 });
-it("blocks low resolution, wrong aspect ratios, absent alpha and missing reviews", () => {
+it("blocks low resolution, wrong aspect ratios and absent alpha without requiring manual review", () => {
   const facts = {
     bytes: 10000,
     format: "jpg",
@@ -59,7 +55,7 @@ it("blocks low resolution, wrong aspect ratios, absent alpha and missing reviews
   };
   const result = evaluatePrint(facts, { ...specs, transparent: true }, {});
   expect(result.state).toBe("blocked");
-  expect(result.errors.join(" ")).toMatch(/Resolution.*aspect ratio.*PNG.*manual review/s);
+  expect(result.errors.join(" ")).toMatch(/Resolution.*aspect ratio.*PNG/s);
   expect(evaluatePrint({ ...facts, width: 1200, height: 1500 }, specs, reviews)).toMatchObject({
     state: "ready",
     dpi: 150,
@@ -84,7 +80,7 @@ it("labels PDF checks as external review and does not invent pixel dimensions or
   const pdf = inspectPrintBytes(raw(Buffer.from("%PDF-1.7\n external preflight required\n%%EOF")));
   expect(evaluatePrint(pdf, specs, reviews).state).toBe("blocked");
   const result = evaluatePrint(pdf, specs, { ...reviews, pdf: true });
-  expect(result.state).toBe("ready");
+  expect(result.state).toBe("blocked");
   expect(result.dpi).toBeNull();
   expect(result.warnings.join(" ")).toMatch(/external preflight/);
 });
@@ -104,7 +100,7 @@ it("server re-reads the private bytes, rejects changed hashes and gates publishi
   const product = {
     print_path: "private.png",
     active: true,
-    print_ready: true,
+    publish_confirmed: true,
     preflight_hash: facts.sha256,
     print_specs: { ...specs, width: 2, height: 2 },
     preflight_reviews: reviews,
@@ -113,8 +109,8 @@ it("server re-reads the private bytes, rejects changed hashes and gates publishi
   await expect(
     validatePrintMapping(db, { ...product, preflight_hash: "0".repeat(64) }),
   ).rejects.toThrow(/changed/);
-  await expect(validatePrintMapping(db, { ...product, preflight_reviews: {} })).rejects.toThrow(
-    /publishing/,
+  await expect(validatePrintMapping(db, { ...product, publish_confirmed: false })).rejects.toThrow(
+    /publish/,
   );
   await expect(validatePrintMapping(db, { ...product, print_path: "private.jpg" })).rejects.toThrow(
     /format/,
@@ -122,8 +118,8 @@ it("server re-reads the private bytes, rejects changed hashes and gates publishi
   const draft = await validatePrintMapping(db, {
     ...product,
     active: false,
-    print_ready: false,
+    publish_confirmed: false,
     preflight_reviews: {},
   });
-  expect(draft.report.state).toBe("blocked");
+  expect(draft.report.state).toBe("ready");
 });

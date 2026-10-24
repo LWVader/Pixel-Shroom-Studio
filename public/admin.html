@@ -202,7 +202,10 @@
               <div>
                 <span class="eyebrow">IMAGES</span>
                 <h2>Images listed on site</h2>
-                <p>Upload, sign, price, edit, and manage artwork and NFTs.</p>
+                <p>
+                  Upload, sign, edit, and manage artwork and its six tier images. Roll prices are
+                  set centrally.
+                </p>
               </div>
               <button id="new-listing-button" type="button" class="secondary">Add new image</button>
             </div>
@@ -217,7 +220,7 @@
               </p>
               <form id="art-form" class="form-grid">
                 <label>Title<input name="title" required="" /></label
-                ><label>Artist<input name="artist" required="" /></label>
+                ><label>Artist<input name="artist" value="LWVader" required="" /></label>
                 <label
                   >Artwork serial number<input
                     name="serialNumber"
@@ -241,9 +244,10 @@
                     <option>NFT</option>
                   </select></label
                 >
-                <label
-                  >Price ($)<input name="price" type="number" min="1" step="0.01" required=""
-                /></label>
+                <p class="wide">
+                  Fixed roll prices: Digital $8 · Canvas + Digital $69, plus shipping and applicable
+                  tax.
+                </p>
                 <fieldset>
                   <legend>Artwork tier images and numbered editions</legend>
                   <label
@@ -501,8 +505,8 @@
             <section class="gelato-management">
               <h2>Canvas &amp; print setup</h2>
               <p>
-                Connect an artwork to a Gelato product. Your dedicated print file stays private
-                until an order is sent for production.
+                Use the artwork and tier images already uploaded in Images. Link each tier to its
+                Gelato canvas or frame; no second image upload is needed.
               </p>
               <div class="gelato-toolbar">
                 <button type="button" id="gelato-refresh">Refresh products &amp; orders</button
@@ -524,8 +528,8 @@
                       artwork ID below.
                     </p>
                     <label
-                      >Print tier<select name="edition_tier">
-                        <option value="">Standalone product (no Vault tier)</option>
+                      >Print tier<select name="edition_tier" required>
+                        <option value="">Choose tier…</option>
                         <option>Standard</option>
                         <option>Silver</option>
                         <option>Gold</option>
@@ -535,10 +539,10 @@
                       </select></label
                     >
                     <details class="full gelato-details">
-                      <summary>Artwork ID / standalone product</summary>
+                      <summary>Shared artwork ID</summary>
                       <p>
-                        Leave the tier empty for a standalone physical product. To link a Vault
-                        edition, select its artwork and tier.
+                        This is the same artwork ID used by Images, the Vault and printing. The
+                        Gelato Product UID identifies the canvas or frame, not the image.
                       </p>
                       <label
                         >Artwork ID<input name="edition_artwork_id" type="number" min="1" step="1"
@@ -568,17 +572,9 @@
                       need a matching UID.
                     </p>
                     <p class="full" id="gelato-tier-hint" role="status">
-                      Choose a tier for suggested size, finish and later-print price.
+                      Choose a tier for its canvas size and finish. Roll prices are set centrally.
                     </p>
-                    <label
-                      >Later-print / product price ($, before shipping &amp; tax)<input
-                        name="price"
-                        type="number"
-                        min="1"
-                        max="10000"
-                        step="0.01"
-                        required="" /></label
-                    ><label>Product title<input name="title" maxlength="160" required="" /></label>
+                    <label>Product title<input name="title" maxlength="160" required="" /></label>
                     <details class="full gelato-details">
                       <summary>Listing details &amp; tax</summary>
                       <div class="print-form">
@@ -607,17 +603,25 @@
                   </div>
                 </fieldset>
                 <fieldset class="full print-preflight">
-                  <legend>3. Upload &amp; check the print file</legend>
+                  <legend>3. Preview &amp; check</legend>
                   <p>
-                    Upload the composition for this exact product, confirm its template settings,
-                    then run the check. Nothing is sent to Gelato during this step.
+                    The uploaded tier image is reused for printing. Check it against the product
+                    template. No image or order is sent to Gelato during this check.
                   </p>
-                  <label class="full"
-                    >Private print-ready PNG, JPEG or PDF<input
-                      name="printFile"
-                      type="file"
-                      accept="image/png,image/jpeg,application/pdf"
-                  /></label>
+                  <p>Image source: the selected artwork’s uploaded tier file.</p>
+                  <button type="button" id="gelato-use-tier-source">
+                    Load uploaded tier image
+                  </button>
+                  <p id="gelato-source-status" role="status">
+                    Choose artwork and tier to load the same private source.
+                  </p>
+                  <input
+                    type="file"
+                    name="printFile"
+                    hidden
+                    disabled
+                    accept="image/png,image/jpeg"
+                  />
                   <details class="gelato-details">
                     <summary>Technical settings — confirm against the Gelato template</summary>
                     <div class="print-form">
@@ -724,53 +728,11 @@
                     The dashed guide marks the requested safe zone. Inspect the exported file in
                     your design application as well.
                   </p>
-                  <h4>Review before approval</h4>
-                  <div class="preflight-reviews">
-                    <label class="consent"
-                      ><input type="checkbox" data-preflight-review="template" /> I checked the
-                      exact UID, print area, orientation, dimensions, bleed and wrap against the
-                      Gelato template.</label
-                    >
-                    <label class="consent"
-                      ><input type="checkbox" data-preflight-review="edges" /> I inspected edges at
-                      200–300% for halos, stray pixels and transparency. For apparel, I checked
-                      fades and the white underbase.</label
-                    >
-                    <label class="consent"
-                      ><input type="checkbox" data-preflight-review="safeArea" /> Background fills
-                      the bleed/wrap. Important details stay inside the safe zone and clear of the
-                      frame.</label
-                    >
-                    <label class="consent"
-                      ><input type="checkbox" data-preflight-review="type" /> Fonts are outlined or
-                      embedded, linked assets embedded, and fine lines meet this product’s
-                      requirements.</label
-                    >
-                    <label class="consent"
-                      ><input type="checkbox" data-preflight-review="color" /> I reviewed the color
-                      profile and soft proof: sRGB for raster, product-required output intent for
-                      PDF.</label
-                    >
-                    <label class="consent"
-                      ><input type="checkbox" data-preflight-review="original" /> The original has
-                      enough pixel detail. Upscaling or changing DPI metadata does not add
-                      detail.</label
-                    >
-                    <label class="consent"
-                      ><input type="checkbox" data-preflight-review="quality" /> I reviewed the
-                      warnings and accept the intended print quality.</label
-                    >
-                    <label class="consent"
-                      ><input type="checkbox" data-preflight-review="pdf" /> PDF only: I externally
-                      checked page/bleed boxes, image PPI, fonts, PDF/X-4/output intent, effects and
-                      security; no crop marks.</label
-                    >
-                  </div>
                   <button type="button" class="button" id="gelato-safe-check">
                     Check print file
                   </button>
                   <div id="gelato-preflight-result" role="status" aria-live="polite">
-                    Select an artwork file and enter the product template requirements.
+                    Choose artwork and tier, then enter the product template requirements.
                   </div>
                   <p>
                     <a
@@ -788,28 +750,15 @@
                     >
                   </p>
                   <p>
-                    Safe check is a technical check plus your review, not a guarantee or Gelato
-                    production approval. It does not detect all halos, missing fonts, incorrect
-                    product UIDs, interpolation or out-of-gamut colors.
+                    Checks cover file format, dimensions and resolution. They do not certify color
+                    accuracy, visual quality or Gelato production approval.
                   </p>
                 </fieldset>
-                <fieldset class="full gelato-step">
-                  <legend>4. Save &amp; publish</legend>
-                  <div class="print-form">
-                    <label class="full consent"
-                      ><input name="print_ready" type="checkbox" /> Mark ready for production after
-                      Safe check and manual review.</label
-                    ><label class="full consent"
-                      ><input name="active" type="checkbox" /> Publish this mapped product (server
-                      checkout settings still apply).</label
-                    >
-                    <p class="full">
-                      Unchecked Publish saves a hidden draft. Publishing still follows your server’s
-                      checkout settings.
-                    </p>
-                    <button type="submit" class="button full">Save product</button>
-                  </div>
-                </fieldset>
+                <button type="submit" class="button full">Publish product</button>
+                <p class="full">
+                  Publishing checks the image and product setup, then asks you to confirm. If it
+                  cannot publish, the message explains what to fix.
+                </p>
               </form>
               <details class="gelato-details gelato-orders">
                 <summary>Physical orders</summary>
@@ -902,9 +851,9 @@
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=20261024-tab"></script>
+    <script type="module" src="/admin.js?v=20261024-one-upload"></script>
 
-    <script type="module" src="/gelato-admin.js?v=20261024-tab"></script>
+    <script type="module" src="/gelato-admin.js?v=20261024-one-upload"></script>
     <script type="module" src="/forge-print.js?v=20261022-loop"></script>
     <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
   </body>

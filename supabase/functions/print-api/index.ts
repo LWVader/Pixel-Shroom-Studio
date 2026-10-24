@@ -1,3 +1,4 @@
+import { reuseTierPrintSource } from "../_shared/gelato-admin-source.ts";
 import { inspectStoredPrint, validatePrintMapping } from "../_shared/print-preflight.ts";
 import Stripe from "npm:stripe@18";
 import { corsFor, json, service, studioSiteUrl } from "../_shared/common.ts";
@@ -130,6 +131,9 @@ Deno.serve(async (request: Request) => {
         if (products.error || orders.error) throw products.error || orders.error;
         return reply({ products: products.data, orders: (orders.data || []).map(publicOrder) });
       }
+      if (body.action === "admin_source") {
+        return reply(await reuseTierPrintSource(db, body.productId, body.artworkId, body.tier));
+      }
       if (body.action === "admin_upload") {
         if (!uuid(body.productId) || !["png", "jpg", "pdf"].includes(body.extension))
           return reply({ error: "Invalid source upload." }, 400);
@@ -150,6 +154,24 @@ Deno.serve(async (request: Request) => {
       }
       if (body.action === "admin_save") {
         const p = body.product;
+        if (!uuid(p?.id)) return reply({ error: "Invalid product." }, 400);
+        const { data: existing, error: existingError } = await db
+          .from("gelato_products")
+          .select("retail_cents")
+          .eq("id", p.id)
+          .maybeSingle();
+        if (existingError) throw existingError;
+        // Roll prices are central. Preserve existing later-print prices; never accept a client price.
+        const laterPrintCents: Record<string, number> = {
+          Standard: 4900,
+          Silver: 4900,
+          Gold: 5500,
+          Emerald: 7900,
+          Sapphire: 7900,
+          Prismatic: 7900,
+        };
+        p.retail_cents = existing?.retail_cents ?? laterPrintCents[p.edition_tier] ?? 6900;
+
         const preview = new URL(String(p?.preview_url || ""));
         const allowedPreview = new Set([
           new URL(studioSiteUrl()).origin,
@@ -194,6 +216,22 @@ Deno.serve(async (request: Request) => {
         if (objectError || !objects?.some((o: any) => o.name === filename))
           throw new Error("Upload the private print-ready source first.");
         const { facts, report } = await validatePrintMapping(db, p);
+        if (p.use_tier_source === true) {
+          const { data: source, error: sourceError } = await db
+            .from("foil_tier_assets")
+            .select("sha256")
+            .eq("listing_id", p.edition_artwork_id)
+            .eq("tier", p.edition_tier)
+            .single();
+          if (sourceError || !source || source.sha256 !== facts.sha256)
+            return reply(
+              {
+                error:
+                  "This image does not match the selected artwork and tier. Reload its uploaded image.",
+              },
+              400,
+            );
+        }
         if (p.edition_artwork_id != null) {
           if (
             !Number.isSafeInteger(p.edition_artwork_id) ||
@@ -227,14 +265,16 @@ Deno.serve(async (request: Request) => {
           stripe_tax_code: p.stripe_tax_code,
           retail_cents: p.retail_cents,
           active: p.active === true,
-          print_ready: report.state === "ready" && p.print_ready === true,
+          print_ready: report.state === "ready" && p.publish_confirmed === true,
           print_specs: report.specs,
           preflight_report: {
             ...report,
             facts,
             productUid: p.product_uid,
             printPath: p.print_path,
-            reviews: p.preflight_reviews,
+            publishConfirmed: p.publish_confirmed === true,
+            sourceArtworkId: p.use_tier_source ? p.edition_artwork_id : null,
+            sourceTier: p.use_tier_source ? p.edition_tier : null,
             checkedAt: new Date().toISOString(),
             checkedBy: user.id,
           },

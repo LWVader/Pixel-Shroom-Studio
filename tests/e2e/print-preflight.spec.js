@@ -1,71 +1,66 @@
 import { test, expect } from "@playwright/test";
 import sharp from "sharp";
-test("owner checks actual artwork, invalidates stale checks, and saves bound product evidence", async ({
+import { createHash } from "node:crypto";
+import { inspectPrintBytes } from "../../public/print-preflight-core.js";
+test("shared tier image, automatic checks, cancel/confirm publish and fixed roll pricing", async ({
   page,
 }) => {
-  test.slow(); // Full owner upload/review workflow includes many mobile scroll/focus steps.
-  const png = await sharp({
-    create: {
-      width: 600,
-      height: 600,
-      channels: 4,
-      background: { r: 30, g: 90, b: 70, alpha: 0.7 },
-    },
+  test.slow();
+  const bytes = await sharp({
+    create: { width: 2400, height: 2400, channels: 3, background: "#407050" },
   })
     .png()
     .toBuffer();
+  const facts = {
+    ...inspectPrintBytes(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)),
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+  };
   await page.route("https://esm.sh/@supabase/supabase-js@2.57.4", (route) =>
     route.fulfill({
       contentType: "text/javascript",
       body: `export function createClient(){return {
     auth:{getUser:async()=>({data:{user:{id:'owner'}}}),getSession:async()=>({data:{session:{access_token:'fixture-token'}}}),signOut:async()=>{}},
-    storage:{from:()=>({uploadToSignedUrl:async()=>({error:null})})},
     from:()=>{const q={select:()=>q,is:()=>q,eq:()=>q,order:()=>q,limit:()=>q,maybeSingle:async()=>({data:{user_id:'owner'}}),then:done=>done({data:[]})};return q;},rpc:async()=>({data:null})
   }}`,
     }),
   );
   await page.route("http://127.0.0.1:4179/**", (route) => route.abort());
-  const calls = [];
+  const calls = [],
+    providerRequests = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).hostname.endsWith("gelatoapis.com"))
+      providerRequests.push(request.url());
+  });
   await page.route("**/functions/v1/print-api", (route) => {
     const body = route.request().postDataJSON();
     calls.push(body);
-    if (body.action === "admin_upload")
+    if (body.action === "admin_source")
       return route.fulfill({
         json: {
           path: `gelato/${body.productId}/11111111-1111-4111-8111-111111111111.png`,
-          token: "upload",
+          facts,
+          previewUrl: "http://127.0.0.1:8020/assets/art-fantasy.png",
         },
       });
     if (body.action === "admin_save") return route.fulfill({ json: { saved: true } });
     return route.fulfill({ json: { products: [], orders: [] } });
   });
-  const gelatoRequests = [];
-  page.on("request", (request) => {
-    if (new URL(request.url()).hostname.endsWith("gelatoapis.com"))
-      gelatoRequests.push(request.url());
-  });
   await page.goto("/admin.html#images-view");
-  await page.locator("[data-admin-view=images-view]").click();
+  await expect(page.locator("#art-form [name=artist]")).toHaveValue("LWVader");
+  await expect(page.locator("#art-form [name=price]")).toHaveCount(0);
   await expect(page.locator("#images-view #gelato-product-form")).toHaveCount(0);
   await page.getByRole("button", { name: "Gelato", exact: true }).click();
-  await expect(page).toHaveURL(/#gelato-view$/);
-  await expect(page.locator("#view-heading")).toHaveText("Gelato");
-  const form = page.locator("#gelato-view #gelato-product-form");
-  await form.locator("[name=edition_tier]").selectOption("Gold");
-  await expect(form.locator("[name=width]")).toHaveValue("16");
-  await expect(form.locator("[name=height]")).toHaveValue("16");
-  await expect(form.locator("[name=price]")).toHaveValue("55");
-  await form.locator("[name=product_uid]").fill("old_uid");
-  await form.locator("[name=edition_tier]").selectOption("Prismatic");
-  await expect(form.locator("[name=height]")).toHaveValue("20");
-  await expect(form.locator("[name=price]")).toHaveValue("");
-  await expect(form.locator("[name=product_uid]")).toHaveValue("");
-  await expect(page.locator("#gelato-tier-hint")).toContainText("no free claim");
-  await page.locator("#gelato-new").click();
-  await form.locator("[name=title]").fill("Canvas preflight fixture");
-  await form.locator("[name=variant_label]").fill("2 × 2 inch test area");
+  const form = page.locator("#gelato-product-form");
+  await expect(
+    form.locator("[data-preflight-review], [name=price], [name=active], [name=print_ready]"),
+  ).toHaveCount(0);
+  await form.getByText("Shared artwork ID", { exact: true }).click();
+  await form.locator("[name=edition_artwork_id]").fill("1");
+  await form.locator("[name=edition_tier]").selectOption("Standard");
+  await expect(page.locator("#gelato-source-status")).toContainText("Same file and SHA-256");
+  await expect(page.locator("#gelato-check-image")).toBeVisible();
+  await form.locator("[name=title]").fill("Shared source canvas");
   await form.locator("[name=product_uid]").fill("canvas_fixture_uid");
-  await form.locator("[name=price]").fill("30");
   await form.getByText("Listing details & tax", { exact: true }).click();
   await form.locator("[name=stripe_tax_code]").fill("txcd_99999999");
   await form
@@ -77,37 +72,29 @@ test("owner checks actual artwork, invalidates stale checks, and saves bound pro
   await form
     .locator("[name=templateUrl]")
     .fill("https://dashboard.gelato.com/catalogue/categories");
-  await form.locator("[name=width]").fill("2");
-  await form.locator("[name=height]").fill("2");
-  await form
-    .locator("[name=printFile]")
-    .setInputFiles({ name: "private.png", mimeType: "image/png", buffer: png });
-  await page.locator("#gelato-safe-check").click();
-  await expect(page.locator("#gelato-preflight-result")).toContainText("300.0 effective PPI");
-  await expect(page.locator("#gelato-preflight-result")).toHaveAttribute("data-state", "blocked");
-  expect(calls).toEqual([]);
-  expect(gelatoRequests).toEqual([]);
-  for (const check of await form.locator("[data-preflight-review]").all()) await check.check();
-  await page.locator("#gelato-safe-check").click();
-  await expect(page.locator("#gelato-preflight-result")).toHaveAttribute("data-state", "ready");
-  await page.locator("#gelato-preview-zoom").selectOption("2");
-  await expect(page.locator("#gelato-preflight-result")).toHaveAttribute("data-state", "ready");
-  await form.locator("[name=width]").fill("3");
-  await expect(page.locator("#gelato-preflight-result")).toHaveAttribute("data-state", "stale");
-  await page.locator("#gelato-safe-check").click();
+  await form.locator("[name=width]").fill("17");
+  await form.getByRole("button", { name: "Publish product", exact: true }).click();
   await expect(page.locator("#gelato-preflight-result")).toContainText("aspect ratio");
-  await form.locator("[name=width]").fill("2");
-  for (const check of await form.locator("[data-preflight-review]").all()) await check.check();
-  await page.locator("#gelato-safe-check").click();
-  await expect(page.locator("#gelato-preflight-result")).toHaveAttribute("data-state", "ready");
-  await form.locator("[name=print_ready]").check();
-  await form.locator("[name=active]").check();
-  await form.getByRole("button", { name: "Save product" }).click();
-  await expect(page.locator("#gelato-admin-status")).toContainText("Product mapping saved");
-  const saved = calls.find((c) => c.action === "admin_save").product;
-  expect(saved.preflight_hash).toMatch(/^[a-f0-9]{64}$/);
-  expect(saved.print_specs.width).toBe(2);
-  expect(saved.preflight_reviews.edges).toBe(true);
-  expect(saved.active).toBe(true);
-  expect(gelatoRequests).toEqual([]);
+  expect(calls.some((c) => c.action === "admin_save")).toBe(false);
+  await form.locator("[name=width]").fill("16");
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await form.getByRole("button", { name: "Publish product", exact: true }).click();
+  await expect(page.locator("#gelato-admin-status")).toContainText("Publishing cancelled");
+  expect(calls.some((c) => c.action === "admin_save")).toBe(false);
+  page.once("dialog", (dialog) => dialog.accept());
+  await form.getByRole("button", { name: "Publish product", exact: true }).click();
+  await expect(page.locator("#gelato-admin-status")).toContainText("Product published");
+  const product = calls.find((c) => c.action === "admin_save").product;
+  expect(product).toMatchObject({
+    edition_artwork_id: 1,
+    edition_tier: "Standard",
+    preflight_hash: facts.sha256,
+    active: true,
+    publish_confirmed: true,
+    use_tier_source: true,
+  });
+  expect(product).not.toHaveProperty("retail_cents");
+  expect(product).not.toHaveProperty("preflight_reviews");
+  expect(calls.some((c) => c.action === "admin_upload")).toBe(false);
+  expect(providerRequests).toEqual([]);
 });

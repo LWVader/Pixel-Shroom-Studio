@@ -1,29 +1,76 @@
-import { createPrintPreflight } from "./print-preflight-ui.js?v=20261022-loop";
+import { createPrintPreflight } from "./print-preflight-ui.js?v=20261024-one-upload";
 import { supabase, invoke } from "./supabase-client.js";
 import { escapeHtml } from "./catalog-core.js?v=20261022-loop";
-const form = document.querySelector("#gelato-product-form"),
-  status = document.querySelector("#gelato-admin-status"),
-  list = document.querySelector("#gelato-admin-list"),
-  orders = document.querySelector("#gelato-admin-orders");
+const form = document.querySelector("#gelato-product-form");
+const status = document.querySelector("#gelato-admin-status");
+const list = document.querySelector("#gelato-admin-list");
+const orders = document.querySelector("#gelato-admin-orders");
+const picker = document.querySelector("#gelato-artwork-picker");
+const sourceStatus = document.querySelector("#gelato-source-status");
+const suggestions = {
+  Standard: [16, 16, "Slim canvas, unframed"],
+  Silver: [16, 16, "Slim canvas, unframed"],
+  Gold: [16, 16, "Thick canvas, unframed"],
+  Emerald: [16, 20, "Black wood floater frame, portrait"],
+  Sapphire: [16, 20, "Dark wood floater frame, portrait"],
+  Prismatic: [16, 20, "Natural wood floater frame, portrait"],
+};
 let currentId = crypto.randomUUID(),
   currentPath = "",
   products = [],
-  artworks = [];
-const picker = document.querySelector("#gelato-artwork-picker");
-const tierHint = document.querySelector("#gelato-tier-hint");
-const tierSuggestions = {
-  Standard: [16, 16, "Slim canvas, unframed", 49],
-  Silver: [16, 16, "Slim canvas, unframed", 49],
-  Gold: [16, 16, "Thick canvas, unframed", 55],
-  Emerald: [16, 20, "Black wood floater frame, portrait", 79],
-  Sapphire: [16, 20, "Dark wood floater frame, portrait", 79],
-  Prismatic: [16, 20, "Natural wood floater frame, portrait", null],
-};
+  artworks = [],
+  sourceRevision = 0,
+  linkedSource = false;
+async function call(body) {
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) throw Error("Sign in as the studio owner.");
+  return invoke("print-api", body, data.session.access_token);
+}
+const preflight = createPrintPreflight(
+  form,
+  async () => (await call({ action: "admin_inspect", productId: currentId })).facts,
+);
 function showTierHint() {
-  const suggestion = tierSuggestions[form.elements.edition_tier.value];
-  tierHint.textContent = suggestion
-    ? `${suggestion[0]} × ${suggestion[1]} in · ${suggestion[2]}. Confirm the exact UID, bleed and wrap in Gelato.${suggestion[3] === null ? " Set a paid print price; no free claim is configured." : " Suggested later-print price: $" + suggestion[3] + "."}`
-    : "Standalone product: enter its size, finish and price.";
+  const selected = suggestions[form.elements.edition_tier.value];
+  document.querySelector("#gelato-tier-hint").textContent = selected
+    ? `${selected[0]} × ${selected[1]} in · ${selected[2]}. Confirm the matching Gelato UID and template. Roll pricing is set centrally.`
+    : "Select the tier and its canvas or frame. Roll pricing is set centrally.";
+}
+function reset() {
+  sourceRevision++;
+  form.reset();
+  preflight.reset();
+  currentId = crypto.randomUUID();
+  currentPath = "";
+  linkedSource = false;
+  picker.value = "";
+  showTierHint();
+  sourceStatus.textContent = "Choose artwork and tier to load the same uploaded image.";
+  status.textContent = "Choose artwork, tier and Gelato product. Then check and publish.";
+}
+async function loadSource() {
+  const revision = ++sourceRevision;
+  currentPath = "";
+  linkedSource = false;
+  preflight.reset();
+  const artworkId = Number(form.elements.edition_artwork_id.value);
+  const tier = form.elements.edition_tier.value;
+  if (!artworkId || !tier) {
+    sourceStatus.textContent = "Select both artwork and tier first.";
+    return;
+  }
+  sourceStatus.textContent = "Loading the saved tier image…";
+  try {
+    const source = await call({ action: "admin_source", productId: currentId, artworkId, tier });
+    if (revision !== sourceRevision) return;
+    currentPath = source.path;
+    linkedSource = true;
+    preflight.useStoredSource(source.facts, source.previewUrl);
+    sourceStatus.textContent = `Artwork #${artworkId} · ${tier} · ${source.facts.width} × ${source.facts.height} px. Same file and SHA-256 as the uploaded tier image.`;
+  } catch (error) {
+    if (revision === sourceRevision)
+      sourceStatus.textContent = "Cannot load image: " + error.message;
+  }
 }
 picker.onchange = () => {
   const artwork = artworks.find((item) => String(item.id) === picker.value);
@@ -32,29 +79,28 @@ picker.onchange = () => {
     form.elements.title.value = artwork.title;
     form.elements.preview_url.value = artwork.preview_url || "";
   }
-  form.elements.width.dispatchEvent(new Event("input", { bubbles: true }));
+  loadSource();
 };
+form.elements.edition_artwork_id.addEventListener("change", () => {
+  picker.value = form.elements.edition_artwork_id.value;
+  loadSource();
+});
 form.elements.edition_tier.addEventListener("change", () => {
-  const suggestion = tierSuggestions[form.elements.edition_tier.value];
-  if (suggestion) {
-    const [width, height, finish, price] = suggestion;
+  const selected = suggestions[form.elements.edition_tier.value];
+  if (selected) {
+    const [width, height, finish] = selected;
     form.elements.kind.value = "canvas";
     form.elements.width.value = width;
     form.elements.height.value = height;
     form.elements.variant_label.value = `${width} × ${height} in · ${finish}`;
-    form.elements.price.value = price ?? "";
-    // A changed tier must never retain approval or the previous product's UID.
-    form.elements.product_uid.value = "";
-    form.elements.templateUrl.value = "";
   }
-  form.elements.width.dispatchEvent(new Event("input", { bubbles: true }));
+  form.elements.product_uid.value = "";
+  form.elements.templateUrl.value = "";
   showTierHint();
+  loadSource();
 });
-form.elements.edition_artwork_id.addEventListener("input", () => {
-  picker.value = form.elements.edition_artwork_id.value;
-  form.elements.width.dispatchEvent(new Event("input", { bubbles: true }));
-});
-// Reveal any required field inside a collapsed technical section on validation.
+document.querySelector("#gelato-use-tier-source").onclick = loadSource;
+document.querySelector("#gelato-new").onclick = reset;
 form.addEventListener(
   "invalid",
   (event) => {
@@ -66,41 +112,21 @@ form.addEventListener(
   },
   true,
 );
-const preflight = createPrintPreflight(
-  form,
-  async () => (await call({ action: "admin_inspect", productId: currentId })).facts,
-);
 document.querySelector("#gelato-safe-check").addEventListener("click", () => {
   const settings = form.querySelector(".print-preflight details");
-  if ([...settings.querySelectorAll("input, select")].some((input) => !input.checkValidity())) {
+  if ([...settings.querySelectorAll("input, select")].some((input) => !input.checkValidity()))
     settings.open = true;
-  }
 });
-async function call(body) {
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) throw Error("Sign in as the studio owner.");
-  return invoke("print-api", body, data.session.access_token);
-}
-function reset() {
-  form.reset();
-  preflight.reset();
-  currentId = crypto.randomUUID();
-  currentPath = "";
-  status.textContent = "New product: choose artwork and tier, then connect its Gelato product.";
-  picker.value = "";
-  showTierHint();
-}
-document.querySelector("#gelato-new").onclick = reset;
 async function refresh() {
   const data = await call({ action: "admin_list" });
   products = data.products || [];
-  const artworkResult = await supabase
+  const result = await supabase
     .from("artworks")
     .select("id,title,preview_url")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
-  if (!artworkResult.error) {
-    artworks = artworkResult.data || [];
+  if (!result.error) {
+    artworks = result.data || [];
     picker.innerHTML =
       '<option value="">Choose a studio artwork…</option>' +
       artworks
@@ -111,16 +137,16 @@ async function refresh() {
         .join("");
     picker.value = form.elements.edition_artwork_id.value;
   }
-  document.querySelector("#gelato-artwork-help").textContent = artworkResult.error
-    ? "Artwork list unavailable. You can enter its ID below; saved products and orders remain accessible."
-    : "Select artwork to fill its title and protected preview. Select a tier for size and price suggestions.";
+  document.querySelector("#gelato-artwork-help").textContent = result.error
+    ? "Artwork list unavailable. Enter the shared artwork ID below."
+    : "Artwork and tier select the same image uploaded in Images. No second upload.";
   list.innerHTML =
     products
       .map(
         (p) =>
-          `<p><strong>${escapeHtml(p.title)}</strong> · ${escapeHtml(p.variant_label)} · ${p.active ? "Published" : "Hidden"} <button type="button" data-gelato-edit="${escapeHtml(p.id)}">Edit mapping</button></p>`,
+          `<p><strong>${escapeHtml(p.title)}</strong> · ${escapeHtml(p.variant_label)} · ${p.active ? "Published" : "Hidden"} <button type="button" data-gelato-edit="${escapeHtml(p.id)}">Edit product</button></p>`,
       )
-      .join("") || "<p>No Gelato product mappings yet.</p>";
+      .join("") || "<p>No products yet.</p>";
   orders.innerHTML =
     (data.orders || [])
       .map(
@@ -133,12 +159,13 @@ document.querySelector("#gelato-refresh").onclick = () =>
   refresh().catch((error) => (status.textContent = error.message));
 list.onclick = (event) => {
   const edit = event.target.closest("[data-gelato-edit]");
-  if (!edit) return;
-  const p = products.find((p) => p.id === edit.dataset.gelatoEdit);
-  if (!p) return;
-  currentId = p.id;
-  currentPath = p.print_path;
+  const product = products.find((p) => p.id === edit?.dataset.gelatoEdit);
+  if (!product) return;
+  sourceRevision++;
   form.reset();
+  currentId = product.id;
+  currentPath = product.print_path;
+  linkedSource = false;
   for (const key of [
     "title",
     "kind",
@@ -146,18 +173,17 @@ list.onclick = (event) => {
     "product_uid",
     "preview_url",
     "stripe_tax_code",
+    "edition_artwork_id",
+    "edition_tier",
   ])
-    form.elements[key].value = p[key];
-  form.elements.edition_artwork_id.value = p.edition_artwork_id || "";
-  form.elements.edition_tier.value = p.edition_tier || "";
-  picker.value = p.edition_artwork_id || "";
+    form.elements[key].value = product[key] ?? "";
+  picker.value = product.edition_artwork_id || "";
+  preflight.reset(product.print_specs);
   showTierHint();
-  form.elements.price.value = (p.retail_cents / 100).toFixed(2);
-  form.elements.active.checked = p.active;
-  form.elements.print_ready.checked = p.print_ready;
-  preflight.reset(p.print_specs);
+  sourceStatus.textContent =
+    "Existing private print file retained. Load uploaded tier image to use the current matching tier source.";
   status.textContent =
-    "Editing mapping. Upload a new source to revise artwork; existing paid snapshots retain the previous file.";
+    "Editing product. Existing paid orders keep their saved file and product details.";
 };
 orders.onclick = async (event) => {
   const button = event.target.closest("[data-gelato-order]");
@@ -166,8 +192,7 @@ orders.onclick = async (event) => {
   try {
     await call({ action: "admin_reconcile", orderId: button.dataset.gelatoOrder });
     await refresh();
-    status.textContent =
-      "Order checked. An ambiguous submission is reconciled by reference, never blindly resubmitted.";
+    status.textContent = "Order checked by its existing reference. No duplicate order placed.";
   } catch (error) {
     status.textContent = error.message;
   } finally {
@@ -176,33 +201,30 @@ orders.onclick = async (event) => {
 };
 form.onsubmit = async (event) => {
   event.preventDefault();
-  if (!form.reportValidity()) return;
+  if (!form.reportValidity()) {
+    status.textContent = "Cannot publish: complete the required product and template fields.";
+    return;
+  }
   const button = form.querySelector("button[type=submit]");
   button.disabled = true;
   try {
+    if (!currentPath) throw Error("Load the uploaded tier image first.");
     if (
       Boolean(form.elements.edition_artwork_id.value) !== Boolean(form.elements.edition_tier.value)
+    )
+      throw Error("Select both artwork and tier.");
+    await preflight.check();
+    const check = preflight.submission(true);
+    const warningText = document.querySelector("#gelato-preflight-result").innerText;
+    if (
+      !window.confirm(
+        `Publish ${form.elements.title.value} — ${form.elements.edition_tier.value}?\n\n${warningText}\n\nTechnical checks do not certify visual quality or Gelato production approval. Confirm to publish, or Cancel to keep editing. Checkout still follows server launch settings.`,
+      )
     ) {
-      throw Error(
-        "Choose both an artwork and print tier for a Vault mapping, or leave both empty for a standalone product.",
-      );
+      status.textContent =
+        "Publishing cancelled. Nothing was published; your setup is still available to edit.";
+      return;
     }
-    const check = preflight.submission(form.elements.active.checked);
-    const file = form.elements.printFile.files[0];
-    if (file) {
-      const extension = { "image/png": "png", "image/jpeg": "jpg", "application/pdf": "pdf" }[
-        file.type
-      ];
-      if (!extension || file.size > 104857600)
-        throw Error("Use a print-ready PNG, JPEG or PDF up to 100 MB.");
-      const upload = await call({ action: "admin_upload", productId: currentId, extension });
-      const { error } = await supabase.storage
-        .from("gelato-print-files")
-        .uploadToSignedUrl(upload.path, upload.token, file, { contentType: file.type });
-      if (error) throw error;
-      currentPath = upload.path;
-    }
-    if (!currentPath) throw Error("Upload a dedicated print-ready file.");
     await call({
       action: "admin_save",
       product: {
@@ -219,16 +241,16 @@ form.onsubmit = async (event) => {
         stripe_tax_code: form.elements.stripe_tax_code.value,
         preview_url: form.elements.preview_url.value,
         print_path: currentPath,
-        retail_cents: Math.round(Number(form.elements.price.value) * 100),
-        active: form.elements.active.checked,
-        print_ready: form.elements.print_ready.checked,
+        use_tier_source: linkedSource,
+        active: true,
+        publish_confirmed: true,
       },
     });
     await refresh();
     status.textContent =
-      "Product mapping saved. Checkout still follows server environment and launch settings.";
+      "Product published. Roll prices and checkout launch settings remain centrally configured.";
   } catch (error) {
-    status.textContent = error.message;
+    status.textContent = "Cannot publish: " + error.message;
   } finally {
     button.disabled = false;
   }

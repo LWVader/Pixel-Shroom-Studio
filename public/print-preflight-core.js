@@ -1,13 +1,4 @@
 // Shared by the owner UI and Edge Function. No file is sent to Gelato by this checker.
-export const REVIEW_KEYS = [
-  "template",
-  "edges",
-  "safeArea",
-  "type",
-  "color",
-  "original",
-  "quality",
-];
 export const SIZE_PRESETS = {
   card: [5, 7],
   small: [8, 10],
@@ -102,7 +93,7 @@ export function normalizeSpecs(value = {}) {
   s.transparent = value.transparent === true;
   return s;
 }
-export function evaluatePrint(facts, input, reviews = {}) {
+export function evaluatePrint(facts, input) {
   const specs = normalizeSpecs(input),
     errors = [],
     warnings = [];
@@ -116,8 +107,9 @@ export function evaluatePrint(facts, input, reviews = {}) {
     warnings.push(
       "PDF dimensions, page count, embedded image PPI, fonts, output intent and PDF/X-4 compliance require external preflight. They are not measured here.",
     );
-    if (reviews.pdf !== true)
-      errors.push("Confirm an external PDF preflight against the exact single default print area.");
+    errors.push(
+      "PDF cannot be approved by the automatic checker. Use a print-ready PNG or JPEG for this workflow.",
+    );
   } else {
     dpi = Math.min(facts.width / widthIn, facts.height / heightIn);
     if (facts.width < minimum[0] || facts.height < minimum[1])
@@ -149,10 +141,9 @@ export function evaluatePrint(facts, input, reviews = {}) {
   }
   if (specs.safeMm * 2 >= Math.min(specs.width, specs.height) * 25.4)
     errors.push("Safe margin leaves no usable design area.");
-  for (const key of REVIEW_KEYS)
-    if (reviews[key] !== true) errors.push(`Complete manual review: ${key}.`);
+
   return {
-    version: 1,
+    version: 2,
     state: errors.length ? "blocked" : "ready",
     specs,
     target,
@@ -162,6 +153,6 @@ export function evaluatePrint(facts, input, reviews = {}) {
     dpi,
     errors,
     warnings,
-    assurance: "Local technical preflight and owner review; not Gelato production approval.",
+    assurance: "Automated technical checks only; not Gelato production approval.",
   };
 }

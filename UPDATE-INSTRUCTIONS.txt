@@ -1,49 +1,40 @@
-GELATO ADMIN TAB UPDATE
+SHARED ARTWORK / GELATO UPLOAD UPDATE
 
-1. Extract this ZIP into your project root, replacing the included files.
-2. From PowerShell in that project root, run:
-   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\cleanup-retired-products.ps1
-   This removes only the 14 retired source/test/guide files listed in DELETED-FILES.txt.
-3. Run npm.cmd ci
-4. Run npm.cmd run build
-5. Deploy using your normal Cloudflare deployment command (for example npx.cmd wrangler deploy).
-6. Open Admin, then Gelato. Hard-refresh if the old admin page was cached.
+Replace the included files in your project root.
 
-No new database migration, secret update or Edge Function deployment is needed.
-Two historical migration files have comment-only edits; their SQL statements and migration IDs are unchanged. Do not rerun them.
-Existing stored products, artwork, paid orders, accounts and payment paths are preserved.
-The old physical-product form was removed from Images and moved to Admin > Gelato.
-The Gelato storefront and print checkout remain the physical-product path.
+Deploy the updated private print API first:
+npx.cmd supabase functions deploy print-api --project-ref decizwtgsqhjdgjiqbui
 
-Validation: 79 unit/integration tests passed; syntax checks, physical storefront checks, production build and admin tab/form structure checks passed. Playwright discovers all 118 browser tests, but browser execution was unavailable because the browser binary download failed in this environment.
+Then rebuild/deploy your storefront:
+npm.cmd run build
+npx.cmd wrangler deploy
 
-FILES TO REPLACE / ADD
-docs/ARTIST-STATEMENT-UPDATE.md
-docs/BUY-OPENING-FLOW.md
-docs/CATALOG-RELAUNCH-AND-CARDS.md
-docs/FOIL-MINT-ENGINE.md
+Hard-refresh Admin after deployment. No migration, secret or dependency changes required.
+
+WORKFLOW
+1. Images: upload/save six finished tier images once. Artist defaults to LWVader; no per-artwork pricing.
+2. Gelato: refresh, select the same artwork and tier. Its saved private PNG/JPEG automatically loads with a private preview and the same SHA-256. No second browser upload.
+3. Enter the Gelato Product UID and canvas/frame specifications. The UID identifies the physical product, while the shared artwork ID and tier identify the image.
+4. Publish product runs the technical check, displays results/warnings and asks for Confirm/Cancel. Cancel leaves the setup editable without publishing. Errors explain why publication is denied.
+
+No manual review checklist or readiness/publication checkboxes remain.
+Digital and canvas roll prices remain centrally configured. Existing later-print prices, published products and paid-order snapshots are preserved. New later-print defaults remain separate from roll prices; no free promotions are enabled.
+Shared print sources must be PNG/JPEG, correctly sized and composed for their product. PDF/WebP are not automatically approved or converted. No crop, stretch, upscaling, visual-quality certification or Gelato production approval is claimed.
+
+VERIFICATION
+81 unit/integration tests passed; syntax checks, formatting, build and structural form checks passed.
+Updated desktop/mobile browser regression covers shared sources, automatic blockers, cancel/confirm, no duplicate upload, no checklist, artist default and no price input. Browser launch was blocked by the missing Chromium executable in this environment.
+
+UPDATED FILES
 docs/GELATO-INTEGRATION.md
-docs/HOMEPAGE-BUYER-UPDATE.md
-docs/LOCAL-DEMO.md
-docs/MINIFIED-DEPLOYMENT.md
-docs/MODAL-SETUP.md
-docs/PAID-REVEAL-PROFILE-UPDATE.md
-docs/SECONDARY-MARKETPLACE.md
-docs/SITE-LANGUAGE-UPDATE.md
-package-lock.json
-package.json
 public/admin.html
 public/admin.js
 public/gelato-admin.js
-public/print-store.css
-supabase/migrations/202610090001_physical_print_orders.sql
-supabase/migrations/202610100001_retire_physical_checkout.sql
-tests/e2e/gelato.spec.js
+public/print-preflight-core.js
+public/print-preflight-ui.js
+supabase/functions/_shared/print-preflight.ts
+supabase/functions/print-api/index.ts
 tests/e2e/print-preflight.spec.js
-tests/e2e/studio-update.spec.js
-tests/local-server.mjs
-tests/unit/physical-history.test.js
-tests/unit/studio-update.test.js
-tools/check-print-pages.mjs
-vitest.config.js
-worker.mjs
+tests/unit/print-preflight.test.js
+supabase/functions/_shared/gelato-admin-source.ts
+tests/unit/gelato-admin-source.test.js

@@ -415,7 +415,7 @@ async function loadItems() {
       <img class="admin-thumb" src="${clean(item.preview_url)}" alt="${clean(item.title)} protected preview">
       <div>
         <strong>${clean(item.title)}</strong>
-        <small>${clean(item.artist)} · ${clean(item.category)} · $${Number(item.price).toFixed(2)}</small>
+        <small>${clean(item.artist)} · ${clean(item.category)}</small>
         <small>${clean(item.serial_number)} · ${item.display_width} × ${item.display_height}px · ${clean(item.status)}</small>
         <small>Private original: ${item.original_path ? "stored securely" : "not stored"}</small>
         <small>Authenticity: ${item.signature_record ? "SHA-256 + P-256 signature registered" : "not registered"}</small>
@@ -717,6 +717,7 @@ function resetArtworkForm() {
   const savedSigningToken = sessionStorage.getItem("pixelShroomSigningToken") || "";
   editingArtworkId = null;
   artForm.reset();
+  artForm.elements.artist.value = "LWVader";
   for (const name of [
     "foilSupply",
     "foilSilver",
@@ -829,7 +830,10 @@ artForm.addEventListener("submit", async (event) => {
       artist: values.get("artist").trim(),
       serial_number: values.get("serialNumber").trim().toUpperCase(),
       category: values.get("category"),
-      price: Number(values.get("price")),
+      price:
+        editingArtworkId === null
+          ? 8
+          : (items.find((item) => item.id === editingArtworkId)?.price ?? 8),
       display_width: files.width,
       display_height: files.height,
       original_width: files.originalWidth,
@@ -957,10 +961,9 @@ adminCatalog.addEventListener("click", async (event) => {
       editionDisclosure(displayedFoilSettings);
     const values = {
       title: item.title,
-      artist: item.artist,
+      artist: item.artist || "LWVader",
       category: item.category,
       serialNumber: item.serial_number,
-      price: item.price,
       displayWidth: item.display_width,
       displayHeight: item.display_height,
     };

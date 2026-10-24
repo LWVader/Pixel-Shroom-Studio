@@ -23,8 +23,8 @@ export async function validatePrintMapping(db: any, product: any) {
     throw Error("File contents do not match the uploaded format.");
   if (!product.preflight_hash || facts.sha256 !== product.preflight_hash)
     throw Error("Run Safe check on this exact file before saving. The file has changed.");
-  const report = evaluatePrint(facts, product.print_specs, product.preflight_reviews || {});
-  if (product.active && (report.state !== "ready" || product.print_ready !== true))
-    throw Error("Complete Safe check and every review before publishing this product.");
+  const report = evaluatePrint(facts, product.print_specs);
+  if (product.active && (report.state !== "ready" || product.publish_confirmed !== true))
+    throw Error("Cannot publish: technical checks must pass and publishing must be confirmed.");
   return { facts, report };
 }
