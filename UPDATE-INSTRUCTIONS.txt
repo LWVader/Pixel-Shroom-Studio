@@ -1,40 +1,44 @@
-SHARED ARTWORK / GELATO UPLOAD UPDATE
+ADMIN IMAGE LOADING / POSITIONING EDITOR UPDATE
 
-Replace the included files in your project root.
+Extract this ZIP into the project root and replace/add all included files.
 
 Deploy the updated private print API first:
 npx.cmd supabase functions deploy print-api --project-ref decizwtgsqhjdgjiqbui
 
-Then rebuild/deploy your storefront:
+Build and deploy the storefront:
 npm.cmd run build
 npx.cmd wrangler deploy
 
-Hard-refresh Admin after deployment. No migration, secret or dependency changes required.
+Hard-refresh Admin after deployment. No migration, secret, or dependency changes required.
 
-WORKFLOW
-1. Images: upload/save six finished tier images once. Artist defaults to LWVader; no per-artwork pricing.
-2. Gelato: refresh, select the same artwork and tier. Its saved private PNG/JPEG automatically loads with a private preview and the same SHA-256. No second browser upload.
-3. Enter the Gelato Product UID and canvas/frame specifications. The UID identifies the physical product, while the shared artwork ID and tier identify the image.
-4. Publish product runs the technical check, displays results/warnings and asks for Confirm/Cancel. Cancel leaves the setup editable without publishing. Errors explain why publication is denied.
+ADMIN WORKFLOW
+Images: native computer file browsing, compact full-width tier settings, a six-card upload grid and local preview thumbnails. The LWVader default, fixed roll pricing, six-tier requirement, signing and private source workflow are preserved.
 
-No manual review checklist or readiness/publication checkboxes remain.
-Digital and canvas roll prices remain centrally configured. Existing later-print prices, published products and paid-order snapshots are preserved. New later-print defaults remain separate from roll prices; no free promotions are enabled.
-Shared print sources must be PNG/JPEG, correctly sized and composed for their product. PDF/WebP are not automatically approved or converted. No crop, stretch, upscaling, visual-quality certification or Gelato production approval is claimed.
+Gelato: Browse site artwork opens a thumbnail picker. Choose from computer opens the native file chooser. Select the artwork/tier, then drag, resize, zoom or use sliders to position the image. Arrow keys and +/- work on the focused positioning canvas. Only 16x16 unframed and 16x20 portrait framed formats are loaded, mapped to the promised tiers.
+
+Preview canvas opens angled, front and wall views, styled after the supplied recording. These are studio mockups, not official Gelato photography. Exact finish and product template still come from the chosen Product UID.
+
+Save image position generates the actual private positioned print PNG and a protected 720px preview; it automatically fills the print path, preview URL, dimensions and print-file hash. Source identity and position metadata are retained. The source tier file and issued digital editions remain unchanged. Editing the position or print-area settings requires saving again.
+
+Product UID, tax code and template settings are reused when a compatible saved tier mapping exists. Unknown values are not guessed. Enter exact product-specific bleed/wrap if not already configured. Roll prices and existing later-print prices are unchanged.
+
+Publish product runs the technical check and asks for Confirm/Cancel. The server re-reads the source and print files, checks hashes and verifies actual cropped source resolution. Low-resolution crops cannot pass by enlarging the export. No image or order is sent to Gelato while preparing, previewing or saving a position.
 
 VERIFICATION
-81 unit/integration tests passed; syntax checks, formatting, build and structural form checks passed.
-Updated desktop/mobile browser regression covers shared sources, automatic blockers, cancel/confirm, no duplicate upload, no checklist, artist default and no price input. Browser launch was blocked by the missing Chromium executable in this environment.
+84 unit/integration tests passed. Production build and syntax checks passed. Targeted desktop/mobile browser checks passed for the editor, actual computer chooser, site artwork browser, automatic field filling, product preview, confirm/cancel publication, crop quality guards, six-tier private uploads and responsive layout. Visual previews were inspected locally; screenshots are not included in this update.
 
-UPDATED FILES
+FILES TO ADD / REPLACE
 docs/GELATO-INTEGRATION.md
+public/admin-image-editor.css
+public/admin-upload-previews.js
 public/admin.html
-public/admin.js
 public/gelato-admin.js
+public/print-position-core.js
+public/print-positioner.js
 public/print-preflight-core.js
 public/print-preflight-ui.js
 supabase/functions/_shared/print-preflight.ts
 supabase/functions/print-api/index.ts
 tests/e2e/print-preflight.spec.js
-tests/unit/print-preflight.test.js
-supabase/functions/_shared/gelato-admin-source.ts
-tests/unit/gelato-admin-source.test.js
+tests/e2e/tiers.spec.js
+tests/unit/print-position.test.js

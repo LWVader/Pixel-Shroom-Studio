@@ -1,0 +1,332 @@
+/* Compact upload grid; scoped to owner tools so storefront styling stays intact. */
+#art-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+#art-form > .wide {
+  grid-column: 1 / -1;
+}
+#art-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--admin-line, var(--line));
+  border-radius: 10px;
+}
+.artwork-supply-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+#tier-image-uploads {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+#tier-image-uploads > h3,
+#tier-image-uploads > p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.artwork-tier-card {
+  border: 1px solid var(--admin-line, var(--line));
+  border-radius: 8px;
+  padding: 10px;
+  min-width: 0;
+}
+.artwork-tier-card p {
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+#art-form input[type="file"] {
+  max-width: 100%;
+  font-size: 12px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+.admin-local-image-preview {
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
+  margin-top: 10px;
+  border-radius: 6px;
+  background: #06110c;
+}
+.admin-local-image-preview[hidden] {
+  display: none;
+}
+#gelato-product-form {
+  display: block;
+}
+.gelato-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.5fr);
+  gap: 18px;
+  align-items: start;
+}
+.gelato-editor-sidebar {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.gelato-editor-sidebar .print-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+.gelato-position-panel {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--admin-line, var(--line));
+  border-radius: 12px;
+  background: var(--surface);
+}
+.gelato-position-panel h3 {
+  margin: 0;
+}
+.gelato-position-panel p,
+.gelato-editor-sidebar p {
+  font-size: 13px;
+}
+.gelato-position-stage {
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: #e8eae8;
+  border-radius: 8px;
+  min-height: 300px;
+}
+#gelato-position-canvas {
+  max-width: 100%;
+  max-height: 58vh;
+  width: auto;
+  height: auto;
+  cursor: grab;
+  touch-action: none;
+  box-shadow: 0 2px 12px #0003;
+}
+#gelato-position-canvas:active {
+  cursor: grabbing;
+}
+.gelato-position-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-block: 14px;
+  font-size: 12px;
+}
+.gelato-position-controls input {
+  padding: 0;
+  accent-color: var(--accent, #438963);
+}
+#gelato-position-readout,
+#gelato-position-status {
+  overflow-wrap: anywhere;
+}
+#gelato-product-form > .print-preflight {
+  margin-block: 18px;
+}
+#gelato-file-preview.gelato-inspector-preview {
+  display: none;
+}
+.gelato-computer-file {
+  border: 1px dashed var(--line);
+  padding: 12px;
+  border-radius: 8px;
+}
+.gelato-editor-dialog {
+  width: min(1000px, calc(100vw - 36px));
+  max-height: 90dvh;
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--surface);
+}
+.gelato-editor-dialog::backdrop {
+  background: #000a;
+}
+.gelato-editor-dialog header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+.gelato-site-art-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.gelato-site-art-list button {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+}
+.gelato-site-art-list img {
+  width: 100%;
+  height: 140px;
+  object-fit: contain;
+}
+#gelato-preview-scene {
+  min-height: min(58vh, 520px);
+  display: grid;
+  place-items: center;
+  background: #f5f5f4;
+  overflow: hidden;
+  padding: 32px;
+  margin-block: 16px;
+  perspective: 1000px;
+}
+.gelato-mockup {
+  position: relative;
+  width: min(70%, 360px);
+  transform: rotateY(-20deg) rotateX(3deg);
+  box-shadow: 14px 18px 16px #0003;
+  border: 0 solid #242424;
+  border-right: 9px solid #45413b;
+  transition: transform 200ms;
+}
+.gelato-mockup img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.gelato-mockup[data-tier="Gold"] {
+  border-right-width: 16px;
+}
+.gelato-mockup[data-tier="Emerald"] {
+  border: 12px solid #242424;
+}
+.gelato-mockup[data-tier="Sapphire"] {
+  border: 12px solid #503323;
+}
+.gelato-mockup[data-tier="Prismatic"] {
+  border: 12px solid #c1a67d;
+}
+#gelato-preview-scene[data-view="front"] .gelato-mockup,
+#gelato-preview-scene[data-view="wall"] .gelato-mockup {
+  transform: none;
+}
+#gelato-preview-scene[data-view="wall"] {
+  background: linear-gradient(#e5e0d5 0 88%, #9f8a70 88% 90%, #b4a28c 90%);
+}
+#gelato-preview-scene[data-view="wall"] .gelato-mockup {
+  width: min(43%, 260px);
+}
+@media (max-width: 1000px) {
+  .gelato-editor-layout {
+    grid-template-columns: 1fr;
+  }
+  .artwork-supply-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  #art-form {
+    grid-template-columns: 1fr;
+  }
+  #tier-image-uploads {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gelato-position-stage {
+    padding: 16px;
+    min-height: 220px;
+  }
+  .gelato-position-controls {
+    grid-template-columns: 1fr;
+  }
+  .gelato-site-art-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Use the existing cream/green owner palette with readable controls. */
+.gelato-position-panel,
+.gelato-editor-dialog {
+  background: var(--admin-paper);
+  color: var(--admin-ink-soft);
+}
+.gelato-position-panel h3,
+.gelato-editor-dialog h2 {
+  color: var(--admin-ink);
+}
+.gelato-editor-sidebar {
+  font-size: 14px;
+}
+.gelato-editor-sidebar p {
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 4px 0;
+}
+.gelato-editor-sidebar .gelato-step {
+  padding: 12px;
+}
+.gelato-editor-sidebar legend {
+  font-size: 1rem;
+}
+#gelato-view .print-form input,
+#gelato-view .print-form select {
+  background: var(--admin-paper);
+  color: var(--admin-ink-soft);
+  border-color: var(--admin-line);
+  padding: 8px;
+}
+#gelato-view button,
+.gelato-editor-dialog button {
+  border: 1px solid var(--admin-line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: var(--admin-ink);
+  color: var(--admin-paper);
+  font: inherit;
+  cursor: pointer;
+}
+#gelato-view #gelato-save-position,
+#gelato-view button[type="submit"] {
+  background: var(--admin-gold);
+  color: #173b2e;
+}
+#gelato-view button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+#gelato-source-status {
+  overflow-wrap: anywhere;
+}
+#gelato-view input[type="file"]::file-selector-button,
+#art-form input[type="file"]::file-selector-button {
+  padding: 7px 10px;
+  margin-right: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--admin-gold);
+  color: #173b2e;
+  font: inherit;
+  cursor: pointer;
+}
+@media (min-width: 1001px) {
+  .gelato-position-panel {
+    position: sticky;
+    top: 104px;
+  }
+}
+.gelato-position-panel {
+  position: static;
+}
+#gelato-product-form > .gelato-product-settings {
+  margin-top: 18px;
+}
+.gelato-product-settings > .print-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 700px) {
+  .gelato-product-settings > .print-form {
+    grid-template-columns: 1fr;
+  }
+}
+#art-form input[type="checkbox"] {
+  display: inline-block;
+  width: auto;
+  margin: 0 6px 0 0;
+}

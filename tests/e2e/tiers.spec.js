@@ -147,6 +147,8 @@ test("admin uploads finished images privately and registers six source mappings"
   await page.locator("#save-button").click();
   await expect(page.locator("#form-message")).toContainText("all six tiers");
   await page.locator('[name="tierImageStandard"]').setInputFiles("public/assets/art-fantasy.png");
+  await expect(page.locator('[data-image-for="tierImageStandard"]')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole("button", { name: "Save private draft" }).click();
   await expect.poll(() => page.evaluate(() => globalThis.assetRecords.length)).toBe(1);
   expect(

@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/admin-dashboard.css?v=20261021-catalog-relaunch" />
     <link rel="stylesheet" href="/print-store.css?v=20261024-simple" />
     <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
+    <link rel="stylesheet" href="/admin-image-editor.css?v=20261024-editor" />
   </head>
   <body class="admin-page">
     <!-- SECTION: Administrator sign-in gate -->
@@ -248,66 +249,63 @@
                   Fixed roll prices: Digital $8 · Canvas + Digital $69, plus shipping and applicable
                   tax.
                 </p>
-                <fieldset>
+                <fieldset class="wide tier-settings">
+                  <div class="artwork-supply-grid">
+                    <label
+                      ><input type="checkbox" name="foilEnabled" /> Enable numbered foil
+                      minting</label
+                    ><label
+                      >Maximum supply<input
+                        name="foilSupply"
+                        type="number"
+                        min="1"
+                        max="100000"
+                        value="500"
+                        required="" /></label
+                    ><label
+                      >Silver cap<input
+                        name="foilSilver"
+                        type="number"
+                        min="0"
+                        max="100000"
+                        value="100"
+                        required="" /></label
+                    ><label
+                      >Gold cap<input
+                        name="foilGold"
+                        type="number"
+                        min="0"
+                        max="100000"
+                        value="50"
+                        required="" /></label
+                    ><label
+                      >Emerald cap<input
+                        name="foilEmerald"
+                        type="number"
+                        min="0"
+                        max="100000"
+                        value="30"
+                        required="" /></label
+                    ><label
+                      >Sapphire cap<input
+                        name="foilSapphire"
+                        type="number"
+                        min="0"
+                        max="100000"
+                        value="15"
+                        required="" /></label
+                    ><label
+                      >Prismatic cap<input
+                        name="foilPrismatic"
+                        type="number"
+                        min="0"
+                        max="100000"
+                        value="5"
+                        required=""
+                    /></label>
+                  </div>
                   <legend>Artwork tier images and numbered editions</legend>
-                  <label
-                    ><input type="checkbox" name="foilEnabled" /> Enable numbered foil
-                    minting</label
-                  >
-                  <label
-                    >Maximum supply<input
-                      name="foilSupply"
-                      type="number"
-                      min="1"
-                      max="100000"
-                      value="500"
-                      required=""
-                  /></label>
-                  <label
-                    >Silver cap<input
-                      name="foilSilver"
-                      type="number"
-                      min="0"
-                      max="100000"
-                      value="100"
-                      required=""
-                  /></label>
-                  <label
-                    >Gold cap<input
-                      name="foilGold"
-                      type="number"
-                      min="0"
-                      max="100000"
-                      value="50"
-                      required=""
-                  /></label>
-                  <label
-                    >Emerald cap<input
-                      name="foilEmerald"
-                      type="number"
-                      min="0"
-                      max="100000"
-                      value="30"
-                      required=""
-                  /></label>
-                  <label
-                    >Sapphire cap<input
-                      name="foilSapphire"
-                      type="number"
-                      min="0"
-                      max="100000"
-                      value="15"
-                      required=""
-                  /></label>
-                  <label
-                    >Prismatic cap<input
-                      name="foilPrismatic"
-                      type="number"
-                      min="0"
-                      max="100000"
-                      value="5"
-                      required=""
-                  /></label>
+
                   <div id="tier-image-uploads">
                     <h3>Finished images for each tier</h3>
                     <p>
@@ -317,58 +315,95 @@
                       image. All six are required before publishing. Each authorized copy receives
                       identity metadata and its own file hash before checkout opens.
                     </p>
-                    <label
-                      >Standard image<input
-                        type="file"
-                        name="tierImageStandard"
-                        accept="image/png,image/jpeg,image/webp"
-                        aria-describedby="tier-status-Standard"
-                    /></label>
-                    <p id="tier-status-Standard">No finished image uploaded</p>
-                    <label
-                      >Silver image<input
-                        type="file"
-                        name="tierImageSilver"
-                        accept="image/png,image/jpeg,image/webp"
-                        aria-describedby="tier-status-Silver"
-                    /></label>
-                    <p id="tier-status-Silver">No finished image uploaded</p>
-                    <label
-                      >Gold image<input
-                        type="file"
-                        name="tierImageGold"
-                        accept="image/png,image/jpeg,image/webp"
-                        aria-describedby="tier-status-Gold"
-                    /></label>
-                    <p id="tier-status-Gold">No finished image uploaded</p>
-                    <label
-                      >Emerald image<input
-                        type="file"
-                        name="tierImageEmerald"
-                        accept="image/png,image/jpeg,image/webp"
-                        aria-describedby="tier-status-Emerald"
-                    /></label>
-                    <p id="tier-status-Emerald">No finished image uploaded</p>
-                    <label
-                      >Sapphire image<input
-                        type="file"
-                        name="tierImageSapphire"
-                        accept="image/png,image/jpeg,image/webp"
-                        aria-describedby="tier-status-Sapphire"
-                    /></label>
-                    <p id="tier-status-Sapphire">No finished image uploaded</p>
-                    <label
-                      >Prismatic image<input
-                        type="file"
-                        name="tierImagePrismatic"
-                        accept="image/png,image/jpeg,image/webp"
-                        aria-describedby="tier-status-Prismatic"
-                    /></label>
-                    <p id="tier-status-Prismatic">No finished image uploaded</p>
+
                     <p>
                       Tier images lock after the first reservation. Use Save private draft for
                       incomplete uploads. Publishing requires all six images.
                     </p>
+                    <div class="artwork-tier-card">
+                      <label
+                        >Standard image<input
+                          type="file"
+                          name="tierImageStandard"
+                          accept="image/png,image/jpeg,image/webp"
+                          aria-describedby="tier-status-Standard" /><img
+                          class="admin-local-image-preview"
+                          data-image-for="tierImageStandard"
+                          alt="Selected image preview"
+                          hidden=""
+                      /></label>
+                      <p id="tier-status-Standard">No finished image uploaded</p>
+                    </div>
+                    <div class="artwork-tier-card">
+                      <label
+                        >Silver image<input
+                          type="file"
+                          name="tierImageSilver"
+                          accept="image/png,image/jpeg,image/webp"
+                          aria-describedby="tier-status-Silver" /><img
+                          class="admin-local-image-preview"
+                          data-image-for="tierImageSilver"
+                          alt="Selected image preview"
+                          hidden=""
+                      /></label>
+                      <p id="tier-status-Silver">No finished image uploaded</p>
+                    </div>
+                    <div class="artwork-tier-card">
+                      <label
+                        >Gold image<input
+                          type="file"
+                          name="tierImageGold"
+                          accept="image/png,image/jpeg,image/webp"
+                          aria-describedby="tier-status-Gold" /><img
+                          class="admin-local-image-preview"
+                          data-image-for="tierImageGold"
+                          alt="Selected image preview"
+                          hidden=""
+                      /></label>
+                      <p id="tier-status-Gold">No finished image uploaded</p>
+                    </div>
+                    <div class="artwork-tier-card">
+                      <label
+                        >Emerald image<input
+                          type="file"
+                          name="tierImageEmerald"
+                          accept="image/png,image/jpeg,image/webp"
+                          aria-describedby="tier-status-Emerald" /><img
+                          class="admin-local-image-preview"
+                          data-image-for="tierImageEmerald"
+                          alt="Selected image preview"
+                          hidden=""
+                      /></label>
+                      <p id="tier-status-Emerald">No finished image uploaded</p>
+                    </div>
+                    <div class="artwork-tier-card">
+                      <label
+                        >Sapphire image<input
+                          type="file"
+                          name="tierImageSapphire"
+                          accept="image/png,image/jpeg,image/webp"
+                          aria-describedby="tier-status-Sapphire" /><img
+                          class="admin-local-image-preview"
+                          data-image-for="tierImageSapphire"
+                          alt="Selected image preview"
+                          hidden=""
+                      /></label>
+                      <p id="tier-status-Sapphire">No finished image uploaded</p>
+                    </div>
+                    <div class="artwork-tier-card">
+                      <label
+                        >Prismatic image<input
+                          type="file"
+                          name="tierImagePrismatic"
+                          accept="image/png,image/jpeg,image/webp"
+                          aria-describedby="tier-status-Prismatic" /><img
+                          class="admin-local-image-preview"
+                          data-image-for="tierImagePrismatic"
+                          alt="Selected image preview"
+                          hidden=""
+                      /></label>
+                      <p id="tier-status-Prismatic">No finished image uploaded</p>
+                    </div>
                   </div>
                   <p>
                     Standard prepares up to maximum supply for downgrade capacity. Rare tiers
@@ -413,6 +448,11 @@
                     name="originalFile"
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
+                  /><img
+                    class="admin-local-image-preview"
+                    data-image-for="originalFile"
+                    alt="Selected image preview"
+                    hidden=""
                   /><small
                     >The local helper adds C2PA automatically. The browser fingerprints and signs
                     the resulting serialized original before private upload.</small
@@ -491,7 +531,7 @@
           </section>
 
           <!-- SECTION: Gelato product setup and physical orders -->
-          <section class="admin-view" id="gelato-view" data-title="Gelato" hidden>
+          <section class="admin-view" id="gelato-view" data-title="Gelato" hidden="">
             <div class="page-heading">
               <div>
                 <span class="eyebrow">PHYSICAL PRODUCTS</span>
@@ -503,10 +543,9 @@
               </div>
             </div>
             <section class="gelato-management">
-              <h2>Canvas &amp; print setup</h2>
               <p>
-                Use the artwork and tier images already uploaded in Images. Link each tier to its
-                Gelato canvas or frame; no second image upload is needed.
+                Select artwork, position the image, then publish its Gelato canvas mapping. US
+                shipping only.
               </p>
               <div class="gelato-toolbar">
                 <button type="button" id="gelato-refresh">Refresh products &amp; orders</button
@@ -515,42 +554,113 @@
               <p id="gelato-admin-status" role="status"></p>
               <div id="gelato-admin-list"></div>
               <form id="gelato-product-form" class="print-form">
-                <fieldset class="full gelato-step">
-                  <legend>1. Choose artwork &amp; tier</legend>
-                  <div class="print-form">
-                    <label class="full"
-                      >Artwork<select id="gelato-artwork-picker">
-                        <option value="">Choose a studio artwork…</option>
-                      </select></label
-                    >
-                    <p class="full" id="gelato-artwork-help">
-                      Use Refresh products &amp; orders to load your artwork list, or enter an
-                      artwork ID below.
-                    </p>
-                    <label
-                      >Print tier<select name="edition_tier" required>
-                        <option value="">Choose tier…</option>
-                        <option>Standard</option>
-                        <option>Silver</option>
-                        <option>Gold</option>
-                        <option>Emerald</option>
-                        <option>Sapphire</option>
-                        <option>Prismatic</option>
-                      </select></label
-                    >
-                    <details class="full gelato-details">
-                      <summary>Shared artwork ID</summary>
-                      <p>
-                        This is the same artwork ID used by Images, the Vault and printing. The
-                        Gelato Product UID identifies the canvas or frame, not the image.
-                      </p>
-                      <label
-                        >Artwork ID<input name="edition_artwork_id" type="number" min="1" step="1"
-                      /></label>
-                    </details>
+                <div class="gelato-editor-layout">
+                  <div class="gelato-editor-sidebar">
+                    <fieldset class="full gelato-step">
+                      <legend>1. Choose artwork &amp; tier</legend>
+                      <div class="print-form">
+                        <div class="gelato-source-actions">
+                          <button type="button" id="gelato-browse-site">Browse site artwork</button>
+                        </div>
+                        <label class="full"
+                          >Artwork<select id="gelato-artwork-picker">
+                            <option value="">Choose a studio artwork…</option>
+                          </select></label
+                        ><label class="gelato-computer-file"
+                          ><small>PNG/JPEG · up to 100 MB</small
+                          ><input type="file" name="printFile" accept="image/png,image/jpeg"
+                        /></label>
+                        <p class="full" id="gelato-artwork-help">
+                          Use saved site artwork or choose a PNG/JPEG from your computer.
+                        </p>
+                        <label
+                          >Print tier<select name="edition_tier" required="">
+                            <option value="">Choose tier…</option>
+                            <option>Standard</option>
+                            <option>Silver</option>
+                            <option>Gold</option>
+                            <option>Emerald</option>
+                            <option>Sapphire</option>
+                            <option>Prismatic</option>
+                          </select></label
+                        >
+                        <p id="gelato-source-status" role="status">
+                          Choose artwork and tier to load the same private source.
+                        </p>
+                        <button type="button" id="gelato-use-tier-source">
+                          Reload site tier image
+                        </button>
+                        <details class="full gelato-details">
+                          <summary>Shared artwork ID</summary>
+                          <p>
+                            Same artwork ID across Images, Vault and printing. Product UID
+                            identifies the canvas/frame.
+                          </p>
+                          <label
+                            >Artwork ID<input
+                              name="edition_artwork_id"
+                              type="number"
+                              min="1"
+                              step="1"
+                          /></label>
+                        </details>
+                      </div>
+                    </fieldset>
                   </div>
-                </fieldset>
-                <fieldset class="full gelato-step">
+                  <section class="gelato-position-panel" aria-labelledby="gelato-position-heading">
+                    <h3 id="gelato-position-heading">Position your artwork</h3>
+                    <p>
+                      Drag the image to position it. Drag a corner or use Zoom to resize. The yellow
+                      guide marks the safe area; the shaded edge is bleed/wrap.
+                    </p>
+                    <div class="gelato-position-stage">
+                      <canvas
+                        id="gelato-position-canvas"
+                        width="720"
+                        height="720"
+                        aria-label="Artwork positioning canvas"
+                        tabindex="0"
+                      ></canvas>
+                    </div>
+                    <div class="gelato-position-controls">
+                      <label
+                        >Zoom<input
+                          id="gelato-position-zoom"
+                          type="range"
+                          min="1"
+                          max="4"
+                          value="1"
+                          step="0.01" /></label
+                      ><label
+                        >Horizontal position<input
+                          id="gelato-position-x"
+                          type="range"
+                          min="-1"
+                          max="1"
+                          value="0"
+                          step="0.01" /></label
+                      ><label
+                        >Vertical position<input
+                          id="gelato-position-y"
+                          type="range"
+                          min="-1"
+                          max="1"
+                          value="0"
+                          step="0.01"
+                      /></label>
+                    </div>
+                    <p id="gelato-position-readout" role="status">Choose an image to begin.</p>
+                    <div class="gelato-toolbar">
+                      <button type="button" id="gelato-position-reset">Reset position</button
+                      ><button type="button" id="gelato-open-product-preview">Preview canvas</button
+                      ><button type="button" id="gelato-save-position">Save image position</button>
+                    </div>
+                    <p id="gelato-position-status" role="status">
+                      Save the image position before publishing.
+                    </p>
+                  </section>
+                </div>
+                <fieldset class="full gelato-step gelato-product-settings">
                   <legend>2. Connect the Gelato product</legend>
                   <div class="print-form">
                     <label
@@ -562,14 +672,12 @@
                       >Size &amp; finish<input name="variant_label" maxlength="160" required=""
                     /></label>
                     <p class="full">
-                      Find the exact size and finish in the
                       <a
                         href="https://dashboard.gelato.com/catalogue/categories"
                         target="_blank"
                         rel="noopener noreferrer"
-                        >Gelato catalog</a
-                      >. Copy its Product UID from below the description. Tier suggestions still
-                      need a matching UID.
+                        >Find the exact Product UID in Gelato’s catalog ↗</a
+                      >
                     </p>
                     <p class="full" id="gelato-tier-hint" role="status">
                       Choose a tier for its canvas size and finish. Roll prices are set centrally.
@@ -581,18 +689,18 @@
                         <label
                           >Category<select name="kind">
                             <option value="canvas">Canvas</option>
-                            <option value="apparel">Apparel / gifts</option>
                           </select></label
                         ><label
                           >Public studio preview URL<input
                             name="preview_url"
                             type="url"
-                            required="" /></label
+                            required=""
+                            readonly="" /></label
                         ><label
                           >Stripe product tax code<input
                             name="stripe_tax_code"
                             pattern="txcd_[0-9]{8}"
-                            required
+                            required=""
                         /></label>
                       </div>
                       <p>
@@ -602,39 +710,24 @@
                     </details>
                   </div>
                 </fieldset>
+
                 <fieldset class="full print-preflight">
-                  <legend>3. Preview &amp; check</legend>
+                  <legend>Product template settings &amp; technical check</legend>
                   <p>
                     The uploaded tier image is reused for printing. Check it against the product
                     template. No image or order is sent to Gelato during this check.
                   </p>
                   <p>Image source: the selected artwork’s uploaded tier file.</p>
-                  <button type="button" id="gelato-use-tier-source">
-                    Load uploaded tier image
-                  </button>
-                  <p id="gelato-source-status" role="status">
-                    Choose artwork and tier to load the same private source.
-                  </p>
-                  <input
-                    type="file"
-                    name="printFile"
-                    hidden
-                    disabled
-                    accept="image/png,image/jpeg"
-                  />
+
                   <details class="gelato-details">
                     <summary>Technical settings — confirm against the Gelato template</summary>
                     <div class="print-form">
                       <label class="full"
                         >Size starting point<select id="gelato-size-preset">
-                          <option value="">Custom / product template</option>
-                          <option value="card">5 × 7 in — card</option>
-                          <option value="small">8 × 10 in — print</option>
-                          <option value="medium">11 × 14 in — print</option>
-                          <option value="shirt">12 × 16 in — apparel area</option>
-                          <option value="poster">18 × 24 in — poster</option>
-                          <option value="large">24 × 36 in — poster</option>
-                          <option value="mug">8.5 × 3.5 in — approximate mug wrap</option>
+                          <option value="canvasSquare">16 × 16 in — unframed canvas</option>
+                          <option value="canvasPortrait">
+                            16 × 20 in — portrait framed canvas
+                          </option>
                         </select></label
                       >
                       <label class="full"
@@ -642,7 +735,8 @@
                           name="templateUrl"
                           type="url"
                           placeholder="https://dashboard.gelato.com/…"
-                          required
+                          required=""
+                          value="https://dashboard.gelato.com/catalogue/categories"
                       /></label>
                       <label
                         >Finished width / design area (in)<input
@@ -651,7 +745,9 @@
                           min="0.01"
                           max="200"
                           step="0.001"
-                          required
+                          required=""
+                          value="16"
+                          readonly=""
                       /></label>
                       <label
                         >Finished height / design area (in)<input
@@ -660,7 +756,9 @@
                           min="0.01"
                           max="200"
                           step="0.001"
-                          required
+                          required=""
+                          value="16"
+                          readonly=""
                       /></label>
                       <label
                         >Bleed per side (mm)<input
@@ -670,7 +768,7 @@
                           max="100"
                           step="0.1"
                           value="0"
-                          required
+                          required=""
                       /></label>
                       <label
                         >Additional canvas wrap per side (mm)<input
@@ -680,7 +778,7 @@
                           max="100"
                           step="0.1"
                           value="0"
-                          required
+                          required=""
                       /></label>
                       <label
                         >Safe margin inside trim (mm)<input
@@ -690,7 +788,7 @@
                           max="100"
                           step="0.1"
                           value="4"
-                          required
+                          required=""
                       /></label>
                       <label
                         >Product minimum PPI<select name="minimumDpi">
@@ -710,14 +808,18 @@
                       template takes precedence.
                     </p>
                   </details>
-                  <div class="preflight-preview" id="gelato-file-preview" hidden>
+                  <div
+                    class="preflight-preview gelato-inspector-preview"
+                    id="gelato-file-preview"
+                    hidden=""
+                  >
                     <img
                       id="gelato-check-image"
                       alt="Private artwork for edge and placement review"
                     />
                     <div id="gelato-safe-overlay" aria-hidden="true"></div>
                   </div>
-                  <label
+                  <label hidden=""
                     >Preview zoom<select id="gelato-preview-zoom">
                       <option value="fit">Fit</option>
                       <option value="2">200% actual pixels</option>
@@ -851,10 +953,41 @@
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=20261024-one-upload"></script>
+    <script type="module" src="/admin.js?v=20261024-editor"></script>
 
-    <script type="module" src="/gelato-admin.js?v=20261024-one-upload"></script>
+    <script type="module" src="/gelato-admin.js?v=20261024-editor"></script>
     <script type="module" src="/forge-print.js?v=20261022-loop"></script>
     <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
+
+    <dialog id="gelato-site-art-dialog" class="gelato-editor-dialog">
+      <header>
+        <h2>Choose site artwork</h2>
+        <button type="button" id="gelato-close-site-art" aria-label="Close artwork browser">
+          Close
+        </button>
+      </header>
+      <div id="gelato-site-art-list" class="gelato-site-art-list"></div>
+    </dialog>
+    <dialog id="gelato-product-preview-dialog" class="gelato-editor-dialog">
+      <header>
+        <h2>Canvas preview</h2>
+        <button type="button" id="gelato-close-product-preview">Close</button>
+      </header>
+      <div id="gelato-preview-scene" data-view="angle">
+        <div id="gelato-mockup" class="gelato-mockup">
+          <img id="gelato-mockup-image" alt="Positioned artwork on the selected canvas or frame" />
+        </div>
+      </div>
+      <div class="gelato-toolbar">
+        <button type="button" data-product-view="angle">Angled canvas</button
+        ><button type="button" data-product-view="front">Front view</button
+        ><button type="button" data-product-view="wall">On a wall</button>
+      </div>
+      <p>
+        Studio mockup: placement is based on your current composition. Finish, lighting and room are
+        illustrative, not Gelato production photography.
+      </p>
+    </dialog>
+    <script type="module" src="/admin-upload-previews.js?v=20261024-editor"></script>
   </body>
 </html>

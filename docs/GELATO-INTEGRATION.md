@@ -37,17 +37,23 @@ The initial physical checkout supports **US delivery, USD, one mapped product va
 
 ## Map physical products
 
-Open Owner access → Current images → **Gelato physical products** → Load products / orders.
+Open Admin → **Gelato** → Refresh products & orders.
 
-In Admin → Images, upload the six finished tier images once. Artist defaults to **LWVader** and no per-artwork price is entered. Digital and canvas roll prices remain centrally configured. Existing direct-purchase prices and already-paid order snapshots are preserved.
+In Admin → Images, upload the six finished tier images once. Artist defaults to **LWVader**; roll pricing remains centrally configured. The compact upload grid includes local thumbnails. Native file inputs open your computer’s file browser.
 
-In Admin → Gelato, choose the same artwork ID and tier. The backend loads its private PNG/JPEG from `foil_tier_assets`, verifies its registered SHA-256, and creates an identical private print snapshot. There is no second browser upload. The artwork ID identifies the image throughout the site, Vault and print mapping; the Gelato Product UID separately identifies the physical canvas/frame. A preview is provided using a short-lived, administrator-only signed link. The public product preview remains protected.
+In Admin → Gelato, use **Browse site artwork** to select an existing artwork and tier, or **Choose from computer** to load a dedicated PNG/JPEG print composition linked to that artwork. The native chooser is visible and enabled. Site sources are read from private tier storage; computer sources are kept private as well. Existing digital masters and issued copies are never modified by this print editor.
 
-Enter the exact Gelato Product UID, size/finish and template requirements. No per-image price field, manual review checklist, readiness checkbox or publication checkbox is needed. **Publish product** runs the technical checks and opens a confirmation containing the result and warnings. Cancel returns to editing without publishing. Failed checks show the reason; server-side checks repeat against the stored bytes and require explicit publication confirmation.
+The positioning editor supports mouse/touch dragging, corner resize handles, Zoom, horizontal/vertical position sliders and Reset. Arrow keys and +/- also work on the focused editor. It shows the full print area, entered bleed/wrap and safe-zone guide. The only canvas size presets are **16 × 16 unframed** and **16 × 20 portrait framed**, with each tier selecting its promised size and finish. Product-specific bleed/wrap must still match the exact Gelato UID’s template; the tool does not invent those specifications.
 
-The simplified shared-source flow supports PNG/JPEG up to 100 MB. WebP and PDF sources are not automatically approved or converted. Wrong aspect ratios and insufficient resolution are rejected rather than cropped, stretched or upscaled. The checker measures technical properties; it does not certify visual quality, profile fidelity, or Gelato production approval.
+**Preview canvas** opens a studio mockup with angled, front and wall views. These are illustrative previews of placement and finish, not official Gelato photography or a production guarantee.
 
-Roll checkout prices remain unchanged. Existing later-print redemption prices are preserved; new mappings use server-side tier defaults (Standard/Silver $49, Gold $55, Emerald/Sapphire/Prismatic $79), never prices supplied by the browser. No free print promotion is enabled. Tax codes remain product-specific configuration. Existing standalone products and paid orders remain available through their existing payment paths.
+**Save image position** exports the actual positioned print PNG, saves the raw source privately when needed, creates a protected 720px preview, and fills the print path, preview URL, dimensions and print hash automatically. The original artwork ID and tier remain linked throughout the site, Vault and print mapping. The positioned print has its own hash; the original tier file and its hash remain unchanged. Changing the source, positioning or print-area requirements invalidates the saved position and requires saving again. Server validation re-reads the raw private source and recomputes effective cropped PPI, so enlarging an export cannot pass off inadequate source detail as sufficient resolution.
+
+Enter the exact Gelato Product UID and applicable Stripe tax code once for the product. When another saved mapping for that same tier exists, the editor can reuse its UID, tax code and template settings. Unknown product UIDs and tax codes are not guessed. There are no manual review checklists, readiness/publication checkboxes or per-artwork price inputs.
+
+**Publish product** reruns technical checks and opens a Confirm/Cancel prompt with results and warnings. Cancel retains the editing setup. Server-side checks independently validate the stored print hash, source association, crop, dimensions and confirmation. Existing later-print prices and already-paid order snapshots are preserved; newly configured later-print defaults remain Standard/Silver $49, Gold $55 and Emerald/Sapphire/Prismatic $79. Roll prices remain separate and unchanged. No free print promotion is enabled.
+
+Deploy the updated `print-api` function and storefront together. No database migration or secret change is needed. No order or artwork is submitted to Gelato while browsing, editing, previewing or saving a position.
 
 ## Sandbox test
 

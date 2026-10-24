@@ -3,7 +3,7 @@ import {
   evaluatePrint,
   normalizeSpecs,
   SIZE_PRESETS,
-} from "./print-preflight-core.js?v=20261024-one-upload";
+} from "./print-preflight-core.js?v=20261024-editor";
 import { escapeHtml } from "./catalog-core.js?v=20261022-loop";
 export function createPrintPreflight(form, loadStoredFacts) {
   const result = document.querySelector("#gelato-preflight-result"),
@@ -16,7 +16,8 @@ export function createPrintPreflight(form, loadStoredFacts) {
     report = null,
     facts = null,
     cachedFile = null,
-    objectUrl = "";
+    objectUrl = "",
+    preferStored = false;
   const specs = () =>
     normalizeSpecs(
       Object.fromEntries(
@@ -65,6 +66,7 @@ export function createPrintPreflight(form, loadStoredFacts) {
   });
   form.addEventListener("change", (event) => {
     if (event.target.name === "printFile") {
+      preferStored = false;
       facts = null;
       cachedFile = null;
       preview.hidden = true;
@@ -103,7 +105,7 @@ export function createPrintPreflight(form, loadStoredFacts) {
     result.textContent = "Reading file and checking product fit…";
     try {
       const input = specs(),
-        file = form.elements.printFile.files[0];
+        file = preferStored ? null : form.elements.printFile.files[0];
       if (file && file !== cachedFile) {
         if (file.size > 104857600) throw Error("File exceeds 100 MB.");
         const buffer = await file.arrayBuffer();
@@ -164,6 +166,7 @@ export function createPrintPreflight(form, loadStoredFacts) {
   return {
     check: () => button.onclick(),
     useStoredSource(sourceFacts, url) {
+      preferStored = true;
       invalidate();
       facts = sourceFacts;
       cachedFile = null;
@@ -174,6 +177,7 @@ export function createPrintPreflight(form, loadStoredFacts) {
       preview.hidden = false;
     },
     reset(savedSpecs) {
+      preferStored = false;
       invalidate();
       facts = null;
       cachedFile = null;

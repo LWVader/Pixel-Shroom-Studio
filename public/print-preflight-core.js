@@ -1,12 +1,7 @@
 // Shared by the owner UI and Edge Function. No file is sent to Gelato by this checker.
 export const SIZE_PRESETS = {
-  card: [5, 7],
-  small: [8, 10],
-  medium: [11, 14],
-  shirt: [12, 16],
-  poster: [18, 24],
-  large: [24, 36],
-  mug: [8.5, 3.5],
+  canvasSquare: [16, 16],
+  canvasPortrait: [16, 20],
 };
 export function inspectPrintBytes(buffer) {
   const bytes = new Uint8Array(buffer),

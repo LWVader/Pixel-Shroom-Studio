@@ -1,5 +1,9 @@
 import { reuseTierPrintSource } from "../_shared/gelato-admin-source.ts";
-import { inspectStoredPrint, validatePrintMapping } from "../_shared/print-preflight.ts";
+import {
+  inspectStoredPrint,
+  validatePrintMapping,
+  validatePositionedSource,
+} from "../_shared/print-preflight.ts";
 import Stripe from "npm:stripe@18";
 import { corsFor, json, service, studioSiteUrl } from "../_shared/common.ts";
 import {
@@ -134,6 +138,18 @@ Deno.serve(async (request: Request) => {
       if (body.action === "admin_source") {
         return reply(await reuseTierPrintSource(db, body.productId, body.artworkId, body.tier));
       }
+      if (body.action === "admin_preview_upload") {
+        if (!uuid(body.productId)) return reply({ error: "Invalid product." }, 400);
+        const path = `gelato/${body.productId}/${crypto.randomUUID()}.webp`;
+        const bucket = db.storage.from("previews");
+        const { data, error } = await bucket.createSignedUploadUrl(path);
+        if (error) throw error;
+        return reply({
+          path,
+          token: data.token,
+          publicUrl: bucket.getPublicUrl(path).data.publicUrl,
+        });
+      }
       if (body.action === "admin_upload") {
         if (!uuid(body.productId) || !["png", "jpg", "pdf"].includes(body.extension))
           return reply({ error: "Invalid source upload." }, 400);
@@ -146,11 +162,24 @@ Deno.serve(async (request: Request) => {
         if (!uuid(body.productId)) return reply({ error: "Invalid product." }, 400);
         const { data: product, error } = await db
           .from("gelato_products")
-          .select("print_path")
+          .select("print_path,preflight_report")
           .eq("id", body.productId)
           .single();
         if (error || !product) return reply({ error: "Product not found." }, 404);
-        return reply({ facts: await inspectStoredPrint(db, product.print_path) });
+        const path =
+          body.editorSource === true && product.preflight_report?.position?.source_path
+            ? product.preflight_report.position.source_path
+            : product.print_path;
+        const { data: preview, error: previewError } = await db.storage
+          .from(PRINT_BUCKET)
+          .createSignedUrl(path, 600);
+        if (previewError) throw previewError;
+        return reply({
+          facts: await inspectStoredPrint(db, path),
+          path,
+          previewUrl: preview.signedUrl,
+          position: body.editorSource === true ? product.preflight_report?.position : null,
+        });
       }
       if (body.action === "admin_save") {
         const p = body.product;
@@ -216,6 +245,7 @@ Deno.serve(async (request: Request) => {
         if (objectError || !objects?.some((o: any) => o.name === filename))
           throw new Error("Upload the private print-ready source first.");
         const { facts, report } = await validatePrintMapping(db, p);
+        const savedPosition = await validatePositionedSource(db, p, report, facts);
         if (p.use_tier_source === true) {
           const { data: source, error: sourceError } = await db
             .from("foil_tier_assets")
@@ -223,7 +253,11 @@ Deno.serve(async (request: Request) => {
             .eq("listing_id", p.edition_artwork_id)
             .eq("tier", p.edition_tier)
             .single();
-          if (sourceError || !source || source.sha256 !== facts.sha256)
+          if (
+            sourceError ||
+            !source ||
+            source.sha256 !== (savedPosition?.source_sha256 || facts.sha256)
+          )
             return reply(
               {
                 error:
@@ -273,6 +307,7 @@ Deno.serve(async (request: Request) => {
             productUid: p.product_uid,
             printPath: p.print_path,
             publishConfirmed: p.publish_confirmed === true,
+            position: savedPosition,
             sourceArtworkId: p.use_tier_source ? p.edition_artwork_id : null,
             sourceTier: p.use_tier_source ? p.edition_tier : null,
             checkedAt: new Date().toISOString(),

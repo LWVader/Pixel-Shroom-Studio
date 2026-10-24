@@ -28,3 +28,38 @@ export async function validatePrintMapping(db: any, product: any) {
     throw Error("Cannot publish: technical checks must pass and publishing must be confirmed.");
   return { facts, report };
 }
+
+// Recompute source detail from private bytes, not the export's DPI or client dimensions.
+export async function validatePositionedSource(
+  db: any,
+  product: any,
+  report: any,
+  printFacts?: any,
+) {
+  if (!product.position) return null;
+  const p = product.position;
+  if (!new RegExp(`^gelato/${product.id}/[0-9a-f-]{36}\\.(png|jpg|pdf)$`).test(p.source_path))
+    throw Error("Invalid position source. Load and save the image again.");
+  const source = await inspectStoredPrint(db, p.source_path);
+  if (source.sha256 !== p.source_sha256)
+    throw Error("Position source changed. Reload and save the image position again.");
+  const { positionedResolution, normalizePosition } =
+    await import("../../../public/print-position-core.js");
+  const position = normalizePosition(p);
+  const resolution = positionedResolution(source.width, source.height, report.specs, position);
+  if (
+    printFacts &&
+    (printFacts.width !== resolution.width || printFacts.height !== resolution.height)
+  )
+    throw Error(
+      "Positioned print dimensions do not match the saved source crop. Save image position again.",
+    );
+  return {
+    ...position,
+    source_path: p.source_path,
+    source_sha256: source.sha256,
+    sourceWidth: source.width,
+    sourceHeight: source.height,
+    effectiveSourcePpi: resolution.effectivePpi,
+  };
+}
