@@ -50,7 +50,7 @@ const pages = new Set([
   "checkout-cancel",
 ]);
 const policy =
-  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://esm.sh; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://esm.sh https://*.supabase.co wss://*.supabase.co http://127.0.0.1:4179 http://localhost:4179; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://esm.sh https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://cloudflareinsights.com https://esm.sh https://*.supabase.co wss://*.supabase.co http://127.0.0.1:4179 http://localhost:4179; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
 let cachedRows = null,
   cachedAt = 0;
 function redirect(url) {
@@ -61,7 +61,20 @@ function redirect(url) {
 }
 function headersFor(response, path) {
   const result = new Response(response.body, response);
-  result.headers.set("Content-Security-Policy", policy);
+  const html = response.headers.get("content-type")?.includes("text/html");
+  // Cloudflare's edge injectors read the response-header nonce and apply it to
+  // their own scripts. Unrelated inline scripts remain blocked.
+  const nonce = html
+    ? btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(24))))
+    : null;
+  result.headers.set(
+    "Content-Security-Policy",
+    nonce ? policy.replace("script-src 'self'", `script-src 'self' 'nonce-${nonce}'`) : policy,
+  );
+  if (html) {
+    result.headers.delete("etag");
+    result.headers.delete("last-modified");
+  }
   result.headers.set(
     "Referrer-Policy",
     path.startsWith("/checkout-") ? "no-referrer" : "strict-origin-when-cross-origin",
@@ -187,6 +200,10 @@ export default {
         "/art.html",
       ].includes(path)
     ) {
+      assetHeaders.delete("if-none-match");
+      assetHeaders.delete("if-modified-since");
+    }
+    if (assetUrl.pathname.endsWith(".html")) {
       assetHeaders.delete("if-none-match");
       assetHeaders.delete("if-modified-since");
     }

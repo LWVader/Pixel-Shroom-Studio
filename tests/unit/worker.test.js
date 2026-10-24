@@ -107,3 +107,18 @@ it("serves a distinct canonical All artwork collection page", async () => {
   expect(html).toContain("catalog-bootstrap");
   expect(html).not.toContain("All artwork · genre sampler");
 });
+
+it("allows Cloudflare analytics and issues fresh HTML nonces without permitting arbitrary inline code", async () => {
+  const fetch = await setup(true);
+  const a = await fetch("https://www.pixelshroomstudio.com/collection.html");
+  const b = await fetch("https://www.pixelshroomstudio.com/collection.html");
+  const policy = a.headers.get("Content-Security-Policy");
+  expect(policy).toContain("https://static.cloudflareinsights.com");
+  expect(policy).toContain("https://cloudflareinsights.com");
+  expect(policy.match(/'nonce-([^']+)'/)[1]).not.toBe(
+    b.headers.get("Content-Security-Policy").match(/'nonce-([^']+)'/)[1],
+  );
+  expect(policy.split("script-src ")[1].split(";")[0]).not.toContain("'unsafe-inline'");
+  expect(a.headers.get("etag")).toBeNull();
+  expect(a.headers.get("Cache-Control")).toBe("no-store");
+});

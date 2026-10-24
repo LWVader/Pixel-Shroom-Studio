@@ -126,6 +126,8 @@ async function updateSession() {
     pending.replaceChildren();
     showStatus("Sign in to mint and view your private editions.");
   } else {
+    document.querySelector("#recovery-password").elements.username.value =
+      session.user?.email || "";
     const recover = new URLSearchParams(location.search).get("reveal");
     if (recover) {
       location.assign("/checkout-success.html?mint=" + encodeURIComponent(recover));

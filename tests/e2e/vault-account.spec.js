@@ -33,6 +33,9 @@ test("Vault signup, password login, private shipping save and sign-out", async (
   await auth.locator("[name=password]").fill("long-test-password");
   await auth.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.locator("#account-email")).toHaveText("collector@example.com");
+  await expect(page.locator("#recovery-password [autocomplete=username]")).toHaveValue(
+    "collector@example.com",
+  );
   const shipping = page.locator("#vault-shipping-form");
   for (const [key, value] of Object.entries({
     firstName: "Test",
