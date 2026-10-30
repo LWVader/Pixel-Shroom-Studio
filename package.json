@@ -27,7 +27,10 @@
     "mint:once": "node --env-file-if-exists=mint-worker/.env mint-worker/worker.mjs --once",
     "demo": "node tools/demo-server.mjs",
     "demo:test": "node tests/local-demo.mjs",
-    "prints:check": "node tools/check-print-pages.mjs"
+    "prints:check": "node tools/check-print-pages.mjs",
+    "test:journey": "npm run build && playwright test tests/e2e/purchase-journey.spec.js",
+    "test:journey:headed": "npm run build && playwright test tests/e2e/purchase-journey.spec.js --project=desktop --headed --workers=1",
+    "test:journey:preflight": "node tools/check-purchase-journey.mjs"
   },
   "dependencies": {
     "sharp": "^0.34.5",

@@ -11,24 +11,32 @@ Deno.serve(async (request: Request) => {
     const body = await request.json(),
       db = service();
     if (body.action === "availability") {
+      const key = Deno.env.get("STRIPE_SECRET_KEY") || "";
+      const paymentMode = key.startsWith("sk_test_")
+        ? "test"
+        : key.startsWith("sk_live_")
+          ? "live"
+          : "unconfigured";
       const { data, error } = await db.rpc("foil_catalog");
       if (error) throw error;
       const edition = (data || []).find((e: any) => String(e.artworkId) === String(body.artworkId));
       if (!edition)
         return reply({
+          paymentMode,
+          canvasMappingsReady: false,
           edition: null,
           previews: [],
           digitalEnabled: false,
           canvasEnabled: false,
           forgeEnabled: Deno.env.get("FORGE_ENABLED") === "true",
         });
-      const mappings = await db
-        .from("gelato_products")
-        .select("edition_tier")
-        .eq("edition_artwork_id", Number(body.artworkId))
-        .eq("kind", "canvas")
-        .eq("active", true)
-        .eq("print_ready", true);
+      const { data: currentMappingsReady, error: mappingError } = await db.rpc(
+        "canvas_options_ready",
+        {
+          target_artwork: Number(edition.artworkId),
+        },
+      );
+      const canvasMappingsReady = !mappingError && currentMappingsReady === true;
       const { data: images, error: ie } = await db
         .from("foil_tier_assets")
         .select("tier,width,height,mime_type,preview_path")
@@ -43,7 +51,6 @@ Deno.serve(async (request: Request) => {
           ? db.storage.from("previews").getPublicUrl(i.preview_path).data.publicUrl
           : null,
       }));
-      const key = Deno.env.get("STRIPE_SECRET_KEY") || "";
       const paymentReady =
         /^sk_(test|live)_/.test(key) &&
         (key.startsWith("sk_test_") || Deno.env.get("FORGE_PRINT_TAX_ENABLED") === "true");
@@ -55,13 +62,14 @@ Deno.serve(async (request: Request) => {
         previews.length === 6 &&
         previews.every((p: any) => p.previewUrl);
       return reply({
+        paymentMode,
+        canvasMappingsReady,
         edition: edition || null,
         previews,
         digitalEnabled: open,
         canvasEnabled:
           open &&
-          !mappings.error &&
-          new Set((mappings.data || []).map((p: any) => p.edition_tier)).size === 6 &&
+          canvasMappingsReady &&
           Deno.env.get("FORGE_PRINT_CANVAS_ENABLED") === "true" &&
           printsEnabled() &&
           String(Deno.env.get("STRIPE_SECRET_KEY") || "").startsWith("sk_test_") ===

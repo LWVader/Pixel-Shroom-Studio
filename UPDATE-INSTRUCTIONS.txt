@@ -1,13 +1,21 @@
-Account & Shipping visual update
+Purchase journey test update
 
-Changed files: public/collection.html, public/vault-account.css and the Vault browser test.
+Extract over the current project. Only the included files change.
 
-Extract over your project, then run:
-npm.cmd run build
-npx.cmd wrangler deploy
+Run automated journey tests (no real payments/orders):
+npm.cmd ci
+npx.cmd playwright install chromium
+npm.cmd run test:journey
 
-No new Supabase migration or API changes for this styling update. The earlier vault_profiles migration remains required for saving addresses.
+Watch the desktop test journeys:
+npm.cmd run test:journey:headed
 
-Includes forest/gold glass styling, responsive account summary and delivery form, clear recipient/address groups, 50-state plus DC dropdown, US-only country dropdown, browser address autocomplete, numeric ZIP keyboard, telephone input, keyboard focus styling and reduced-motion support.
+Deploy the readiness fix and inspect the actual project without creating checkout:
+npx.cmd supabase functions deploy forge-api --project-ref decizwtgsqhjdgjiqbui
+npm.cmd run test:journey:preflight -- --artwork 48
 
-Validated on desktop and mobile: signup/login, saving state/address, sign-out clearing, delivery autofill, horizontal overflow and a scoped WCAG accessibility scan. Four browser tests passed. Existing ownership, Forge, pricing and order fulfillment are unchanged.
+No new migration is introduced. The prior canvas migrations providing canvas_options_ready must already be applied. No storefront Worker deployment is needed for these test/backend files. Do not change your main live Stripe key to run test payments.
+
+The deployed project was checked read-only on October 30, 2026: artwork 48 had six previews but was disabled; both roll offers were closed; physical checkout was disabled; Gelato reported draft mode. Stripe mode and full mapping readiness were not exposed by the older function. No actual order/payment was created in this run.
+
+See docs/PURCHASE-JOURNEY-TEST.md for the precise staging/provider test setup and acceptance criteria. Automated evidence: 92 unit/integration tests and 48 targeted desktop/mobile browser tests passed (12 full six-tier journeys plus 36 regressions). Provider fixtures are not proof that a genuine Stripe webhook or supplier call succeeded.

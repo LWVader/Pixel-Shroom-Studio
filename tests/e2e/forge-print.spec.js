@@ -88,7 +88,7 @@ test("tier comparisons and Forge recipe calculator remain transparent and access
   await page.goto("/drop-odds.html");
   await page.locator("[data-tier-finish=Emerald]").click();
   await expect(page.locator("#finish-title")).toHaveText("Emerald · 6%");
-  await expect(page.locator("#finish-format")).toContainText("16 × 20");
+  await expect(page.locator("#finish-format")).toContainText("16 × 24");
   await page.goto("/forge.html");
   await page.locator("[name=tier]").selectOption("Gold");
   await page.locator("[name=quantity]").fill("2");

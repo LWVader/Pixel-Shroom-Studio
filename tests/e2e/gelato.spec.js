@@ -12,7 +12,7 @@ async function setup(page, category = "canvas") {
   await page.route("https://esm.sh/@supabase/supabase-js@2.57.4", (route) =>
     route.fulfill({
       contentType: "text/javascript",
-      body: `export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:'owner'}}})}}}`,
+      body: `export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:'owner',user:{id:'owner',email:'test@example.com'}}}}),onAuthStateChange:()=>({})},from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:null,error:null})})}}`,
     }),
   );
   await page.route("**/functions/v1/print-api", (route) => {
