@@ -479,29 +479,18 @@
                   <h3>Current images</h3>
                 </div>
               </div>
-              <section class="catalog-relaunch">
-                <h3>Prepare a fresh edition catalog</h3>
-                <p>
-                  Remove all current artwork listings from public view before reloading your six
-                  finished tier images. This preserves stored files, orders, issued editions,
-                  receipts, member accounts, physical product mappings and secondary-market history.
-                </p>
-                <button type="button" id="archive-catalog" class="danger">
-                  Remove current artwork listings for reload
-                </button>
-                <p id="catalog-relaunch-status" role="status"></p>
-              </section>
               <details class="catalog-relaunch">
-                <summary>Permanently reset old artwork records</summary>
+                <summary>Reset test storefront</summary>
                 <p>
-                  Preview all records, including hidden and archived uploads. Delete only records
-                  with no order, reservation or print quote, releasing their serials. Stored image
-                  files remain available for recovery.
+                  Permanently clear the catalog, serials, test orders, Vault data, Forge history,
+                  print mappings, articles and messages. Accounts, administrator access, and signing
+                  keys stay in place. Stored files are cleared separately in Supabase Storage.
                 </p>
-                <button id="preview-artwork-rebuild" type="button">Preview permanent reset</button>
-                <div id="artwork-rebuild-preview" role="status"></div>
-                <button id="apply-artwork-rebuild" type="button" class="danger" hidden>
-                  Permanently delete unlinked artwork records
+                <button id="preview-storefront-reset" type="button">Preview test reset</button>
+                <p id="storefront-reset-status" role="status"></p>
+                <ul id="storefront-reset-counts" hidden></ul>
+                <button id="apply-storefront-reset" type="button" class="danger" hidden>
+                  Permanently clear test data
                 </button>
               </details>
               <div id="admin-catalog"></div>
@@ -823,7 +812,7 @@
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=20261113-artwork-rebuild"></script>
+    <script type="module" src="/admin.js?v=20261113-clean-start"></script>
 
     <script type="module" src="/gelato-admin.js?v=20261024-account-admin"></script>
     <script type="module" src="/forge-print.js?v=20261024-account-admin"></script>

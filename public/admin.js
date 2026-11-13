@@ -1303,38 +1303,6 @@ const requestedView = location.hash.slice(1);
 if (document.getElementById(requestedView)?.classList.contains("admin-view"))
   openAdminView(requestedView);
 
-// Catalog relaunch is a single admin-only transaction; no purchase history is deleted.
-document.querySelector("#archive-catalog")?.addEventListener("click", async (event) => {
-  const button = event.currentTarget;
-  const status = document.querySelector("#catalog-relaunch-status");
-  if (!items.length) {
-    status.textContent = "There are no current artwork listings to remove.";
-    return;
-  }
-  if (
-    !confirm(
-      `Remove all ${items.length} current artwork listings from public view for reloading? Stored files, orders, editions, receipts and Gelato products will be preserved.`,
-    )
-  )
-    return;
-  button.disabled = true;
-  try {
-    await requireAdmin();
-    const { data, error } = await supabase.rpc("archive_catalog_for_relaunch", {
-      expected_count: items.length,
-    });
-    if (error) throw error;
-    resetArtworkForm();
-    await loadItems();
-    await loadDashboard();
-    status.textContent = `${data.archived} artwork listings removed from the public catalog. Public gallery refresh can take up to 60 seconds. Add a new image, upload all six tier variations, and prepare copy hashes before enabling checkout.`;
-  } catch (error) {
-    status.textContent = `Catalog reset did not complete: ${error.message}. If the action is unavailable, apply the catalog relaunch migration first.`;
-  } finally {
-    button.disabled = false;
-  }
-});
-
 // Regenerate public previews for existing locked sources without replacing signed files.
 document.querySelector("#prepare-tier-previews")?.addEventListener("click", async (event) => {
   const button = event.currentTarget;
@@ -1375,74 +1343,77 @@ document.querySelector("#prepare-tier-previews")?.addEventListener("click", asyn
   }
 });
 
-// SECTION: Explicit two-step permanent reset of unlinked artwork rows.
-const rebuildPreview = document.querySelector("#artwork-rebuild-preview");
-const previewRebuild = document.querySelector("#preview-artwork-rebuild");
-const applyRebuild = document.querySelector("#apply-artwork-rebuild");
-let reviewedArtworkIds = [];
-previewRebuild.addEventListener("click", async () => {
-  previewRebuild.disabled = true;
-  applyRebuild.hidden = true;
-  reviewedArtworkIds = [];
-  rebuildPreview.textContent = "Checking all artwork records…";
+// SECTION: Preview and explicitly confirm a clean start for the test storefront.
+const resetStatus = document.querySelector("#storefront-reset-status");
+const resetCounts = document.querySelector("#storefront-reset-counts");
+const previewReset = document.querySelector("#preview-storefront-reset");
+const applyReset = document.querySelector("#apply-storefront-reset");
+const resetPhrase = "RESET TEST STOREFRONT";
+let reviewedResetCounts;
+
+function resetErrorMessage(error) {
+  if (error.code === "PGRST202") {
+    return "The reset is not installed in this Supabase project. Apply the pending migrations with supabase db push, then reload this page.";
+  }
+  return error.message;
+}
+
+previewReset.addEventListener("click", async () => {
+  previewReset.disabled = true;
+  applyReset.hidden = true;
+  reviewedResetCounts = null;
+  resetCounts.hidden = true;
+  resetCounts.replaceChildren();
+  resetStatus.textContent = "Counting records…";
   try {
     await requireAdmin();
-    const { data, error } = await supabase.rpc("preview_artwork_rebuild");
+    const { data, error } = await supabase.rpc("preview_storefront_reset");
     if (error) throw error;
-    const eligible = data.filter((record) => !record.protected);
-    const kept = data.filter((record) => record.protected);
-    reviewedArtworkIds = eligible.map((record) => record.id);
-    rebuildPreview.textContent = `${eligible.length} eligible for permanent deletion. ${kept.length} protected by transaction history.`;
-    for (const [title, records] of [
-      ["Will be deleted", eligible],
-      ["Will be kept", kept],
-    ]) {
-      if (!records.length) continue;
-      const details = document.createElement("details");
-      const summary = document.createElement("summary");
-      summary.textContent = title;
-      const list = document.createElement("ul");
-      for (const record of records) {
-        const item = document.createElement("li");
-        item.textContent = `${record.serial} · ${record.title} (#${record.id})`;
-        list.append(item);
-      }
-      details.append(summary, list);
-      rebuildPreview.append(details);
+    reviewedResetCounts = data;
+    const entries = Object.entries(data).filter(([, count]) => count > 0);
+    for (const [table, count] of entries) {
+      const li = document.createElement("li");
+      li.textContent = `${table.replaceAll("_", " ")}: ${count}`;
+      resetCounts.append(li);
     }
-    applyRebuild.hidden = !eligible.length;
+    resetCounts.hidden = !entries.length;
+    applyReset.hidden = !entries.length;
+    resetStatus.textContent = entries.length
+      ? "Review these counts before permanently clearing the test records."
+      : "No storefront records to clear. Check Supabase Storage separately for old uploads.";
   } catch (error) {
-    rebuildPreview.textContent = error.message;
+    resetStatus.textContent = resetErrorMessage(error);
   } finally {
-    previewRebuild.disabled = false;
+    previewReset.disabled = false;
   }
 });
-applyRebuild.addEventListener("click", async () => {
-  if (
-    !reviewedArtworkIds.length ||
-    prompt(
-      `Permanently delete ${reviewedArtworkIds.length} unlinked artwork records and release their serials? Type DELETE ARTWORK to continue.`,
-    ) !== "DELETE ARTWORK"
-  )
-    return;
-  applyRebuild.disabled = true;
-  previewRebuild.disabled = true;
+
+applyReset.addEventListener("click", async () => {
+  if (!reviewedResetCounts) return;
+  const confirmation = prompt(
+    `This permanently clears the reviewed test records. Type ${resetPhrase} to continue.`,
+  );
+  if (confirmation !== resetPhrase) return;
+  applyReset.disabled = true;
+  previewReset.disabled = true;
   try {
     await requireAdmin();
-    const { data, error } = await supabase.rpc("delete_unlinked_artworks_for_rebuild", {
-      expected_ids: reviewedArtworkIds,
+    const { error } = await supabase.rpc("reset_test_storefront", {
+      expected_counts: reviewedResetCounts,
+      confirmation,
     });
     if (error) throw error;
     resetArtworkForm();
-    rebuildPreview.textContent = `${data} artwork records permanently deleted. Their serials can now be used for new uploads.`;
-    await loadItems();
-    await loadDashboard();
+    resetStatus.textContent =
+      "Test storefront cleared. Artwork serials can be reused. Empty the old files in Supabase Storage before uploading again.";
+    await Promise.allSettled([loadItems(), loadDashboard()]);
   } catch (error) {
-    rebuildPreview.textContent = error.message;
+    resetStatus.textContent = resetErrorMessage(error);
   } finally {
-    reviewedArtworkIds = [];
-    applyRebuild.hidden = true;
-    applyRebuild.disabled = false;
-    previewRebuild.disabled = false;
+    reviewedResetCounts = null;
+    resetCounts.hidden = true;
+    applyReset.hidden = true;
+    applyReset.disabled = false;
+    previewReset.disabled = false;
   }
 });

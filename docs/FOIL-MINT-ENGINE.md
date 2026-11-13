@@ -61,7 +61,7 @@ The new `/verify-mint.html` hashes the selected derivative locally, fetches the 
 
 Technical references: https://sharp.pixelplumbing.com/api-composite/ , https://sharp.pixelplumbing.com/api-output/ , https://docs.stripe.com/api/checkout/sessions/expire .
 
-Buy-button opening effects and the paid-only server roll are documented in `docs/BUY-OPENING-FLOW.md`. The animation does not allocate rarity or bypass payment verification.
+The opening animation plays after payment verification. It neither chooses rarity nor allocates inventory.
 
 ## Historical Prismatic overlay (pre-migration reservations only)
 

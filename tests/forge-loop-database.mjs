@@ -291,4 +291,68 @@ assert.equal(
 console.log(
   "PASS current canvas sizes, three frame choices, versioned claims, complete-setup gate and legacy preservation",
 );
+
+// Validate the reset against the live table graph built by the Forge migrations.
+await db.exec(`
+  create function auth.uid() returns uuid language sql as $$select '${owner}'::uuid$$;
+  alter table artworks add column deleted_at timestamptz, add column updated_at timestamptz;
+  create table public.articles(id bigint);
+  create table public.contact_messages(id bigint);
+  create table public.admin_users(user_id uuid primary key references auth.users(id));
+  insert into public.admin_users values ('${owner}');
+  insert into public.foil_keys(key_id, public_key_jwk) values('reset-preserved', '{}');
+`);
+for (const file of [
+  "202610210001_catalog_relaunch.sql",
+  "202610240003_vault_profiles.sql",
+  "202611130002_storefront_clean_start.sql",
+])
+  await db.exec(await fs.readFile(`supabase/migrations/${file}`, "utf8"));
+const preview = async () =>
+  (await db.query("select preview_storefront_reset() counts")).rows[0].counts;
+const reset = (counts, phrase = "RESET TEST STOREFRONT") =>
+  db.query("select reset_test_storefront($1,$2)", [JSON.stringify(counts), phrase]);
+const before = await preview();
+assert.ok(before.artworks && before.orders && before.mints && before.gelato_orders);
+await db.exec("set role anon");
+await assert.rejects(preview, /permission denied/);
+await db.exec(`
+  reset role;
+  create or replace function public.is_admin() returns boolean language sql as $$select false$$;
+  set role authenticated;
+`);
+await assert.rejects(preview, /Admin access required/);
+await assert.rejects(() => reset(before), /Admin access required/);
+await db.exec(`
+  reset role;
+  create or replace function public.is_admin() returns boolean language sql as $$select true$$;
+  set role authenticated;
+`);
+await assert.rejects(() => reset(before, "RESET"), /exact confirmation/);
+await assert.rejects(() => reset({ ...before, artworks: before.artworks + 1 }), /counts changed/);
+assert.deepEqual(await preview(), before);
+await reset(before);
+assert.ok(Object.values(await preview()).every((count) => count === 0));
+await db.exec(`
+  reset role;
+  create table public.physical_products(id int primary key);
+  create table public.physical_orders(product_id int references public.physical_products);
+  insert into public.physical_products values(1);
+  insert into public.physical_orders values(1);
+  set role authenticated;
+`);
+const legacy = await preview();
+assert.equal(legacy.physical_products, 1);
+assert.equal(legacy.physical_orders, 1);
+await reset(legacy);
+assert.ok(Object.values(await preview()).every((count) => count === 0));
+await db.exec("reset role");
+assert.equal((await db.query("select count(*)::int n from auth.users")).rows[0].n, 2);
+assert.equal((await db.query("select count(*)::int n from public.admin_users")).rows[0].n, 1);
+assert.equal((await db.query("select count(*)::int n from public.foil_keys")).rows[0].n, 1);
+assert.ok((await db.query("select count(*)::int n from storage.objects")).rows[0].n > 0);
+await db.exec("insert into artworks(id,serial_number) values (2,'LWV-0000000001')");
+console.log(
+  "PASS authenticated storefront reset clears dependent test data and releases serials while preserving admin access and signing keys",
+);
 await db.close();

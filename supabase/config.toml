@@ -12,9 +12,6 @@ verify_jwt = false
 [functions.add-admin-user]
 verify_jwt = false
 
-[functions.physical-checkout]
-verify_jwt = false
-
 [functions.mint-checkout]
 verify_jwt = false
 [functions.mint-access]

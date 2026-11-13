@@ -617,3 +617,13 @@
     font-size: 20px;
   }
 }
+
+.catalog-relaunch {
+  border: 1px solid var(--line, #47534c);
+  padding: 18px;
+  margin: 18px 0;
+  border-radius: 10px;
+}
+.catalog-relaunch button {
+  white-space: normal;
+}

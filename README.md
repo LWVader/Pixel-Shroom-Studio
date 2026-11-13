@@ -2,31 +2,9 @@
 
 This package merges the redesign with the uploaded Pixel-Shroom-Studio master. It retains the forest-green, cream, gold, and cyan palette, the original fantasy-city hero, the existing public Supabase configuration, the original admin screens, and the cryptographic verifier. It has not been deployed to the live site.
 
-## Required installation
+## Install or reset the storefront
 
-Merge this package into your existing project. Keep your existing local secrets, signing identity, environment settings, and dependency installation. The package deliberately does not include private credentials, signing keys, Git history, or node_modules. The uploaded master remains your backup. The original setup/signing instructions are retained in `docs/MASTER-README.md`.
-
-Deploy only the `public/` directory as static assets, using the supplied routing Worker. Never deploy the project root as a public directory.
-
-1. Apply only the new `supabase/migrations/202610040001_payment_fulfillment_and_downloads.sql` in Supabase SQL Editor, after your existing schema/migrations. It adds the service-only fulfillment and download RPCs required by this update. It does not delete tables, orders, or license records. It uses new RPC names to avoid conflicting with manually installed older functions.
-2. Deploy the updated Edge Functions listed below. Your existing Supabase secrets remain necessary; do not put them in `public/config.js`. Set `SITE_URL` to `https://www.pixelshroomstudio.com` for production. The shared code also normalizes the known old production aliases to this URL, and supports the canonical www and apex origins for browser API requests.
-3. Merge `worker.mjs` and the `assets` settings from `wrangler.jsonc` into your existing Cloudflare Worker configuration. Retain your actual existing Worker name, account settings, custom-domain routes, and other bindings. The sample name is `pixel-shroom-studio`; confirm it matches the Worker you already deploy.
-4. The routing settings must include `binding: "ASSETS"`, `run_worker_first: true`, and `html_handling: "none"`. The Worker is essential for server-readable query-string genre pages and stable `.html` URLs. Uploading static files alone gives a JavaScript fallback, but not the same server-rendered genre metadata or redirect handling.
-5. Deploy through your existing GitHub/Cloudflare workflow, or use your existing Wrangler deployment command. In PowerShell, use `npx.cmd` / `npm.cmd` if `.ps1` execution is blocked. For local routing checks, `npm.cmd run dev:worker` starts Wrangler through npx.
-6. After deployment, check one Stripe test payment, the payment return page, the private download, the contact form, admin access, and one known signed artwork. Submit `/sitemap.xml` to Google Search Console and Bing Webmaster Tools.
-
-Deploy these functions after applying the new SQL:
-
-```powershell
-npx.cmd supabase functions deploy create-checkout --no-verify-jwt
-npx.cmd supabase functions deploy order-status --no-verify-jwt
-npx.cmd supabase functions deploy stripe-webhook --no-verify-jwt
-npx.cmd supabase functions deploy download-original --no-verify-jwt
-npx.cmd supabase functions deploy submit-message --no-verify-jwt
-npx.cmd supabase functions deploy add-admin-user --no-verify-jwt
-```
-
-The admin-invitation function still verifies the caller's bearer token and admin membership in its handler. Webhooks verify provider signatures; turning off the gateway JWT requirement does not disable those checks. Deploy every listed function that imports the changed shared helper, including the webhook and download functions.
+Follow [Clean start](docs/CLEAN-START.md) for the Supabase migrations, Cloudflare deployment, and test-data reset. Apply the numbered migrations in order; keep your existing provider secrets, signing identity, and Cloudflare routes. The Worker serves the generated `dist/public` assets. If a local checkout already has dependencies, use `npm ci` to sync them to the supplied lockfile.
 
 ## Exactly the requested navigation
 
@@ -46,7 +24,7 @@ The admin-invitation function still verifies the caller's bearer token and admin
 
 These are the only genre categories. Utility pages such as contact, verification, admin, and payment confirmation remain available.
 
-The homepage displays the 14 newest published artworks across all genres, ordered by creation time. All artwork is the separate compiled gallery at `/all-artwork.html`. Each genre gets up to four randomly sampled published previews, without duplicates within a group, and a “Take me to [genre]” link. A “Show another selection” button refreshes the sample. Search covers the entire loaded published catalog before selecting up to four matches per category. A full genre page shows every published listing in that genre, rather than stopping at four. If fewer than four works exist, only the available works are shown. Empty genres show their collection link and an honest empty state. NFT previews may be displayed, but NFT purchase actions are disabled and new NFT checkout requests are rejected until releases are enabled deliberately.
+The homepage displays the 14 newest published artworks across all genres, ordered by creation time. All artwork is the separate compiled gallery at `/all-artwork.html`. Each genre gets up to four randomly sampled published previews, without duplicates within a group, and a “Take me to [genre]” link. A “Show another selection” button refreshes the sample. A full genre page shows every published listing in that genre, rather than stopping at four. If fewer than four works exist, only the available works are shown. Empty genres show their collection link and an honest empty state. NFT previews may be displayed, but NFT purchase actions are disabled and new NFT checkout requests are rejected until releases are enabled deliberately.
 
 `public/genres/*.html` are internal HTML assets for the nine query-string pages. Direct visits to those paths redirect to the associated `/genre.html?genre=...` URL. They are not additional public genre categories.
 

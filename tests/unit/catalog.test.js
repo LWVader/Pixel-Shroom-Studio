@@ -33,8 +33,8 @@ describe("catalog and provider boundaries", () => {
     const rows = Array.from({ length: 8 }, (_, id) => ({ ...row, id }));
     expect(core.randomSample(rows, 4, () => 0)).toHaveLength(4);
     expect(rows[0].id).toBe(0);
-    expect(core.renderCompiled(rows).match(/class="art-card"/g)).toHaveLength(4);
-    expect(core.renderGenre(rows, "fantasy").match(/class="art-card"/g)).toHaveLength(8);
+    expect(core.renderCompiled(rows).match(/class="art-card\b[^"]*"/g)).toHaveLength(4);
+    expect(core.renderGenre(rows, "fantasy").match(/class="art-card\b[^"]*"/g)).toHaveLength(8);
   });
   it("searches serial and artist, preserves empty genre links and disables NFT purchases", () => {
     expect(core.renderGenre([row], "fantasy", { term: "Artist" })).toContain("art-card");
@@ -98,5 +98,5 @@ it("selects the newest 14 across categories and preserves input", () => {
     Array.from({ length: 14 }, (_, i) => 20 - i),
   );
   expect(rows[0].id).toBe(1);
-  expect(core.renderLatest(rows).match(/class="art-card"/g)).toHaveLength(14);
+  expect(core.renderLatest(rows).match(/class="art-card\b[^"]*"/g)).toHaveLength(14);
 });
