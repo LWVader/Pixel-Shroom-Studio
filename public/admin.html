@@ -215,23 +215,13 @@
                 <h3 id="art-form-title">Add artwork or NFT</h3>
               </div>
               <p>
-                Select the finished source once. The localhost helper embeds its C2PA credential,
-                then the browser creates the protected preview and stores only the signed original
-                privately.
+                Upload Standard once. The signing helper reads its serial from the image
+                information, signs the original, and the site uses that signed file for Standard
+                rolls.
               </p>
               <form id="art-form" class="form-grid">
                 <label>Title<input name="title" required="" /></label
                 ><label>Artist<input name="artist" value="LWVader" required="" /></label>
-                <label
-                  >Artwork serial number<input
-                    name="serialNumber"
-                    placeholder="LWV-3249949452"
-                    pattern="[A-Za-z0-9-]{4,40}"
-                    required=""
-                  /><small
-                    >Enter the identifier already embedded in the finished artwork.</small
-                  ></label
-                >
                 <label
                   >Genre<select name="category">
                     <option>Portrait</option>
@@ -322,7 +312,7 @@
                     </p>
                     <div class="artwork-tier-card">
                       <label
-                        >Standard image<input
+                        >Standard image (signed original and Standard roll)<input
                           type="file"
                           name="tierImageStandard"
                           accept="image/png,image/jpeg,image/webp"
@@ -333,6 +323,10 @@
                           hidden=""
                       /></label>
                       <p id="tier-status-Standard">No finished image uploaded</p>
+                      <p id="original-status" class="field-status">
+                        Use a Standard file with its LWV serial in the image information or
+                        filename.
+                      </p>
                     </div>
                     <div class="artwork-tier-card">
                       <label
@@ -443,23 +437,6 @@
                     value="600"
                     required=""
                 /></label>
-                <label class="wide"
-                  >Finished source artwork<input
-                    name="originalFile"
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                  /><img
-                    class="admin-local-image-preview"
-                    data-image-for="originalFile"
-                    alt="Selected image preview"
-                    hidden=""
-                  /><small
-                    >The local helper adds C2PA automatically. The browser fingerprints and signs
-                    the resulting serialized original before private upload.</small
-                  ><small id="original-status" class="field-status"
-                    >No original selected.</small
-                  ></label
-                >
                 <fieldset class="wide signing-fields">
                   <legend>Cryptographic identity</legend>
                   <label class="wide"
@@ -514,6 +491,19 @@
                 </button>
                 <p id="catalog-relaunch-status" role="status"></p>
               </section>
+              <details class="catalog-relaunch">
+                <summary>Permanently reset old artwork records</summary>
+                <p>
+                  Preview all records, including hidden and archived uploads. Delete only records
+                  with no order, reservation or print quote, releasing their serials. Stored image
+                  files remain available for recovery.
+                </p>
+                <button id="preview-artwork-rebuild" type="button">Preview permanent reset</button>
+                <div id="artwork-rebuild-preview" role="status"></div>
+                <button id="apply-artwork-rebuild" type="button" class="danger" hidden>
+                  Permanently delete unlinked artwork records
+                </button>
+              </details>
               <div id="admin-catalog"></div>
             </section>
             <details class="dashboard-card editorial-manager">
@@ -833,7 +823,7 @@
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=20261024-editor"></script>
+    <script type="module" src="/admin.js?v=20261113-artwork-rebuild"></script>
 
     <script type="module" src="/gelato-admin.js?v=20261024-account-admin"></script>
     <script type="module" src="/forge-print.js?v=20261024-account-admin"></script>

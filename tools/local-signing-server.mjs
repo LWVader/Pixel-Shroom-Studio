@@ -6,6 +6,7 @@ import {
   timingSafeEqual,
   X509Certificate,
 } from "node:crypto";
+import { artworkImageInfo } from "./artwork-image-info.mjs";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -339,6 +340,23 @@ const server = createServer(async (request, response) => {
     if (request.method === "GET" && request.url === "/health") {
       await validateSigningIdentity();
       return sendJson(response, origin, 200, { ready: true });
+    }
+    if (request.method === "POST" && request.url === "/image-info") {
+      const authorization = request.headers.authorization || "";
+      if (
+        !authorization.startsWith("Bearer ") ||
+        !tokenMatches(authorization.slice(7).trim(), signingToken)
+      )
+        return sendJson(response, origin, 401, {
+          error: "The local signing-helper token is invalid.",
+        });
+      const filename = decodeHeader(request.headers["x-artwork-filename"], "File name");
+      return sendJson(
+        response,
+        origin,
+        200,
+        await artworkImageInfo(await readRequestBody(request), filename),
+      );
     }
     if (request.method === "POST" && request.url === "/sign") {
       await signArtwork(request, response, origin, signingToken);

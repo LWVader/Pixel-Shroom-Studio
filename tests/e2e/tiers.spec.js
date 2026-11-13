@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from "node:crypto";
 import { test, expect } from "@playwright/test";
 const edition = {
   artworkId: 1,
@@ -130,24 +131,39 @@ test("admin uploads finished images privately and registers six source mappings"
     route.fulfill({
       contentType: "text/javascript",
       body: `
-    globalThis.uploadRecords=[];globalThis.assetRecords=[];globalThis.writeRecords=[];
+    globalThis.standardRecords=[];globalThis.uploadRecords=[];globalThis.assetRecords=[];globalThis.writeRecords=[];
     export function createClient(){return {
       auth:{getUser:async()=>({data:{user:{id:'admin'}}}),signOut:async()=>{}},
-      storage:{from:bucket=>({upload:async(path,file,options)=>{globalThis.uploadRecords.push({bucket,path,size:file.size,type:file.type,options});return {error:null};}})},
-      from:table=>{const q={select:()=>q,update:row=>{globalThis.writeRecords.push(row);return q;},is:()=>q,eq:()=>q,order:()=>q,limit:()=>q,single:async()=>({data:{id:1}}),maybeSingle:async()=>({data:{user_id:'admin'}}),then:done=>done({data:table==='artworks'?[${JSON.stringify(item)}]:[]})};return q;},
-      rpc:async(name,body)=>{if(name==='set_foil_tier_assets')globalThis.assetRecords.push(body);return {data:name==='admin_foil_tier_assets'?{locked:false,assets:[]}:name==='admin_foil_settings'?{enabled:false,maxSupply:500,silverCap:100,goldCap:50,emeraldCap:30,sapphireCap:15,prismaticCap:5,rulesVersion:2,locked:false}:null};}
+      storage:{from:bucket=>({upload:async(path,file,options)=>{globalThis.uploadRecords.push({bucket,path,size:file.size,type:file.type,options});return {error:null};},getPublicUrl:path=>({data:{publicUrl:"https://example.invalid/"+path}})})},
+      from:table=>{const q={select:()=>q,update:row=>{globalThis.writeRecords.push(row);return q;},upsert:async()=>({error:null}),is:()=>q,eq:()=>q,order:()=>q,limit:()=>q,single:async()=>({data:{id:1}}),maybeSingle:async()=>({data:{user_id:'admin'}}),then:done=>done({data:table==='artworks'?[${JSON.stringify(item)}]:[]})};return q;},
+      rpc:async(name,body)=>{if(name==='set_standard_tier_from_master')globalThis.standardRecords.push(body);if(name==='set_foil_tier_assets')globalThis.assetRecords.push(body);return {data:name==='admin_foil_tier_assets'?{locked:false,assets:[]}:name==='admin_foil_settings'?{enabled:false,maxSupply:500,silverCap:100,goldCap:50,emeraldCap:30,sapphireCap:15,prismaticCap:5,rulesVersion:2,locked:false}:null};}
     }}
   `,
     }),
   );
-  await page.route("http://127.0.0.1:4179/**", (route) => route.abort());
+  await page.route("http://127.0.0.1:4179/**", (route) => {
+    const headers = {
+      "access-control-allow-origin": "*",
+      "access-control-allow-private-network": "true",
+      "access-control-allow-headers":
+        "authorization,content-type,x-artwork-filename,x-artwork-title,x-artwork-serial,x-artwork-creator",
+    };
+    if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+    if (route.request().url().endsWith("/sign"))
+      return route.fulfill({
+        path: "public/assets/art-fantasy.png",
+        contentType: "image/png",
+        headers,
+      });
+    return route.fulfill({ json: { serial: item.serial_number }, headers });
+  });
   await page.goto("/admin.html#images-view");
   await page.locator('[data-edit="1"]').click();
   await page.locator('[name="foilEnabled"]').uncheck();
   await page.locator("#save-button").click();
   await expect(page.locator("#form-message")).toContainText("all six tiers");
-  await page.locator('[name="tierImageStandard"]').setInputFiles("public/assets/art-fantasy.png");
-  await expect(page.locator('[data-image-for="tierImageStandard"]')).toBeVisible();
+  await page.locator('[name="tierImageSilver"]').setInputFiles("public/assets/art-fantasy.png");
+  await expect(page.locator('[data-image-for="tierImageSilver"]')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole("button", { name: "Save private draft" }).click();
   await expect.poll(() => page.evaluate(() => globalThis.assetRecords.length)).toBe(1);
@@ -157,8 +173,28 @@ test("admin uploads finished images privately and registers six source mappings"
   await page.locator('[data-edit="1"]').click();
   for (const tier of ["Standard", "Silver", "Gold", "Emerald", "Sapphire", "Prismatic"])
     await page.locator(`[name="tierImage${tier}"]`).setInputFiles("public/assets/art-fantasy.png");
+  await expect(page.locator('[name="serialNumber"],[name="originalFile"]')).toHaveCount(0);
+  const keys = generateKeyPairSync("ec", {
+    namedCurve: "P-256",
+    privateKeyEncoding: { type: "pkcs8", format: "pem" },
+    publicKeyEncoding: { type: "spki", format: "pem" },
+  });
+  await page.locator('[name="signingHelperToken"]').fill("fixture");
+  for (const [field, pem] of [
+    ["privateSigningKey", keys.privateKey],
+    ["publicSigningKey", keys.publicKey],
+  ])
+    await page.locator(`[name="${field}"]`).setInputFiles({
+      name: "fixture.pem",
+      mimeType: "application/x-pem-file",
+      buffer: Buffer.from(pem),
+    });
   await page.locator("#save-button").click();
+  await expect(page.locator("#form-message")).toContainText("Listing published");
   await expect.poll(() => page.evaluate(() => globalThis.assetRecords.length)).toBe(2);
+  expect(await page.evaluate(() => globalThis.standardRecords)).toEqual([
+    { target_artwork: 1, preview: expect.stringMatching(/^artworks\/.*-protected-preview\.webp$/) },
+  ]);
   const uploaded = await page.evaluate(() =>
     globalThis.uploadRecords.filter((r) => r.bucket === "originals").slice(1),
   );
@@ -168,20 +204,22 @@ test("admin uploads finished images privately and registers six source mappings"
   expect(previews).toHaveLength(7);
   for (const preview of previews) {
     expect(preview.type).toBe("image/webp");
-    expect(preview.path).toMatch(/^foil-tiers\/1\/[^/]+\/[0-9a-f-]+\.webp$/);
+    expect(preview.path).toMatch(
+      /^(?:foil-tiers\/1\/[^/]+\/[0-9a-f-]+|artworks\/[0-9a-f-]+-protected-preview)\.webp$/,
+    );
   }
   expect(uploaded).toHaveLength(6);
   for (const record of uploaded) {
     expect(record.bucket).toBe("originals");
     expect(record.path).toMatch(
-      /^foil-tiers\/1\/(standard|silver|gold|emerald|sapphire|prismatic)\/[a-f0-9-]+\.png$/,
+      /^(?:foil-tiers\/1\/(silver|gold|emerald|sapphire|prismatic)\/[a-f0-9-]+|artworks\/[a-f0-9-]+-LWV-0000000001)\.png$/,
     );
     expect(record.options.upsert).toBe(false);
     expect(record.type).toBe("image/png");
   }
   const mappings = await page.evaluate(() => globalThis.assetRecords[1]);
   expect(mappings.target_artwork).toBe(1);
-  expect(mappings.assets).toHaveLength(6);
+  expect(mappings.assets).toHaveLength(5);
   for (const asset of mappings.assets) {
     expect(asset.sha256).toMatch(/^[a-f0-9]{64}$/);
     expect(asset.width).toBeGreaterThan(0);

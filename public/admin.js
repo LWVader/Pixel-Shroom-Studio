@@ -140,6 +140,49 @@ async function createSignatureRecord(originalFile, formData) {
   };
 }
 
+async function standardSerial(file, formData) {
+  const token = formData.get("signingHelperToken").trim();
+  if (!token) throw Error("Paste the local signing-helper token before saving the Standard image.");
+  let response;
+  try {
+    response = await fetch(`${LOCAL_SIGNER_URL}/image-info`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": file.type,
+        "X-Artwork-Filename": encodeURIComponent(file.name),
+      },
+      body: file,
+    });
+  } catch {
+    throw Error("Start the updated local signing helper to read the Standard image information.");
+  }
+  const info = await response.json().catch(() => ({}));
+  if (!response.ok || !/^LWV-\d{10,11}$/.test(info.serial || ""))
+    throw Error(
+      info.error || "Restart the updated signing helper and check the Standard file information.",
+    );
+  return info.serial;
+}
+
+async function checkArtworkSerial(serial, artworkId) {
+  const { data, error } = await supabase
+    .from("artworks")
+    .select("id,title,deleted_at")
+    .eq("serial_number", serial)
+    .limit(1);
+  if (error) throw error;
+  const existing = data?.[0];
+  if (existing && String(existing.id) !== String(artworkId)) {
+    throw Error(
+      `${serial} belongs to “${existing.title}” (artwork ${existing.id}). ` +
+        (existing.deleted_at
+          ? "It is hidden. Use Preview permanent reset to see whether this record can be deleted."
+          : "Edit that listing, or preview the permanent reset to remove unlinked records."),
+    );
+  }
+}
+
 // SECTION: Local C2PA signing helper
 async function signOriginalLocally(originalFile, formData) {
   const token = formData.get("signingHelperToken").trim();
@@ -333,10 +376,10 @@ async function generatePreview(originalFile, serialNumber) {
 
 // SECTION: Private original and public derivative uploads
 async function uploadFiles(formData, current) {
-  const originalFile = formData.get("originalFile");
+  const originalFile = formData.get("tierImageStandard");
   if (!(originalFile instanceof File) || !originalFile.size) {
     if (!current?.preview_url || !current?.original_path)
-      throw new Error("Select the serialized original image.");
+      throw new Error("Select the Standard image.");
     return {
       previewUrl: current.preview_url,
       originalPath: current.original_path,
@@ -661,10 +704,11 @@ function updateTierUploadStatus() {
       : "No finished image uploaded";
   }
 }
-async function uploadTierImages(artworkId) {
+async function uploadTierImages(artworkId, serial, reuseStandard) {
   const assets = [];
   const previews = [];
   for (const tier of FOIL_TIERS) {
+    if (reuseStandard && tier === "Standard") continue;
     const file = artForm.elements.namedItem("tierImage" + tier).files[0];
     if (!file) continue;
     if (tierAssetsLocked) throw new Error("Tier images are locked for this edition.");
@@ -684,7 +728,7 @@ async function uploadTierImages(artworkId) {
       .upload(path, file, { contentType: file.type, upsert: false });
     if (error) throw error;
     assets.push({ tier, path, sha256, mimeType: file.type, width, height });
-    const preview = await generatePreview(file, artForm.elements.serialNumber.value);
+    const preview = await generatePreview(file, serial);
     const previewPath = `foil-tiers/${artworkId}/${tier.toLowerCase()}/${crypto.randomUUID()}.webp`;
     const { error: pe } = await supabase.storage
       .from("previews")
@@ -714,6 +758,7 @@ function resetArtworkForm() {
   tierAssetsLocked = false;
   updateTierUploadStatus();
   delete artForm.dataset.foilConfigured;
+  delete artForm.dataset.masterLocked;
   const savedSigningToken = sessionStorage.getItem("pixelShroomSigningToken") || "";
   editingArtworkId = null;
   artForm.reset();
@@ -741,21 +786,22 @@ function resetArtworkForm() {
   cancelEdit.hidden = true;
   document.querySelector("#art-form-title").textContent = "Add artwork or NFT";
   document.querySelector("#save-button").textContent = "Publish new listing";
-  document.querySelector("#original-status").textContent = "No original selected.";
+  document.querySelector("#original-status").textContent =
+    "Use a Standard file with its LWV serial in the image information or filename.";
   checkLocalSigner();
 }
 
-artForm.elements.originalFile.addEventListener("change", async () => {
-  const file = artForm.elements.originalFile.files[0];
+artForm.elements.tierImageStandard.addEventListener("change", async () => {
+  const file = artForm.elements.tierImageStandard.files[0];
   const status = document.querySelector("#original-status");
   if (!file) {
-    status.textContent = "No original selected.";
+    status.textContent = "No new Standard image selected.";
     return;
   }
   try {
     const image = await readImage(file);
-    artForm.elements.displayWidth.value = image.width;
-    artForm.elements.displayHeight.value = image.height;
+    artForm.elements.displayWidth.value = Math.max(160, Math.min(960, image.width));
+    artForm.elements.displayHeight.value = Math.max(120, Math.min(640, image.height));
     status.textContent = `Selected: ${file.name} · ${image.width} × ${image.height}px`;
     document.querySelector("#signature-status").textContent =
       "Ready to create C2PA, SHA-256, and studio signatures when you publish.";
@@ -798,7 +844,10 @@ artForm.addEventListener("submit", async (event) => {
       values.get("category") !== "NFT" ||
       foilEnabled ||
       artForm.dataset.foilConfigured === "true" ||
-      FOIL_TIERS.some((tier) => artForm.elements.namedItem("tierImage" + tier).files.length);
+      FOIL_TIERS.some(
+        (tier) =>
+          tier !== "Standard" && artForm.elements.namedItem("tierImage" + tier).files.length,
+      );
     const publish = event.submitter?.value !== "draft";
     const foilSupply = Number(values.get("foilSupply"));
     const foilCaps = ["foilSilver", "foilGold", "foilEmerald", "foilSapphire", "foilPrismatic"].map(
@@ -824,11 +873,29 @@ artForm.addEventListener("submit", async (event) => {
       throw new Error(
         "Upload the finished image for all six tiers before publishing this foil listing.",
       );
+    const standard = values.get("tierImageStandard");
+    const newStandard = standard instanceof File && standard.size > 0;
+    if (newStandard && (tierAssetsLocked || artForm.dataset.masterLocked === "true"))
+      throw Error("Tier images are locked for this edition.");
+    if (
+      newStandard &&
+      (!["image/png", "image/jpeg", "image/webp"].includes(standard.type) ||
+        standard.size > 104857600)
+    )
+      throw Error("Standard: use PNG, JPEG or WebP up to 100 MB.");
+    const serial = newStandard ? await standardSerial(standard, values) : current?.serial_number;
+    if (!serial) throw Error("Select the Standard image with its LWV serial.");
+    if (current && serial !== current.serial_number)
+      throw Error(
+        "The Standard serial differs from this listing’s serial. Use the matching image.",
+      );
+    await checkArtworkSerial(serial, editingArtworkId);
+    values.set("serialNumber", serial);
     const files = await uploadFiles(values, current);
     const row = {
       title: values.get("title").trim(),
       artist: values.get("artist").trim(),
-      serial_number: values.get("serialNumber").trim().toUpperCase(),
+      serial_number: serial,
       category: values.get("category"),
       price:
         editingArtworkId === null
@@ -855,9 +922,11 @@ artForm.addEventListener("submit", async (event) => {
       await saveSignature(artworkId, files.signatureRecord);
     }
     if (
-      foilEnabled ||
-      artForm.dataset.foilConfigured === "true" ||
-      FOIL_TIERS.some((tier) => artForm.elements.namedItem("tierImage" + tier).files.length)
+      foilIntent &&
+      (newStandard ||
+        foilEnabled ||
+        artForm.dataset.foilConfigured === "true" ||
+        FOIL_TIERS.some((tier) => values.get("tierImage" + tier)?.size))
     ) {
       const { error: foilError } = await supabase.rpc("configure_foil_listing_v2", {
         target_artwork: artworkId,
@@ -871,8 +940,15 @@ artForm.addEventListener("submit", async (event) => {
       });
       if (foilError)
         throw new Error("Artwork saved, but foil settings were not applied: " + foilError.message);
+      if (newStandard) {
+        const { error } = await supabase.rpc("set_standard_tier_from_master", {
+          target_artwork: artworkId,
+          preview: files.previewPath,
+        });
+        if (error) throw Error("Artwork saved, but Standard was not registered: " + error.message);
+      }
     }
-    await uploadTierImages(artworkId);
+    if (foilIntent) await uploadTierImages(artworkId, serial, newStandard);
     if (foilIntent && publish) await saveRow("artworks", { status: "published" }, artworkId);
     delete artForm.dataset.foilConfigured;
     resetArtworkForm();
@@ -890,7 +966,12 @@ artForm.addEventListener("submit", async (event) => {
     await loadItems();
     await loadDashboard();
   } catch (error) {
-    showMessage("#form-message", error.message);
+    showMessage(
+      "#form-message",
+      error.code === "23505" && error.message.includes("artworks_serial_number_key")
+        ? "That serial already exists. Edit the existing artwork or preview the permanent reset for hidden records."
+        : error.message,
+    );
   } finally {
     button.disabled = false;
   }
@@ -923,6 +1004,7 @@ adminCatalog.addEventListener("click", async (event) => {
     for (const tier of FOIL_TIERS) artForm.elements.namedItem("tierImage" + tier).value = "";
     updateTierUploadStatus();
     artForm.dataset.foilConfigured = foilSettings ? "true" : "false";
+    artForm.dataset.masterLocked = String(Boolean(foilSettings?.locked));
     artForm.elements.namedItem("foilEnabled").checked = Boolean(foilSettings?.enabled);
     for (const [name, key, fallback] of [
       ["foilSupply", "maxSupply", 500],
@@ -963,13 +1045,13 @@ adminCatalog.addEventListener("click", async (event) => {
       title: item.title,
       artist: item.artist || "LWVader",
       category: item.category,
-      serialNumber: item.serial_number,
       displayWidth: item.display_width,
       displayHeight: item.display_height,
     };
     Object.entries(values).forEach(([name, value]) => {
       artForm.elements.namedItem(name).value = value;
     });
+    document.querySelector("#original-status").textContent = `Saved serial: ${item.serial_number}`;
     document.querySelector("#art-form-title").textContent = `Editing: ${item.title}`;
     document.querySelector("#save-button").textContent = "Save listing changes";
     cancelEdit.hidden = false;
@@ -1265,7 +1347,10 @@ document.querySelector("#prepare-tier-previews")?.addEventListener("click", asyn
       const { data, error } = await supabase.storage.from("originals").download(asset.path);
       if (error) throw error;
       const file = new File([data], "tier-image", { type: asset.mimeType });
-      const preview = await generatePreview(file, artForm.elements.serialNumber.value);
+      const preview = await generatePreview(
+        file,
+        items.find((item) => item.id === editingArtworkId).serial_number,
+      );
       const path = `foil-tiers/${editingArtworkId}/${asset.tier.toLowerCase()}/${crypto.randomUUID()}.webp`;
       const upload = await supabase.storage
         .from("previews")
@@ -1287,5 +1372,77 @@ document.querySelector("#prepare-tier-previews")?.addEventListener("click", asyn
     showMessage("#form-message", error.message);
   } finally {
     button.disabled = false;
+  }
+});
+
+// SECTION: Explicit two-step permanent reset of unlinked artwork rows.
+const rebuildPreview = document.querySelector("#artwork-rebuild-preview");
+const previewRebuild = document.querySelector("#preview-artwork-rebuild");
+const applyRebuild = document.querySelector("#apply-artwork-rebuild");
+let reviewedArtworkIds = [];
+previewRebuild.addEventListener("click", async () => {
+  previewRebuild.disabled = true;
+  applyRebuild.hidden = true;
+  reviewedArtworkIds = [];
+  rebuildPreview.textContent = "Checking all artwork records…";
+  try {
+    await requireAdmin();
+    const { data, error } = await supabase.rpc("preview_artwork_rebuild");
+    if (error) throw error;
+    const eligible = data.filter((record) => !record.protected);
+    const kept = data.filter((record) => record.protected);
+    reviewedArtworkIds = eligible.map((record) => record.id);
+    rebuildPreview.textContent = `${eligible.length} eligible for permanent deletion. ${kept.length} protected by transaction history.`;
+    for (const [title, records] of [
+      ["Will be deleted", eligible],
+      ["Will be kept", kept],
+    ]) {
+      if (!records.length) continue;
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = title;
+      const list = document.createElement("ul");
+      for (const record of records) {
+        const item = document.createElement("li");
+        item.textContent = `${record.serial} · ${record.title} (#${record.id})`;
+        list.append(item);
+      }
+      details.append(summary, list);
+      rebuildPreview.append(details);
+    }
+    applyRebuild.hidden = !eligible.length;
+  } catch (error) {
+    rebuildPreview.textContent = error.message;
+  } finally {
+    previewRebuild.disabled = false;
+  }
+});
+applyRebuild.addEventListener("click", async () => {
+  if (
+    !reviewedArtworkIds.length ||
+    prompt(
+      `Permanently delete ${reviewedArtworkIds.length} unlinked artwork records and release their serials? Type DELETE ARTWORK to continue.`,
+    ) !== "DELETE ARTWORK"
+  )
+    return;
+  applyRebuild.disabled = true;
+  previewRebuild.disabled = true;
+  try {
+    await requireAdmin();
+    const { data, error } = await supabase.rpc("delete_unlinked_artworks_for_rebuild", {
+      expected_ids: reviewedArtworkIds,
+    });
+    if (error) throw error;
+    resetArtworkForm();
+    rebuildPreview.textContent = `${data} artwork records permanently deleted. Their serials can now be used for new uploads.`;
+    await loadItems();
+    await loadDashboard();
+  } catch (error) {
+    rebuildPreview.textContent = error.message;
+  } finally {
+    reviewedArtworkIds = [];
+    applyRebuild.hidden = true;
+    applyRebuild.disabled = false;
+    previewRebuild.disabled = false;
   }
 });
