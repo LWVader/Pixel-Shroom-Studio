@@ -374,6 +374,69 @@ async function generatePreview(originalFile, serialNumber) {
   return { blob, width, height, originalWidth: image.width, originalHeight: image.height };
 }
 
+// Compression happens locally, before creating any signature or tier hash.
+const PNG_OPTIMIZATION_THRESHOLD = 9 * 1024 * 1024;
+const MAX_ARTWORK_UPLOAD_BYTES = 100 * 1024 * 1024;
+
+async function prepareArtworkUploads(values, includeTiers) {
+  const tiers = includeTiers ? FOIL_TIERS : ["Standard"];
+  const reductions = [];
+  for (const tier of tiers) {
+    const field = "tierImage" + tier;
+    const file = values.get(field);
+    if (!(file instanceof File) || !file.size) continue;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type))
+      throw new Error(`${tier}: choose a PNG, JPEG or WebP file.`);
+    if (file.type === "image/png" && file.size > PNG_OPTIMIZATION_THRESHOLD) {
+      const token = values.get("signingHelperToken").trim();
+      if (!token)
+        throw new Error(`${tier}: paste the local signing-helper token to optimize the PNG.`);
+      showMessage("#form-message", `Optimizing ${tier} PNG locally…`, true);
+      let response;
+      try {
+        response = await fetch(`${LOCAL_SIGNER_URL}/optimize-png`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type },
+          body: file,
+        });
+      } catch {
+        throw new Error(`${tier}: start the updated local signing helper to optimize the PNG.`);
+      }
+      if (!response.ok) {
+        const details = await response.json().catch(() => ({}));
+        throw new Error(
+          `${tier}: ${response.status === 404 ? "restart the updated local signing helper." : details.error || "PNG optimization failed."}`,
+        );
+      }
+      const blob = await response.blob();
+      if (blob.type !== "image/png" || !blob.size)
+        throw new Error(`${tier}: the signing helper did not return a valid PNG response.`);
+      if (blob.size < file.size) {
+        values.set(field, new File([blob], file.name, { type: file.type }));
+        reductions.push(tier);
+      }
+    }
+    if (values.get(field).size > MAX_ARTWORK_UPLOAD_BYTES)
+      throw new Error(
+        `${tier}: the file is still over 100 MiB. Export a smaller file at the same pixel dimensions and try again.`,
+      );
+  }
+  return reductions;
+}
+
+function artworkUploadError(error, label, bucket, file) {
+  if (
+    Number(error.statusCode ?? error.status) === 413 ||
+    /maximum allowed size|payload too large/i.test(error.message || "")
+  ) {
+    const size = (file.size / 1024 ** 2).toFixed(2);
+    return new Error(
+      `${label} is ${size} MiB. Supabase rejected it in ${bucket}. Check that bucket’s limit and the project-wide limit, or export a smaller source before signing.`,
+    );
+  }
+  return error;
+}
+
 // SECTION: Private original and public derivative uploads
 async function uploadFiles(formData, current) {
   const originalFile = formData.get("tierImageStandard");
@@ -406,12 +469,14 @@ async function uploadFiles(formData, current) {
   const { error: previewError } = await supabase.storage
     .from("previews")
     .upload(previewPath, previewFile, { contentType: previewFile.type, upsert: false });
-  if (previewError) throw previewError;
+  if (previewError)
+    throw artworkUploadError(previewError, "Standard preview", "previews", previewFile);
 
   const { error: originalError } = await supabase.storage
     .from("originals")
     .upload(originalPath, signedOriginal, { contentType: signedOriginal.type, upsert: false });
-  if (originalError) throw originalError;
+  if (originalError)
+    throw artworkUploadError(originalError, "Signed Standard", "originals", signedOriginal);
 
   const { data: publicPreview } = supabase.storage.from("previews").getPublicUrl(previewPath);
 
@@ -704,16 +769,14 @@ function updateTierUploadStatus() {
       : "No finished image uploaded";
   }
 }
-async function uploadTierImages(artworkId, serial, reuseStandard) {
+async function uploadTierImages(artworkId, serial, reuseStandard, values) {
   const assets = [];
   const previews = [];
   for (const tier of FOIL_TIERS) {
     if (reuseStandard && tier === "Standard") continue;
-    const file = artForm.elements.namedItem("tierImage" + tier).files[0];
-    if (!file) continue;
+    const file = values.get("tierImage" + tier);
+    if (!file?.size) continue;
     if (tierAssetsLocked) throw new Error("Tier images are locked for this edition.");
-    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 104857600)
-      throw new Error(`${tier}: use PNG, JPEG or WebP up to 100 MB.`);
     const image = await readImage(file);
     const { width, height } = image;
     image.source.close();
@@ -726,14 +789,14 @@ async function uploadTierImages(artworkId, serial, reuseStandard) {
     const { error } = await supabase.storage
       .from("originals")
       .upload(path, file, { contentType: file.type, upsert: false });
-    if (error) throw error;
+    if (error) throw artworkUploadError(error, tier, "originals", file);
     assets.push({ tier, path, sha256, mimeType: file.type, width, height });
     const preview = await generatePreview(file, serial);
     const previewPath = `foil-tiers/${artworkId}/${tier.toLowerCase()}/${crypto.randomUUID()}.webp`;
     const { error: pe } = await supabase.storage
       .from("previews")
       .upload(previewPath, preview.blob, { contentType: "image/webp", upsert: false });
-    if (pe) throw pe;
+    if (pe) throw artworkUploadError(pe, tier + " preview", "previews", preview.blob);
     previews.push({ target: artworkId, chosen_tier: tier, preview: previewPath });
   }
   if (assets.length) {
@@ -877,12 +940,6 @@ artForm.addEventListener("submit", async (event) => {
     const newStandard = standard instanceof File && standard.size > 0;
     if (newStandard && (tierAssetsLocked || artForm.dataset.masterLocked === "true"))
       throw Error("Tier images are locked for this edition.");
-    if (
-      newStandard &&
-      (!["image/png", "image/jpeg", "image/webp"].includes(standard.type) ||
-        standard.size > 104857600)
-    )
-      throw Error("Standard: use PNG, JPEG or WebP up to 100 MB.");
     const serial = newStandard ? await standardSerial(standard, values) : current?.serial_number;
     if (!serial) throw Error("Select the Standard image with its LWV serial.");
     if (current && serial !== current.serial_number)
@@ -891,6 +948,14 @@ artForm.addEventListener("submit", async (event) => {
       );
     await checkArtworkSerial(serial, editingArtworkId);
     values.set("serialNumber", serial);
+    const reductions = await prepareArtworkUploads(values, foilIntent);
+    showMessage(
+      "#form-message",
+      reductions.length
+        ? `Optimized ${reductions.join(", ")}. Signing and uploading…`
+        : "Signing and uploading…",
+      true,
+    );
     const files = await uploadFiles(values, current);
     const row = {
       title: values.get("title").trim(),
@@ -948,7 +1013,7 @@ artForm.addEventListener("submit", async (event) => {
         if (error) throw Error("Artwork saved, but Standard was not registered: " + error.message);
       }
     }
-    if (foilIntent) await uploadTierImages(artworkId, serial, newStandard);
+    if (foilIntent) await uploadTierImages(artworkId, serial, newStandard, values);
     if (foilIntent && publish) await saveRow("artworks", { status: "published" }, artworkId);
     delete artForm.dataset.foilConfigured;
     resetArtworkForm();

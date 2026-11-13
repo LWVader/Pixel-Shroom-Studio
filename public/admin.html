@@ -301,9 +301,11 @@
                     <p>
                       Upload the complete design for each tier, including Standard. Buyers receive a
                       numbered copy of the image selected by the secure tier roll. No borders or
-                      effects are added. PNG, JPEG or WebP; up to 100 MB and 100 million pixels per
-                      image. All six are required before publishing. Each authorized copy receives
-                      identity metadata and its own file hash before checkout opens.
+                      effects are added. The local signing helper losslessly optimizes larger PNGs
+                      before upload, without resizing. Supabase still enforces its configured file
+                      size limits. PNG, JPEG or WebP; up to 100 million pixels per image. All six
+                      are required before publishing. Each authorized copy receives identity
+                      metadata and its own file hash before checkout opens.
                     </p>
 
                     <p>
@@ -812,7 +814,7 @@
         <p class="message" id="password-message"></p>
       </form>
     </dialog>
-    <script type="module" src="/admin.js?v=20261113-clean-start"></script>
+    <script type="module" src="/admin.js?v=20261113-png-optimization"></script>
 
     <script type="module" src="/gelato-admin.js?v=20261024-account-admin"></script>
     <script type="module" src="/forge-print.js?v=20261024-account-admin"></script>

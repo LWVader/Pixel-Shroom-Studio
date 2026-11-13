@@ -1,4 +1,5 @@
-import { generateKeyPairSync } from "node:crypto";
+import { createHash, generateKeyPairSync } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
 const edition = {
   artworkId: 1,
@@ -141,6 +142,10 @@ test("admin uploads finished images privately and registers six source mappings"
   `,
     }),
   );
+  const png = readFileSync("public/assets/art-fantasy.png");
+  const oversizedPng = Buffer.concat([png, Buffer.alloc(10 * 1024 * 1024)]);
+  const optimizedTiers = [];
+  let signedInputSize;
   await page.route("http://127.0.0.1:4179/**", (route) => {
     const headers = {
       "access-control-allow-origin": "*",
@@ -149,12 +154,18 @@ test("admin uploads finished images privately and registers six source mappings"
         "authorization,content-type,x-artwork-filename,x-artwork-title,x-artwork-serial,x-artwork-creator",
     };
     if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers });
-    if (route.request().url().endsWith("/sign"))
+    if (route.request().url().endsWith("/optimize-png")) {
+      optimizedTiers.push(route.request().postDataBuffer().length);
+      return route.fulfill({ body: png, contentType: "image/png", headers });
+    }
+    if (route.request().url().endsWith("/sign")) {
+      signedInputSize = route.request().postDataBuffer().length;
       return route.fulfill({
         path: "public/assets/art-fantasy.png",
         contentType: "image/png",
         headers,
       });
+    }
     return route.fulfill({ json: { serial: item.serial_number }, headers });
   });
   await page.goto("/admin.html#images-view");
@@ -173,6 +184,12 @@ test("admin uploads finished images privately and registers six source mappings"
   await page.locator('[data-edit="1"]').click();
   for (const tier of ["Standard", "Silver", "Gold", "Emerald", "Sapphire", "Prismatic"])
     await page.locator(`[name="tierImage${tier}"]`).setInputFiles("public/assets/art-fantasy.png");
+  for (const tier of ["Standard", "Gold"])
+    await page.locator(`[name="tierImage${tier}"]`).setInputFiles({
+      name: `${tier}.png`,
+      mimeType: "image/png",
+      buffer: oversizedPng,
+    });
   await expect(page.locator('[name="serialNumber"],[name="originalFile"]')).toHaveCount(0);
   const keys = generateKeyPairSync("ec", {
     namedCurve: "P-256",
@@ -218,6 +235,12 @@ test("admin uploads finished images privately and registers six source mappings"
     expect(record.type).toBe("image/png");
   }
   const mappings = await page.evaluate(() => globalThis.assetRecords[1]);
+  expect(optimizedTiers).toEqual([oversizedPng.length, oversizedPng.length]);
+  expect(signedInputSize).toBe(png.length);
+  expect(mappings.assets.find((asset) => asset.tier === "Gold").sha256).toBe(
+    createHash("sha256").update(png).digest("hex"),
+  );
+  expect(uploaded.find((file) => file.path.includes("/gold/")).size).toBe(png.length);
   expect(mappings.target_artwork).toBe(1);
   expect(mappings.assets).toHaveLength(5);
   for (const asset of mappings.assets) {

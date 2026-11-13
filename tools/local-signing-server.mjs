@@ -7,6 +7,7 @@ import {
   X509Certificate,
 } from "node:crypto";
 import { artworkImageInfo } from "./artwork-image-info.mjs";
+import { optimizeArtworkPng } from "./artwork-upload-optimization.mjs";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -341,7 +342,7 @@ const server = createServer(async (request, response) => {
       await validateSigningIdentity();
       return sendJson(response, origin, 200, { ready: true });
     }
-    if (request.method === "POST" && request.url === "/image-info") {
+    if (request.method === "POST" && ["/image-info", "/optimize-png"].includes(request.url)) {
       const authorization = request.headers.authorization || "";
       if (
         !authorization.startsWith("Bearer ") ||
@@ -350,6 +351,16 @@ const server = createServer(async (request, response) => {
         return sendJson(response, origin, 401, {
           error: "The local signing-helper token is invalid.",
         });
+      if (request.url === "/optimize-png") {
+        const png = await optimizeArtworkPng(await readRequestBody(request));
+        response.writeHead(200, {
+          ...corsHeaders(origin),
+          "Content-Type": "image/png",
+          "Content-Length": String(png.length),
+        });
+        response.end(png);
+        return;
+      }
       const filename = decodeHeader(request.headers["x-artwork-filename"], "File name");
       return sendJson(
         response,
