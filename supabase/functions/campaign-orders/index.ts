@@ -66,33 +66,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
       auth: {persistSession: false, autoRefreshToken: false}
     });
     const table = () => database.from("campaign_briefs");
-    const deliveries = () => database.from("campaign_zip_deliveries");
     const store = {
-      async listDeliveries(id: string) {
-        const {data, error} = await deliveries()
-          .select("id,file_name,published_at")
-          .eq("checkout_session_id", id)
-          .order("published_at", {ascending: false})
-          .order("id");
-        if (error) throw error;
-        return data ?? [];
-      },
-      async signDelivery(orderId: string, deliveryId: string) {
-        const {data: delivery, error} = await deliveries()
-          .select("object_path,file_name").eq("checkout_session_id", orderId)
-          .eq("id", deliveryId).maybeSingle();
-        if (error) throw error;
-        if (!delivery) return null;
-        const {data, error: signingError} = await database.storage
-          .from("campaign-zips")
-          .createSignedUrl(delivery.object_path, 120, {download: delivery.file_name});
-        if (signingError) {
-          console.error("Campaign ZIP signing failed.");
-          throw {error: "This ZIP is temporarily unavailable. Contact the studio for help.", status: 503};
-        }
-        if (!data?.signedUrl) throw new Error("Storage did not return a signed URL.");
-        return data.signedUrl;
-      },
       async get(id: string) {
         const {data, error} = await table()
           .select("landing_session_id,landing_paid_at").eq("checkout_session_id", id).maybeSingle();

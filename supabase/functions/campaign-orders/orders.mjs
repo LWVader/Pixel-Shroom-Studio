@@ -120,8 +120,7 @@ export function createCampaignOrders({stripe, store, options, notify}) {
     return {
       offer,
       submitted: Boolean(existing),
-      canAddLanding: Boolean(existing && options.landing && offer === "attention" && !existing.landing_paid_at),
-      deliveries: existing ? await store.listDeliveries(session.id) : []
+      canAddLanding: Boolean(existing && options.landing && offer === "attention" && !existing.landing_paid_at)
     };
   }
 
@@ -148,24 +147,13 @@ export function createCampaignOrders({stripe, store, options, notify}) {
     return orderState({session, offer});
   }
 
-  async function download(input) {
-    if (typeof input.deliveryId !== "string" || !requestPattern.test(input.deliveryId)) {
-      throw error("This campaign ZIP could not be found.", 404);
-    }
-    const {session, offer} = await paid(input.sessionId);
-    if (offer === "landing") throw error("Open the original campaign order to view its downloads.", 404);
-    const url = await store.signDelivery(session.id, input.deliveryId);
-    if (!url) throw error("This campaign ZIP could not be found for your order.", 404);
-    return {url};
-  }
-
   return async (input) => {
     switch (input?.action) {
       case "offers": return offers();
       case "checkout": return checkout(input);
       case "order": return orderState(await paid(input.sessionId));
       case "brief": return submit(input);
-      case "download": return download(input);
+      case "download": throw error("Campaign ZIPs are now sent by email.", 410);
       default: throw error("Unknown campaign action.", 400);
     }
   };
