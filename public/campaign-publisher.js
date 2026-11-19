@@ -1,3 +1,5 @@
+import {industries} from "./industries.js";
+
 const list = document.querySelector("#publisher-list");
 const form = document.querySelector("#portfolio-form");
 const preview = document.querySelector("#publisher-image");
@@ -5,6 +7,9 @@ const status = document.querySelector("#publisher-status");
 const formStatus = document.querySelector("#publisher-form-status");
 const more = document.querySelector("#more-campaigns");
 let current, offset = 0;
+for (const [id, label] of Object.entries(industries)) {
+  form.elements.sector.add(new Option(label, id));
+}
 
 async function request(query = "", data) {
   const response = await fetch("/api/admin/portfolio" + query, data ? {
@@ -51,7 +56,7 @@ function row(item) {
   const name = document.createElement("strong");
   const label = document.createElement("small");
   name.textContent = item.name;
-  label.textContent = item.published ? "Live on the site" : "Draft";
+  label.textContent = `${item.published ? "Live on the site" : "Draft"} · ${industries[item.sector] || industries.other}`;
   copy.append(name, label);
   const controls = document.createElement("div");
   controls.className = "publisher-actions";

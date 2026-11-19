@@ -81,7 +81,7 @@ Use **New campaign** in Campaign publisher to add artwork and a case study. **Sa
 
 Choose **Create ad** on a published campaign to load its artwork, tagline and link into AD Studio. Use **Attention Pack promotion** or **Studio portfolio promotion** when you want a general studio ad. Choose a square, portrait, or story format, edit the copy, and download a PNG or export the video. The **Publish to social** tab uses the existing Buffer connection. Choose **Pop-out editor** to work with the original character and product layouts.
 
-If you're upgrading an existing deployment, apply `0003_campaign_workflow.sql` before deploying this version. `npm.cmd run deploy` does both. If Git builds still deploy with `npx wrangler deploy`, run `npm.cmd run db:migrate` first.
+If you're upgrading an existing deployment, apply the pending campaign migrations through `0004_portfolio_industries.sql` before deploying this version. The industry migration preserves existing campaigns. `npm.cmd run deploy` applies the migrations and deploys the Worker. If Git builds still deploy with `npx wrangler deploy`, run `npm.cmd run db:migrate` first.
 
 ## Email a finished ZIP
 

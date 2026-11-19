@@ -25,19 +25,18 @@
     </div>
   </header>
   <main id="main">
-    <section class="hero wrap" aria-labelledby="headline">
-      <div class="hero-copy">
+    <section class="hero" aria-labelledby="headline">
+      <div class="hero-background" aria-hidden="true">
+        <img src="/assets/sir-shroomalot.webp" srcset="/assets/sir-shroomalot-768.webp 768w, /assets/sir-shroomalot.webp 1440w" sizes="(max-width: 700px) 100vw, min(70vw, 1120px)" width="1440" height="1440" fetchpriority="high" alt="">
+      </div>
+      <div class="hero-copy wrap">
         <p class="eyebrow"><span aria-hidden="true"></span> Independent creative studio</p>
         <h1 id="headline">Good ads.<br><em>Weird worlds.</em></h1>
         <p class="intro">Surreal campaign art for indie brands with a strange streak. Get five coordinated visuals for your next drop, launch, or release.</p>
         <div class="actions"><a class="button" href="#pack">Get the Attention Pack <span aria-hidden="true">↗</span></a><a class="text-link" href="#work">Explore the work <span aria-hidden="true">↓</span></a></div>
       </div>
-      <figure class="hero-art">
-        <img src="/assets/campaigns/orbit-roast.webp" srcset="/assets/campaigns/orbit-roast-640.webp 640w, /assets/campaigns/orbit-roast.webp 1440w" sizes="(max-width: 850px) 94vw, 52vw" width="1440" height="960" fetchpriority="high" alt="A giant coffee bean hangs over a violet city, circled by a streak of lime light">
-        <figcaption><span>Featured concept</span><strong>Orbit Roast <span aria-hidden="true">↗</span></strong></figcaption>
-      </figure>
     </section>
-    <div class="sector-bar"><div class="wrap sectors"><span>FOOD &amp; DRINK</span><b aria-hidden="true">✦</b><span>INDIE GAMES</span><b aria-hidden="true">✦</b><span>MUSIC &amp; CREATORS</span><b aria-hidden="true">✦</b><span>STREETWEAR</span></div></div>
+    <div class="sector-bar"><div class="wrap sectors"><span>FOOD &amp; DRINK</span><b aria-hidden="true">✦</b><span>GAMING</span><b aria-hidden="true">✦</b><span>MUSIC &amp; CREATORS</span><b aria-hidden="true">✦</b><span>STREETWEAR</span></div></div>
     <section id="work" class="section wrap" aria-labelledby="work-title">
       <div class="section-top">
         <div><p class="eyebrow">The portfolio</p><h2 id="work-title">Strange by design.</h2></div>
@@ -45,16 +44,15 @@
       </div>
       <div class="filters" aria-label="Filter campaigns">
         <button type="button" aria-pressed="true" data-filter="all">All work</button>
-        <button type="button" aria-pressed="false" data-filter="food">Food &amp; drink</button>
-        <button type="button" aria-pressed="false" data-filter="games">Indie games</button>
+        <button type="button" aria-pressed="false" data-filter="food">Food &amp; Drink</button>
+        <button type="button" aria-pressed="false" data-filter="games">Gaming</button>
         <button type="button" aria-pressed="false" data-filter="music">Music</button>
-        <button type="button" aria-pressed="false" data-filter="fashion">Streetwear</button>
-        <button type="button" aria-pressed="false" data-filter="other" hidden>Other campaigns</button>
+        <button type="button" aria-pressed="false" data-filter="fashion">Fashion &amp; Streetwear</button>
       </div>
       <div class="work-grid">
         <button class="work-card" type="button" data-case="orbit" data-sector="food" aria-haspopup="dialog"><img src="/assets/campaigns/orbit-roast-640.webp" width="640" height="427" loading="lazy" alt="Giant coffee bean floating above a nighttime city"><span class="card-info"><span><small>COFFEE LAUNCH</small><strong>Orbit Roast</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
         <button class="work-card" type="button" data-case="boom" data-sector="food" aria-haspopup="dialog"><img src="/assets/campaigns/boom-bun.webp" width="960" height="640" loading="lazy" alt="A terrier with a cheeseburger races down a retro diner"><span class="card-info"><span><small>DINER CAMPAIGN</small><strong>Boom Bun</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
-        <button class="work-card" type="button" data-case="moss" data-sector="games" aria-haspopup="dialog"><img src="/assets/campaigns/mossbyte.webp" width="960" height="640" loading="lazy" alt="A tiny explorer stands beside a luminous pink mushroom in a strange forest"><span class="card-info"><span><small>INDIE GAME REVEAL</small><strong>Mossbyte Games</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
+        <button class="work-card" type="button" data-case="moss" data-sector="games" aria-haspopup="dialog"><img src="/assets/campaigns/mossbyte.webp" width="960" height="640" loading="lazy" alt="A tiny explorer stands beside a luminous pink mushroom in a strange forest"><span class="card-info"><span><small>GAMING</small><strong>Mossbyte Games</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
         <button class="work-card" type="button" data-case="static" data-sector="music" aria-haspopup="dialog"><img src="/assets/campaigns/static-bloom.webp" width="960" height="640" loading="lazy" alt="Chrome headphones in the shape of a neon jellyfish float above a city"><span class="card-info"><span><small>EP RELEASE</small><strong>Static Bloom</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
         <button class="work-card" type="button" data-case="sole" data-sector="fashion" aria-haspopup="dialog"><img src="/assets/campaigns/midnight-sole.webp" width="960" height="640" loading="lazy" alt="A black and lime high-top sneaker breaks through dark water"><span class="card-info"><span><small>STREETWEAR DROP</small><strong>Midnight Sole</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
       </div>

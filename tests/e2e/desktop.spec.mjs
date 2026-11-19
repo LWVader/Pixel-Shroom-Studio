@@ -11,8 +11,9 @@ test.beforeEach(async ({context}) => {
 
 test("portfolio filter and keyboard dismissal", async ({page}) => {
   await page.goto("/");
+  await expect.poll(() => page.locator(".hero-background img").evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
   await expect(page.locator(".work-card:visible")).toHaveCount(5);
-  await page.getByRole("button", {name: "Indie games", exact: true}).click();
+  await page.getByRole("button", {name: "Gaming", exact: true}).click();
   await expect(page.locator(".work-card:visible")).toHaveCount(1);
   await page.getByRole("button", {name: /Mossbyte Games/}).click();
   await expect(page.getByRole("dialog", {name: "Mossbyte Games"})).toBeVisible();
@@ -87,10 +88,12 @@ test("publishes a campaign and starts a marketing ad from its artwork", async ({
   await page.getByRole("button", {name: "Sign in", exact: true}).click();
   await page.getByRole("button", {name: "New campaign", exact: true}).click();
   await page.getByLabel("Campaign name").fill("Twilight Release");
-  await page.getByLabel("Category").selectOption("food");
+  const industry = page.getByLabel("Industry");
+  await expect(industry.locator('option[value="games"]')).toHaveText("Gaming");
+  await industry.selectOption("technology");
   await page.getByLabel("Tagline").fill("Taste the night");
-  await page.getByLabel("Campaign brief").fill("Launch an independent coffee roast.");
-  await page.getByLabel("Why this creative works").fill("A giant coffee bean connects the product to the story.");
+  await page.getByLabel("Campaign brief").fill("Launch a new coffee subscription app.");
+  await page.getByLabel("Why this creative works").fill("A giant coffee bean makes the app's purpose clear.");
   await page.getByLabel("Artwork description").fill("A giant coffee bean floating above a city.");
   await page.locator('input[name="image"]').setInputFiles("public/assets/campaigns/orbit-roast-640.webp");
   await page.getByRole("button", {name: "Save as draft"}).click();
@@ -105,6 +108,9 @@ test("publishes a campaign and starts a marketing ad from its artwork", async ({
   await page.goto(view);
   await expect(page.getByRole("dialog", {name: "Twilight Release"})).toBeVisible();
   await expect(page.getByRole("dialog").getByText("Taste the night")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", {name: "Technology, Software & SaaS", exact: true}).click();
+  await expect(page.locator(".work-card:visible")).toHaveCount(1);
   await page.goto(create);
   await expect(page.getByText("Template loaded. Edit the copy, then export or publish.")).toBeVisible();
   await expect(page.locator("#headline")).toHaveValue("Twilight Release\nTaste the night");

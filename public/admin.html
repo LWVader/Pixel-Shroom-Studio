@@ -61,10 +61,7 @@
       <form class="brief-form portfolio-form" id="portfolio-form" hidden>
         <div class="publisher-fields">
           <label>Campaign name<input name="name" maxlength="100" required></label>
-          <label>Category<select name="sector">
-            <option value="food">Food &amp; drink</option><option value="games">Indie games</option>
-            <option value="music">Music</option><option value="fashion">Streetwear</option><option value="other">Other</option>
-          </select></label>
+          <label>Industry<select name="sector" required><option value="" disabled selected>Choose an industry</option></select></label>
           <label>Tagline<input name="tagline" maxlength="160" required></label>
           <label>Palette <input name="palette" placeholder="#D9FF55, #21192B" maxlength="60"></label>
           <label>Campaign brief<textarea name="brief" maxlength="600" required></textarea></label>

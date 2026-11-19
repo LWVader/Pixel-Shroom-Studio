@@ -2,7 +2,7 @@
 
 ## Product Hunt, Indie Hackers and X
 
-Look for independent launches where one striking visual could make the product easier to remember. Start with indie games, food and drink, electronic music, streetwear and creators. Match one campaign from the portfolio to the launch. Open with a detail that shows you looked at their project.
+Look for independent launches where one striking visual could make the product easier to remember. Start with gaming, food and drink, electronic music, streetwear and creators. Match one campaign from the portfolio to the launch. Open with a detail that shows you looked at their project.
 
 > Hey [first name], I saw the [specific thing] in your [project] launch. I’m Loren from Pixel Shroom Studio. I make five coordinated, surreal campaign images for indie launches for $199. I thought you might like [matched concept] because [one genuine connection]. Here’s the work if you’re planning launch visuals [portfolio link].
 

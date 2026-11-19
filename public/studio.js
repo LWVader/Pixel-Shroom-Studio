@@ -1,3 +1,5 @@
+import {industries} from "./industries.js";
+
 const cases = {
   orbit: {
     name: "Orbit Roast", image: "orbit-roast",
@@ -16,7 +18,7 @@ const cases = {
   moss: {
     name: "Mossbyte Games", image: "mossbyte",
     alt: "An astronaut explores an alien forest beside an enormous pink mushroom.",
-    brief: "An indie game studio wants its first reveal to feel like stepping into a mysterious playable world.",
+    brief: "A gaming studio wants its first reveal to feel like stepping into a mysterious playable world.",
     value: "The tiny explorer sets a scale the viewer understands, while the impossible glow promises a world worth discovering.",
     colors: ["#182B24", "#465348", "#BD5B77", "#FEB6A8"], tagline: "Small explorer. Strange planet."
   },
@@ -51,6 +53,18 @@ function filterCards(selected) {
 }
 for (const button of filterButtons) button.addEventListener("click", () => filterCards(button));
 
+function addFilter(sector) {
+  if (filterButtons.some((button) => button.dataset.filter === sector)) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.filter = sector;
+  button.textContent = industries[sector] || industries.other;
+  button.setAttribute("aria-pressed", "false");
+  button.addEventListener("click", () => filterCards(button));
+  filterButtons.push(button);
+  document.querySelector(".filters").append(button);
+}
+
 const dialog = document.querySelector("#case-dialog");
 
 function openCase(study) {
@@ -82,7 +96,6 @@ for (const card of cards) card.addEventListener("click", () => openCase(cases[ca
 const workGrid = document.querySelector(".work-grid");
 if (workGrid) {
   const more = document.querySelector("#more-work");
-  const labels = {food: "Food & drink", games: "Indie games", music: "Music", fashion: "Streetwear", other: "Campaign"};
   const published = new Map();
   let offset = 0;
 
@@ -111,7 +124,7 @@ if (workGrid) {
         info.className = "card-info";
         const copy = document.createElement("span");
         const category = document.createElement("small");
-        category.textContent = labels[study.sector];
+        category.textContent = industries[study.sector] || industries.other;
         const title = document.createElement("strong");
         title.textContent = study.name;
         copy.append(category, title);
@@ -120,7 +133,7 @@ if (workGrid) {
         card.addEventListener("click", () => openCase(study));
         cards.push(card);
         added.push(card);
-        if (study.sector === "other") document.querySelector('[data-filter="other"]').hidden = false;
+        addFilter(study.sector);
       }
       if (offset === 0) workGrid.prepend(...added);
       else workGrid.append(...added);
