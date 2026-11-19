@@ -1,0 +1,27 @@
+.admin-main { padding-block: clamp(2rem, 6vw, 5rem); min-height: 76vh; }
+.admin-heading, .orders-top, .order-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.admin-heading h1 { font: 900 clamp(2.9rem, 7vw, 5.2rem)/.95 var(--display); letter-spacing: -.075em; margin-top: .5rem; }
+.admin-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
+.admin-panel { margin-top: 1.5rem; border: 1px solid #574865; border-radius: .75rem; background: var(--surface); padding: clamp(1rem, 3vw, 2rem); }
+.sign-in { max-width: 480px; }
+.secondary { background: var(--surface); border: 1px solid #645375; color: var(--text); min-height: 42px; padding: .55rem .8rem; font-weight: 700; border-radius: .4rem; }
+.secondary:hover { border-color: var(--accent); }
+.secondary:disabled { opacity: .45; cursor: default; }
+.orders-top label { display: grid; gap: .15rem; font-size: .8rem; color: var(--muted); }
+.orders-top input { border: 1px solid #645375; border-radius: .35rem; background: var(--background); color: var(--text); padding: .55rem; }
+.order-list { margin: .8rem 0; padding: 0; list-style: none; }
+.order-row { border-top: 1px solid var(--line); padding: .7rem 0; }
+.order-row strong, .order-row small { display: block; overflow-wrap: anywhere; }
+.order-row small { color: var(--muted); }
+.order-row button { flex: none; }
+.detail-inner { position: relative; padding: clamp(1rem, 4vw, 2.3rem); }
+.detail-inner h2 { font-size: clamp(2rem, 5vw, 3.8rem); padding-right: 2.5rem; overflow-wrap: anywhere; }
+.brief-details { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(0, 3fr); gap: .5rem 1rem; margin: 1.3rem 0; }
+.brief-details dt { font-weight: 700; }
+.brief-details dd { margin: 0; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.order-files { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1rem; }
+.order-files h3 { font-size: 1.35rem; }
+@media (max-width: 650px) {
+  .admin-heading, .orders-top { align-items: stretch; flex-direction: column; }
+  .order-row { gap: .5rem; }
+}

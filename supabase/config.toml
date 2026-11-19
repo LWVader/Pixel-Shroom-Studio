@@ -1,26 +1,2 @@
-[functions.create-checkout]
-verify_jwt = false
-[functions.order-status]
-verify_jwt = false
-[functions.stripe-webhook]
-verify_jwt = false
-[functions.download-original]
-verify_jwt = false
-
-[functions.submit-message]
-verify_jwt = false
-[functions.add-admin-user]
-verify_jwt = false
-
-[functions.mint-checkout]
-verify_jwt = false
-[functions.mint-access]
-verify_jwt = false
-
-[functions.market-api]
-verify_jwt = false
-[functions.market-reconcile]
-verify_jwt = false
-
-[functions.print-api]
+[functions.campaign-orders]
 verify_jwt = false

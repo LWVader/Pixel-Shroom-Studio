@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="/assets/pixel-shroom-logo-128.webp">
+  <link rel="stylesheet" href="/studio.css">
+  <script type="module" src="/brief.js"></script>
+  <title>Your campaign brief · Pixel Shroom Studio</title>
+</head>
+<body>
+  <header class="site-header"><div class="wrap header-row"><a class="wordmark" href="/"><img src="/assets/pixel-shroom-logo-128.webp" width="40" height="40" alt=""><span>PIXEL SHROOM <b>STUDIO</b></span></a><a class="text-link" href="/">Back to studio</a></div></header>
+  <main class="wrap subpage">
+    <p class="eyebrow">Pixel Shroom Studio</p>
+    <h1 id="brief-title">Set the vibe.</h1>
+    <p id="brief-status" role="status">Checking your payment with Stripe…</p>
+    <noscript><p>Enable JavaScript to submit your brief, or email lwvader@pixelshroomstudio.com with your Stripe receipt number.</p></noscript>
+    <form id="brief-form" class="brief-form" hidden>
+      <label>Business or project name <input name="business" maxlength="120" required></label>
+      <label>Industry <input name="industry" maxlength="100" placeholder="Coffee, indie games, streetwear…" required></label>
+      <label>Three words for the vibe <input name="vibe" maxlength="120" placeholder="Playful, eerie, neon" required></label>
+      <label>Preferred colors <input name="colors" maxlength="150" placeholder="Lime and violet"></label>
+      <label class="check"><input type="checkbox" name="surprise"> Surprise me with the colors</label>
+      <label>What are you launching? <textarea name="goal" maxlength="2400" placeholder="Tell me about the product, your audience, where the visuals will run, and any launch date or brand links." required></textarea></label>
+      <button type="submit" class="button">Send the campaign brief <span aria-hidden="true">↗</span></button>
+      <p class="status" id="form-status" role="status"></p>
+    </form>
+    <section class="checkout-panel" id="download-panel" aria-labelledby="downloads-title" hidden>
+      <h2 id="downloads-title">Campaign downloads</h2>
+      <p id="download-note"></p>
+      <ul class="delivery-list"></ul>
+      <p class="status" id="download-status" role="status"></p>
+    </section>
+    <section class="checkout-panel" id="addon-panel" aria-labelledby="addon-title" hidden>
+      <h2 id="addon-title">Put the visuals on a landing page.</h2>
+      <p>Add a matching one-page site for $199 USD through a separate Stripe checkout.</p>
+      <label><input type="checkbox" id="addon-confirm"> Add the one-page landing page for $199</label>
+      <p><button type="button" class="button" data-checkout="landing" disabled>Continue to Stripe <span aria-hidden="true">↗</span></button></p>
+      <p class="status" id="addon-status" role="status"></p>
+    </section>
+    <p><a class="text-link" href="mailto:lwvader@pixelshroomstudio.com?subject=Campaign%20order">Email the studio for order help</a></p>
+  </main>
+</body>
+</html>

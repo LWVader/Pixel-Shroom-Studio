@@ -1,2 +1,0 @@
--- Retired migration: retained as a no-op to preserve deployed migration history.
--- Existing installations retain historical records; the retirement migration locks access.

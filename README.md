@@ -1,74 +1,64 @@
-# Pixel Shroom Studio — checked master-site update
+# Pixel Shroom Studio · Attention Pack storefront
 
-This package merges the redesign with the uploaded Pixel-Shroom-Studio master. It retains the forest-green, cream, gold, and cyan palette, the original fantasy-city hero, the existing public Supabase configuration, the original admin screens, and the cryptographic verifier. It has not been deployed to the live site.
+This redesign uses the existing Pixel Shroom Studio domain, mushroom mark, Stripe account and Supabase project. The homepage sells one $199 USD pack of five coordinated surreal campaign images. Five fictional campaigns demonstrate the approach. Each case has a brief, art direction, color palette and a social placement example.
 
-## Install or reset the storefront
+## Preview the site
 
-Follow [Clean start](docs/CLEAN-START.md) for the Supabase migrations, Cloudflare deployment, and test-data reset. Apply the numbered migrations in order; keep your existing provider secrets, signing identity, and Cloudflare routes. The Worker serves the generated `dist/public` assets. If a local checkout already has dependencies, use `npm ci` to sync them to the supplied lockfile.
+Run this from the extracted project folder using Python 3.
 
-## Exactly the requested navigation
+```powershell
+py -m http.server 8000 --directory public
+```
 
-| Label        | Public destination                                   |
-| ------------ | ---------------------------------------------------- |
-| All artwork  | `https://www.pixelshroomstudio.com/all-artwork.html` |
-| Portrait     | `/genre.html?genre=portrait`                         |
-| Fantasy      | `/genre.html?genre=fantasy`                          |
-| Landscape    | `/genre.html?genre=landscape`                        |
-| Sci-Fi       | `/genre.html?genre=sci-fi`                           |
-| Abstract     | `/genre.html?genre=abstract`                         |
-| Dreamscape   | `/genre.html?genre=dreamscape`                       |
-| Dark Fantasy | `/genre.html?genre=dark-fantasy`                     |
-| Horror       | `/genre.html?genre=horror`                           |
-| NFT          | `/genre.html?genre=nft`                              |
-| FAQ          | `/faq.html`                                          |
+Open http://localhost:8000. On macOS or Linux use `python3` in place of `py`. This preview shows the artwork and portfolio interactions. Use a Cloudflare Worker and the Supabase function for checkout.
 
-These are the only genre categories. Utility pages such as contact, verification, admin, and payment confirmation remain available.
+## Connect test checkout
 
-The homepage displays the 14 newest published artworks across all genres, ordered by creation time. All artwork is the separate compiled gallery at `/all-artwork.html`. Each genre gets up to four randomly sampled published previews, without duplicates within a group, and a “Take me to [genre]” link. A “Show another selection” button refreshes the sample. A full genre page shows every published listing in that genre, rather than stopping at four. If fewer than four works exist, only the available works are shown. Empty genres show their collection link and an honest empty state. NFT previews may be displayed, but NFT purchase actions are disabled and new NFT checkout requests are rejected until releases are enabled deliberately.
+Use staging or your existing test project before moving the production route. Confirm which Git revision Cloudflare currently runs. The legacy archive records the source revision used to make this package.
 
-`public/genres/*.html` are internal HTML assets for the nine query-string pages. Direct visits to those paths redirect to the associated `/genre.html?genre=...` URL. They are not additional public genre categories.
+1. In the existing Supabase project, apply both files in `supabase/migrations` in order. They create the private campaign tables, `campaign-zips` Storage bucket, and administrator access policies. If the brief and ZIP migrations are already deployed, apply only `202611180003_campaign_admin.sql`. The earlier catalog and order tables need no changes.
+2. Copy `supabase/functions/campaign-orders` into the existing Supabase source and merge the new function entry from `supabase/config.toml` into the existing config. Deploy it with JWT verification off. It uses a shared server-only key instead. The package includes the webhook patch and its shared dependencies for comparison. Apply the new `studio-campaign-v1` guard to the version of the legacy Stripe webhook running in your project before using the same Stripe account. Preserve later edits to that webhook.
+3. Set the same randomly generated `CAMPAIGN_PROXY_KEY` of at least 32 characters as a Cloudflare Worker secret and a Supabase function secret. Keep it out of Git, browser code and the command line. Set `CAMPAIGN_SITE_URL` in Supabase to the actual staging Worker origin during tests and `https://www.pixelshroomstudio.com` for the production cutover. Set `CAMPAIGN_SUPABASE_URL` in the Worker config if you use a separate staging project.
+4. Use the existing `STRIPE_SECRET_KEY` in Supabase. For staging, use a Stripe test key and set `CAMPAIGN_ATTENTION_ENABLED=true` when the function and migration are in place. Deploy to the staging Worker with Wrangler and test checkout, cancellation, payment return, brief submission, studio notification, and a ZIP download from the correct paid order. Use the existing `RESEND_API_KEY`, `RESEND_FROM_EMAIL` and optionally `ADMIN_ALERT_EMAIL` for notification.
+5. For a full production switch, deploy with the existing Cloudflare Worker name and the current custom-domain routing. The new campaign admin and AD Studio are served by this Worker. Other archived storefront and Vault URLs return a help page in a standalone deployment. If existing orders or verification links still need those routes, deploy the previous source as a separate Worker with its current bindings and set a service binding named `LEGACY_STUDIO` on the redesign. Requests for URLs absent from the redesign then reach the earlier Worker. Check early order links and admin login before moving the production route. Keep the prior Cloudflare deployment available for rollback.
 
-## Connection and redirect fixes
+## Fulfill orders
 
-- Canonical URLs and social/sitemap metadata use `https://www.pixelshroomstudio.com`, replacing the earlier redesign's workers.dev domain.
-- The master currently redirects `.html` requests to extensionless URLs. The update explicitly handles `/genre?genre=...` and `/genre.html?genre=...`, preserving the query and avoiding loops when deployed with the supplied HTML handling settings.
-- Legacy `/genre/fantasy` and the earlier redesign's `/genres/fantasy.html` redirect permanently to `/genre.html?genre=fantasy`. `/artwork` and `/artwork.html` redirect to `/all-artwork.html`; `/all-artwork.html` serves the collection page directly.
-- Apex and the known old workers.dev hostname redirect to www. Query parameters, including payment-return credentials, are preserved through these hostname redirects. Unknown or duplicate genre parameters return a genuine 404.
-- The original Supabase URL and anonymous key are retained. Public artwork requests explicitly select preview fields and never request `original_path`, orders, or private originals.
-- Catalog pagination no longer stops at the master homepage's six-record limit. Journal errors do not prevent catalog loading.
-- The Worker renders live public previews into HTML for search engines and JavaScript-disabled readers. The browser uses that same server sample, then enables checkout controls. Server-side catalog data is cached in memory for up to 60 seconds; checkout always re-reads the published artwork and price on the backend.
-- Stripe checkout are connected to the existing `create-checkout` contract. IDs are passed without coercion. Provider URLs are checked against HTTPS Stripe hostnames before navigation.
-- The master called fulfillment/download RPCs whose definitions were absent from the uploaded migrations. This update supplies `fulfill_stripe_checkout_verified`, `fulfill_verified_order`, and `consume_verified_download`, and updates the server callers.
-- Payment event recording, paid state, and license creation commit atomically. Duplicate webhooks do not reset license expiration. Amount, currency, provider, and provider reference must match the local order. These RPCs are executable only by `service_role`.
-- Download authorization still checks the private buyer token, paid state, license expiry, and count before returning a 60-second private Storage redirect. The master license policy remains 24 hours and three authorized download-link requests. A signed Storage URL can be reused within its 60-second lifetime; the count limits link issuance, not each Storage GET.
-- The verifier's pinned C2PA SDK and DOM IDs are retained. The CSP permits the existing esm.sh SDK, WebAssembly, and public HTTPS preview images.
-- Admin HTML, admin JavaScript, admin CSS, legacy shared CSS, and public configuration were checked byte-for-byte against the master and preserved. New storefront styling lives in `storefront.css` so it does not restyle the admin, verifier, or payment screens.
-- Payment return pages are not indexed, use no-store caching, and the success page uses no-referrer. The returned delivery URL is checked before it is displayed.
+The buyer pays with Stripe and submits a brief from the private order page. View submitted briefs in the Supabase `campaign_briefs` table. Stripe Dashboard shows paid sessions for buyers who left before submitting a brief. Follow up separately for missing briefs.
 
-## SEO, GEO, SXO, AEO
+## Campaign Admin and AD Studio
 
-SEO: server-readable unique genre titles/descriptions, canonical query URLs, XML sitemap, robots controls, social metadata, appropriate image dimensions and alt text, local responsive WebP hero, and stable internal links.
+Open `/admin.html` and sign in with the same Supabase administrator email and password used by the old site. The dashboard uses the existing `admin_users` membership table. On a new Supabase project, create the owner account under Authentication and insert its user UUID into `public.admin_users` through the SQL Editor. On a separate staging project, set the Worker vars `CAMPAIGN_SUPABASE_URL` and `CAMPAIGN_SUPABASE_PUBLIC_KEY` to that project’s URL and publishable or anon key. Keep service-role credentials server-side.
 
-GEO and AEO: readable genre definitions, concise buyer answers derived from the master FAQ, explicit studio/artist identity, matching FAQ/Breadcrumb/Organization/WebPage structured data, and VisualArtwork metadata for rendered previews. No invented ratings, sales inventory, or unsupported trusted-issuer claims. There is no guarantee of rankings, AI citations, or rich results.
+Select **Open AD Studio** to use the restored editor, including its project files, assets, animations and video export. The editor is also available at `/admin-ad-studio/` after admin sign-in.
 
-SXO: full collections beyond the four-work sampler, global and genre search, clear usage and payment guidance, accessible focus/skip links, keyboard-dismissable image previews, mobile navigation, reduced-motion support, and explicit unavailable/coming-soon states.
+### Connect AD Studio social publishing
 
-Relevant primary guidance:
+If social publishing was configured on the previous Worker, add its existing D1 binding under the name `AD_STUDIO_DB` and reuse its `BUFFER_CREDENTIAL_ENCRYPTION_KEY` Worker secret so the saved connections and history stay readable. The Worker entry point for this package is `worker.mjs`.
 
-- https://developers.google.com/search/docs/appearance/ai-features
-- https://developers.google.com/search/docs/fundamentals/ai-optimization-guide
-- https://developers.cloudflare.com/workers/static-assets/redirects/
-- https://developers.cloudflare.com/workers/static-assets/routing/advanced/html-handling/
-- https://opensource.contentauthenticity.org/docs/sdk-repos/c2pa-js/packages/c2pa-web/
+For a first-time setup, create an AD Studio D1 database, add the `AD_STUDIO_DB` binding in Wrangler, and apply `migrations/ad-studio.sql` to that D1 database. Set `BUFFER_CREDENTIAL_ENCRYPTION_KEY` as a Worker secret using a randomly generated 32-byte key encoded as 64 hexadecimal characters. In the editor’s **Publish to social** tab, connect Buffer and optionally Cloudinary for video hosting. Campaign briefs and ZIP delivery use Supabase and work independently of D1.
 
-## Validation and limits
+### Publish a finished ZIP
 
-See `docs/AUDIT.md` for results. Automated checks use synthetic fixtures and a local PostgreSQL engine; no live purchase, invitation, message, or database modification was performed. Real billing, webhook delivery, private Storage delivery, and validation of a known signed original require the post-deployment test above. Applying the SQL and routing/backend updates is necessary; this is not a CSS-only patch.
+1. In Campaign Admin, open the buyer’s brief. For each recurring Monthly Asset Pack delivery, confirm the matching month’s invoice in Stripe.
+2. Select the finished ZIP and choose **Publish ZIP to order**. Use a name like `Orbit-Roast-Campaign.zip` and keep it at or below 50 MiB. Your Supabase project may enforce a lower upload limit.
+3. Choose **Copy buyer’s private order link** and send it to the buyer’s checkout email. The buyer can also reopen the original order page. Treat the order link as private because it grants access to that order.
 
-## Automated testing
+Publishing the same ZIP with the same filename to the same order is safe to retry. Give each monthly drop a distinct name. The order page lists each ZIP, newest first, and issues a two-minute download URL when the buyer clicks it. **Withdraw** removes a ZIP from the order page and stops new download links. Previously issued links can still work until they expire. Remove the Storage object in Supabase if you also need to delete the uploaded file.
 
-Playwright and Vitest are installed with locked dependency versions. Run `npm ci`, `npm run test:install-browsers`, then `npm run test:all`. See [docs/TESTING.md](docs/TESTING.md) for scope, reports, Windows commands and remaining staging checks.
+### Upload from the command line
 
-## Readable source formatting
+Use the buyer’s `checkout_session_id` from the private Supabase `campaign_briefs` table. In a private local environment file saved outside the project, set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and, for staging, `CAMPAIGN_SITE_URL`. Use the project’s server secret or legacy service-role key. Run this command from the extracted project on Node.js 22 or later.
 
-HTML, CSS, JavaScript, TypeScript, test files and configuration use consistent two-space indentation. Run `npm.cmd run format` to format changes, or `npm.cmd run format:check` to check formatting. On other platforms use `npm` instead of `npm.cmd`. EditorConfig and Prettier settings keep source readable across editors. Public asset files and generated reports are excluded.
+```powershell
+node --env-file="C:\path\to\campaign-publish.env" tools/publish-campaign-zip.mjs cs_test_yourCheckoutSessionId "C:\path\to\Orbit-Roast-Campaign.zip"
+```
+
+The command prints the private order link after publishing. Send it manually to the buyer’s checkout email.
+
+## Enable add-ons when ready
+
+- Set `CAMPAIGN_LANDING_ENABLED=true` to offer the $199 one-page landing page after an Attention Pack buyer submits the brief. That checkout is tied to the original order. A buyer returning from an expired add-on checkout is directed to email the studio.
+- Create a Stripe Product and active $49 USD per month flat recurring Price for the Monthly Asset Pack. Enable the Stripe Customer Portal with subscription cancellation. Set `CAMPAIGN_MONTHLY_PRICE_ID` and `CAMPAIGN_BILLING_PORTAL_URL` to the Price ID and the Stripe-hosted portal login link. The homepage shows the subscription when configured. Review recurring payments in Stripe before scheduling each month's ten backgrounds.
+
+The optional offers are off unless enabled. The studio prepares and publishes finished ZIPs by hand. The buyer downloads them from the order page.

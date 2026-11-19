@@ -1,672 +1,103 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Roll, Forge &amp; Print Your Artwork | Pixel Shroom Studio</title>
-    <meta
-      name="description"
-      content="Explore LWVader’s digital art, discover six tiers and explore the Forge & Print model. Browse the newest 14 artworks, visit your Vault and review canvas formats."
-    />
-    <meta name="robots" content="index,follow,max-image-preview:large" />
-    <link rel="canonical" href="https://www.pixelshroomstudio.com/" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Pixel Shroom Studio" />
-    <meta
-      property="og:title"
-      content="Roll, Forge &amp; Print Your Artwork | Pixel Shroom Studio"
-    />
-    <meta
-      property="og:description"
-      content="Explore LWVader’s digital art, discover six tiers and explore the Forge & Print model. Browse the newest 14 artworks, visit your Vault and review canvas formats."
-    />
-    <meta property="og:url" content="https://www.pixelshroomstudio.com/" />
-    <meta property="og:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta
-      name="twitter:title"
-      content="Roll, Forge &amp; Print Your Artwork | Pixel Shroom Studio"
-    />
-    <meta
-      name="twitter:description"
-      content="Explore LWVader’s digital art, discover six tiers and explore the Forge & Print model. Browse the newest 14 artworks, visit your Vault and review canvas formats."
-    />
-    <meta name="twitter:image" content="https://www.pixelshroomstudio.com/assets/hero-1280.webp" />
-    <link rel="icon" href="/assets/pixel-shroom-logo-128.webp" />
-    <link rel="stylesheet" href="/storefront.css?v=20261021-edition-cards" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "Organization",
-            "@id": "https://www.pixelshroomstudio.com/#studio",
-            "name": "Pixel Shroom Studio",
-            "alternateName": "LWVader",
-            "url": "https://www.pixelshroomstudio.com/",
-            "logo": "https://www.pixelshroomstudio.com/assets/pixel-shroom-logo-128.webp",
-            "email": "lwvader@pixelshroomstudio.com"
-          },
-          {
-            "@type": "WebPage",
-            "url": "https://www.pixelshroomstudio.com/",
-            "name": "Roll, Forge & Print Your Artwork | Pixel Shroom Studio",
-            "description": "Choose artwork, reveal a digital variant, combine eligible editions and print on canvas when ready.",
-            "publisher": {
-              "@id": "https://www.pixelshroomstudio.com/#studio"
-            }
-          }
-        ]
-      }
-    </script>
-    <link
-      rel="preload"
-      as="image"
-      href="/assets/hero-1280.webp"
-      imagesrcset="/assets/hero-640.webp 640w, /assets/hero-1280.webp 1280w"
-      imagesizes="100vw"
-      fetchpriority="high"
-    />
-    <link rel="stylesheet" href="/print-nav.css?v=20261010" />
-    <link rel="stylesheet" href="/studio-home.css?v=20261014-size" />
-    <link rel="stylesheet" href="/foil.css?v=20261019" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "What happens after payment is confirmed?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Once the server verifies payment, the concealed card starts spinning on the forest reveal screen. It keeps moving while your assigned image is prepared and loaded, then slows smoothly into the reveal. There is one continuous opening, without a stationary waiting card or a second roll. Reduced-motion settings disable spinning. The animation presents the server’s result; it never chooses the tier."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Where do I find my revealed edition?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Ready editions save automatically to your signed-in account. After reveal, download the exact edition image and signed JSON receipt whenever you choose. Your browser may ask you to allow multiple downloads or choose where to save them. Keep both files and a backup. Already-saved editions offer file downloads again without another collection entry."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Can I request any studio artwork on canvas or apparel?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Use the contact form to send the artwork title or LWV serial and the product you want. LWVader will check print suitability, available Gelato product variations and pricing. A request does not guarantee that a product or destination can be supported."
-            }
-          }
-        ]
-      }
-    </script>
-    <link rel="stylesheet" href="/forge-print.css?v=20261022-loop" />
-  </head>
-  <body>
-    <a class="skip" href="#main">Skip to content</a>
-    <header>
-      <div class="shell header">
-        <a class="brand" href="/"
-          ><img
-            src="/assets/pixel-shroom-logo-128.webp"
-            width="48"
-            height="48"
-            alt="Pixel Shroom Studio mushroom logo"
-          /><span>Pixel Shroom <b>Studio</b></span></a
-        >
-        <nav class="primary" aria-label="Main navigation">
-          <a href="/all-artwork.html">Explore Gallery</a><a href="/forge.html">The Forge</a
-          ><a href="/how-it-works.html">How It Works</a><a href="/drop-odds.html">Drop Odds</a
-          ><a href="/verify.html">Verify Serial</a>
-        </nav>
-        <div class="header-tools">
-          <a href="/collection.html">My Vault<span data-vault-count hidden></span></a>
-          <details class="header-search">
-            <summary>Search artworks</summary>
-            <form class="site-search" role="search" action="/all-artwork.html#gallery" method="get">
-              <label for="header-art-search">Search titles, genres or serials</label
-              ><input
-                id="header-art-search"
-                type="search"
-                name="q"
-                maxlength="160"
-                placeholder="Title, genre or LWV serial"
-              /><button type="submit">Search</button>
-            </form>
-          </details>
-        </div>
-        <details class="mobile">
-          <summary>Menu</summary>
-          <nav aria-label="Mobile navigation">
-            <a href="/all-artwork.html">Explore Gallery</a><a href="/forge.html">The Forge</a
-            ><a href="/how-it-works.html">How It Works</a><a href="/drop-odds.html">Drop Odds</a
-            ><a href="/verify.html">Verify Serial</a><a href="/canvases.html">Canvas shop</a
-            ><a href="/apparel.html">Apparel &amp; gifts</a><a href="/market.html">Marketplace</a
-            ><a href="/contact.html">Contact</a>
-          </nav>
-        </details>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#100e15">
+  <meta name="description" content="Pixel Shroom Studio makes Stand Out Campaign Art For Brands That Need To Stand Out. Get five coordinated ad visuals in one fixed-price Attention Pack.">
+  <meta property="og:title" content="Pixel Shroom Studio · Surreal visuals for brands that need to stand out.">
+  <meta property="og:description" content="Five coordinated campaign images. One fixed price. Made for brands with a strange streak.">
+  <meta property="og:image" content="https://www.pixelshroomstudio.com/assets/campaigns/orbit-roast.webp">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="https://www.pixelshroomstudio.com/">
+  <link rel="icon" href="/assets/pixel-shroom-logo-128.webp">
+  <link rel="stylesheet" href="/studio.css">
+  <script src="/studio.js" type="module"></script>
+  <title>Pixel Shroom Studio · Surreal Campaign Art</title>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="wordmark" href="/" aria-label="Pixel Shroom Studio home"><img src="/assets/pixel-shroom-logo-128.webp" width="40" height="40" alt=""><span>PIXEL SHROOM <b>STUDIO</b></span></a>
+      <nav aria-label="Main navigation"><a href="#work">Work</a><a href="#process">Process</a><a href="#faq">FAQ</a></nav>
+      <a class="button small header-cta" href="#pack" aria-label="Get an Attention Pack"><span class="wide-cta">Get an Attention Pack</span><span class="short-cta">Get the Pack</span><span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="headline">
+      <div class="hero-copy">
+        <p class="eyebrow"><span aria-hidden="true"></span> Independent creative studio</p>
+        <h1 id="headline">Good ads.<br><em>Weird worlds.</em></h1>
+        <p class="intro">Surreal campaign art for brands that need to stand out. Get five coordinated visuals for your next drop, launch, or release.</p>
+        <div class="actions"><a class="button" href="#pack">Get the Attention Pack <span aria-hidden="true">↗</span></a><a class="text-link" href="#work">Explore the work <span aria-hidden="true">↓</span></a></div>
       </div>
-      <nav class="category-nav shell" aria-label="Art genres and FAQ">
-        <a href="/all-artwork.html">All artwork</a><a href="/genre.html?genre=portrait">Portrait</a
-        ><a href="/genre.html?genre=fantasy">Fantasy</a
-        ><a href="/genre.html?genre=landscape">Landscape</a
-        ><a href="/genre.html?genre=sci-fi">Sci-Fi</a
-        ><a href="/genre.html?genre=abstract">Abstract</a
-        ><a href="/genre.html?genre=dreamscape">Dreamscape</a
-        ><a href="/genre.html?genre=dark-fantasy">Dark Fantasy</a
-        ><a href="/genre.html?genre=horror">Horror</a><a href="/genre.html?genre=nft">NFT</a
-        ><a href="/faq.html">FAQ</a>
-      </nav>
-    </header>
-    <main id="main">
-      <section class="hero forge-hero">
-        <picture
-          ><source
-            srcset="/assets/hero-640.webp 640w, /assets/hero-1280.webp 1280w"
-            sizes="100vw"
-            type="image/webp" />
-          <img
-            src="/assets/hero-1280.webp"
-            width="1280"
-            height="720"
-            fetchpriority="high"
-            alt="A luminous fantasy city above a river canyon at twilight"
-        /></picture>
-        <div class="shell hero-copy">
-          <p class="eyebrow">LWVader · Forge &amp; Print</p>
-          <h1>Pick your art.<br />Reveal. <em>Upgrade.</em></h1>
-          <p>
-            Choose an artwork and reveal a digital variant. Collect your editions, combine eligible
-            copies into higher tiers, then print your chosen edition on canvas.
-          </p>
-          <div class="actions">
-            <a class="button" href="#gallery">Browse artwork →</a
-            ><a class="text-link" href="/how-it-works.html">How the studio loop works →</a>
-          </div>
-          <div class="hero-trust">
-            <span>Studio-issued identity</span><span>Published tier rules</span
-            ><span>Gelato print fulfillment</span>
-          </div>
-          <p class="offer-state">
-            Digital Roll $8 · Canvas + Digital $69 + $13.49 US shipping. Each artwork shows which
-            offers are open before payment.
-          </p>
-        </div>
-      </section>
-      <section class="shell section" id="shop-paths" aria-labelledby="shop-paths-heading">
-        <p class="eyebrow">The three-step studio loop</p>
-        <h2 id="shop-paths-heading">Choose. Reveal. Forge or Print.</h2>
-        <ol class="loop-ribbon">
-          <li>
-            <span class="step-number">01 / Pick your art</span>
-            <h3>Start with a world you love.</h3>
-            <p>
-              Explore the nine studio collections. View the protected image, serial, dimensions and
-              available purchase details.
-            </p>
-            <a class="text-link" href="/all-artwork.html">Explore gallery →</a>
-          </li>
-          <li>
-            <span class="step-number">02 / Pay &amp; reveal</span>
-            <h3>One artwork. Six possible variants.</h3>
-            <p>
-              Choose digital-only or an included canvas claim when available. After verified
-              payment, one continuous reveal shows your assigned variant.
-            </p>
-            <a class="text-link" href="/drop-odds.html#offers">Compare roll options →</a>
-          </li>
-          <li>
-            <span class="step-number">03 / Forge or print</span>
-            <h3>Keep it. Upgrade it. Make it real.</h3>
-            <p>
-              Your ready edition saves in My Vault. Combine eligible digital-only editions or choose
-              a canvas print when you are ready.
-            </p>
-            <a class="text-link" href="/collection.html">Open My Vault →</a>
-          </li>
-        </ol>
-      </section>
-      <section class="shell section" id="art-identity" aria-labelledby="identity-heading">
-        <p class="eyebrow">Original vision. Unique identity. Verifiable art.</p>
-        <h2 id="identity-heading">Art With Identity. Creativity With Proof.</h2>
-        <p>
-          Every edition connects to its studio record through an individual number, file fingerprint
-          and signed receipt. Collect with a traceable identity; purchases remain nonexclusive
-          unless stated otherwise.
-        </p>
-        <a class="text-link" href="/about.html">Discover the Story Behind the Art →</a>
-      </section>
-      <section class="shell section" id="gallery" aria-labelledby="gallery-heading">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">The latest 14 · all genres</p>
-            <h2 id="gallery-heading">Find the artwork. Follow the feeling.</h2>
-            <p>
-              The 14 newest artworks across all genres. Open an edition’s details to review tiers,
-              image sizes, odds and availability before paying.
-            </p>
-          </div>
-        </div>
-        <div class="gallery-tools">
-          <nav class="gallery-links" aria-label="Gallery shortcuts">
-            <a href="/all-artwork.html">All artwork</a
-            ><a href="/genre.html?genre=dark-fantasy">Dark Fantasy</a
-            ><a href="/genre.html?genre=sci-fi">Sci-Fi</a
-            ><a href="/genre.html?genre=portrait">Portrait</a
-            ><a href="/genre.html?genre=landscape">Landscape</a>
-          </nav>
-          <label
-            >Sort displayed artworks
-            <select id="gallery-sort">
-              <option value="newest">Newest first</option>
-              <option value="title">Title A–Z</option>
-            </select></label
-          >
-        </div>
-        <p id="catalog-status" class="muted" role="status">Checking current published listings…</p>
-
-        <div id="catalog" data-mode="latest" aria-busy="true" class="art-grid">
-          <!--CATALOG_START-->
-          <div class="empty"><p>Loading the latest artwork…</p></div>
-          <!--CATALOG_END-->
-        </div>
-        <noscript
-          ><p>
-            The full genre links work without JavaScript. Purchases require JavaScript.
-          </p></noscript
-        ><!--BOOTSTRAP-->
-        <p><a class="button secondary" href="/all-artwork.html">Browse all artwork →</a></p>
-      </section>
-      <section class="shell section" id="drop-odds" aria-labelledby="drop-odds-heading">
-        <p class="eyebrow">Know the possibilities before you buy</p>
-        <h2 id="drop-odds-heading">Six tiers. Every finish explained.</h2>
-        <p>
-          Compare the six base tiers and their US canvas formats. Standard, Silver and Gold use the
-          same 16 × 16 thick canvas. Emerald, Sapphire and Prismatic add a choice of frame: 10%
-          combined base odds. Prismatic also upgrades to 24 × 24.
-        </p>
-        <div class="tier-showcase">
-          <div class="tier-selector" role="group" aria-label="Explore tier finishes">
-            <button type="button" data-tier-finish="Standard" aria-pressed="true">
-              <strong>60% Standard</strong><span>16 × 16 thick canvas, unframed</span
-              ><meter min="0" max="100" value="60" aria-label="Standard base odds">
-                60%
-              </meter></button
-            ><button type="button" data-tier-finish="Silver" aria-pressed="false">
-              <strong>20% Silver</strong><span>16 × 16 thick canvas, unframed</span
-              ><meter min="0" max="100" value="20" aria-label="Silver base odds">20%</meter></button
-            ><button type="button" data-tier-finish="Gold" aria-pressed="false">
-              <strong>10% Gold</strong><span>16 × 16 thick canvas, unframed</span
-              ><meter min="0" max="100" value="10" aria-label="Gold base odds">10%</meter></button
-            ><button type="button" data-tier-finish="Emerald" aria-pressed="false">
-              <strong>6% Emerald</strong
-              ><span>16 × 24 portrait canvas · Black, Natural or Dark Wood frame</span
-              ><meter min="0" max="100" value="6" aria-label="Emerald base odds">6%</meter></button
-            ><button type="button" data-tier-finish="Sapphire" aria-pressed="false">
-              <strong>3% Sapphire</strong
-              ><span>16 × 24 portrait canvas · Black, Natural or Dark Wood frame</span
-              ><meter min="0" max="100" value="3" aria-label="Sapphire base odds">3%</meter></button
-            ><button type="button" data-tier-finish="Prismatic" aria-pressed="false">
-              <strong>1% Prismatic</strong
-              ><span>24 × 24 canvas · Black, Natural or Dark Wood frame</span
-              ><meter min="0" max="100" value="1" aria-label="Prismatic base odds">1%</meter>
-            </button>
-          </div>
-          <article class="tier-focus" aria-live="polite">
-            <p class="eyebrow">Associated canvas finish</p>
-            <h3 id="finish-title">Standard · 60%</h3>
-            <p id="finish-format">16 × 16 thick canvas, unframed</p>
-            <p id="finish-description">
-              The Standard studio-uploaded image. Thick gallery canvas profile.
-            </p>
-            <a class="text-link" href="/canvas-specs.html">See sizing and print details →</a>
-          </article>
-        </div>
-        <p class="muted">
-          Rolls are assigned securely on the server after payment. Listing caps can change effective
-          odds. Guaranteed bundles change final distributions. No purchase promises exclusivity or a
-          financial return.
-        </p>
-        <a class="text-link" href="/drop-odds.html">Read complete odds and guarantees →</a>
-      </section>
-      <section class="shell section" id="studio-forge">
-        <div class="forge-teaser">
-          <div>
-            <p class="eyebrow">The Studio Forge</p>
-            <h2>Build toward your next tier.</h2>
-            <p>
-              Combine eligible, same-artwork images into the next tier. Five Standards become one
-              Silver; three Golds become one Emerald.
-            </p>
-            <p>
-              Forging upgrades the digital image. A digital-only upgrade does not automatically
-              include a prepaid canvas. Print prices and one-time promotion eligibility are
-              separate.
-            </p>
-            <a class="button" href="/forge.html">See Forge rules &amp; your progress →</a>
-          </div>
-          <ol class="forge-ladder">
-            <li><strong>5 Standard → 1 Silver</strong></li>
-            <li>3 Silver → 1 Gold</li>
-            <li>3 Gold → 1 Emerald</li>
-            <li>2 Emerald → 1 Sapphire</li>
-            <li>2 Sapphire → 1 Prismatic</li>
-          </ol>
-        </div>
-      </section>
-      <section class="shell section" id="featured" aria-labelledby="featured-heading">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">A few personal picks</p>
-            <h2 id="featured-heading">Featured by LWVader.</h2>
-          </div>
-          <a class="text-link" href="/all-artwork.html">Explore every collection →</a>
-        </div>
-        <div id="featured-artwork" class="featured-grid">
-          <!--FEATURED_START-->
-          <p><a class="text-link" href="/all-artwork.html">Explore the studio’s artwork →</a></p>
-          <!--FEATURED_END-->
-        </div>
-      </section>
-      <section class="shell section" id="art-in-use" hidden aria-labelledby="art-in-use-heading">
-        <p class="eyebrow">From an image to an idea</p>
-        <h2 id="art-in-use-heading">Make room for imagination.</h2>
-        <p class="lede">
-          See product listing previews and an illustrative creative-project example. Any artwork
-          listed here can be requested for apparel or canvas prints.
-        </p>
-        <div class="examples-grid">
-          <div id="product-examples" class="product-examples">
-            <!--PRODUCT_EXAMPLES_START-->
-            <article class="example-card">
-              <div>
-                <h3>Canvas prints</h3>
-                <p>Find a piece for your wall.</p>
-                <a class="text-link" href="/canvases.html">Browse canvases →</a>
-              </div>
-            </article>
-            <article class="example-card">
-              <div>
-                <h3>Apparel &amp; gifts</h3>
-                <p>Find your next favorite design.</p>
-                <a class="text-link" href="/apparel.html">Explore products →</a>
-              </div>
-            </article>
-            <!--PRODUCT_EXAMPLES_END-->
-          </div>
-          <article class="example-card">
-            <div id="creative-project-preview">
-              <!--PROJECT_EXAMPLE_START-->
-              <div class="example-placeholder">Your next creative project starts here.</div>
-              <!--PROJECT_EXAMPLE_END-->
-            </div>
-            <div>
-              <p class="eyebrow">Digital artwork in use</p>
-              <h3>Your next creative project.</h3>
-              <p>
-                Illustrative screen mockup using a protected, watermarked preview. It is not a
-                customer project. Choose an original with a resolution suitable for your intended
-                use.
-              </p>
-              <a class="text-link" href="/all-artwork.html">Find artwork for your project →</a>
-            </div>
-          </article>
-        </div>
-        <p>
-          <a class="text-link" href="/contact.html?product=custom-print#contact-form"
-            >Request your favorite artwork as a print or apparel →</a
-          >
-        </p>
-      </section>
-      <section class="feature" id="meet-lwvader" aria-labelledby="creator-heading">
-        <div class="shell creator-grid">
-          <figure>
-            <img
-              src="/assets/sir-shroomalot-hero.webp"
-              width="1254"
-              height="1254"
-              loading="lazy"
-              alt="Cartoon illustration of LWVader with the Pixel Shroom Studio mushroom mascot"
-            />
-            <figcaption>LWVader and Sir Shroomalot — the studio’s illustrated duo.</figcaption>
-          </figure>
-          <div>
-            <p class="eyebrow">The creator behind the studio</p>
-            <h2 id="creator-heading">Hi, I’m LWVader.</h2>
-            <p class="lede">
-              I combine imagination, AI tools and digital artistry to create distinctive designs and
-              artwork.
-            </p>
-            <p>
-              From strange worlds and cinematic characters to playful everyday humor, Pixel Shroom
-              Studio is where my ideas take shape. I also develop and manage the studio’s website
-              and online gallery.
-            </p>
-            <p>
-              Found something you love? Collect a digital edition, choose a printed product or ask
-              me about a custom direction.
-            </p>
-            <a class="text-link" href="/contact.html">Talk to LWVader →</a>
-          </div>
-        </div>
-      </section>
-      <section class="shell section" id="buyer-information" hidden aria-labelledby="buyer-heading">
-        <p class="eyebrow">Know what you’re buying</p>
-        <h2 id="buyer-heading">Art you can use. Details you can check.</h2>
-        <p class="lede">
-          Collect numbered digital artwork for personal and commercial projects, with an
-          individually identified file and a studio-signed receipt.
-        </p>
-        <div class="purchase-summary">
-          <article>
-            <h3>Choose. Pay. Reveal.</h3>
-            <p>
-              Open the edition details before paying to review tier images, formats, pixel
-              dimensions, initial odds, supply and caps. New collections include Standard, Silver,
-              Gold, Emerald, Sapphire and Prismatic.
-            </p>
-            <p>
-              After verified Stripe payment, one continuous opening animation reveals your
-              server-assigned tier. The ready edition saves automatically in My Vault. Download its
-              image and signed receipt whenever you choose.
-            </p>
-            <a class="text-link" href="/how-it-works.html">See the purchase process →</a>
-          </article>
-          <article>
-            <h3>Included permissions</h3>
-            <p>
-              Personal and commercial use are included. You may edit, reproduce, redistribute or
-              resell purchased artwork under the published usage terms.
-            </p>
-            <p>
-              Purchases are nonexclusive unless an individual listing explicitly says otherwise.
-            </p>
-            <a class="text-link" href="/usage-rights.html">Read the full usage rights →</a>
-          </article>
-          <article>
-            <h3>A verifiable edition</h3>
-            <p>
-              Keep your issued edition file and signed JSON receipt unchanged. Verify them together
-              to check the studio signature and file fingerprint; edit separate copies.
-            </p>
-            <p>
-              A serial number or signature does not create exclusive ownership or prevent copying.
-            </p>
-            <a class="text-link" href="/verify-mint.html">Verify an edition →</a>
-          </article>
-        </div>
-      </section>
-      <section
-        class="shell section"
-        id="customer-feedback"
-        aria-labelledby="feedback-heading"
-        hidden=""
-      >
-        <p class="eyebrow">Shared with permission</p>
-        <h2 id="feedback-heading">From our customers.</h2>
-        <div id="customer-quotes" class="customer-quotes"></div>
-      </section>
-      <section class="shell section" aria-labelledby="faq-heading">
-        <p class="eyebrow">Before you buy</p>
-        <h2 id="faq-heading">A few clear answers.</h2>
-        <div class="faq">
-          <details>
-            <summary>What happens after payment is confirmed?</summary>
-            <p>
-              Once the server verifies payment, the concealed card starts spinning on the forest
-              reveal screen. It keeps moving while your assigned image is prepared and loaded, then
-              slows smoothly into the reveal. There is one continuous opening, without a stationary
-              waiting card or a second roll. Reduced-motion settings disable spinning. The animation
-              presents the server’s result; it never chooses the tier.
-            </p>
-          </details>
-          <details>
-            <summary>Where do I find my revealed edition?</summary>
-            <p>
-              Ready editions save automatically to your signed-in account. After reveal, download
-              the exact edition image and signed JSON receipt whenever you choose. Your browser may
-              ask you to allow multiple downloads or choose where to save them. Keep both files and
-              a backup. Already-saved editions offer file downloads again without another collection
-              entry.
-            </p>
-          </details>
-          <details>
-            <summary>Can I request any studio artwork on canvas or apparel?</summary>
-            <p>
-              Use the contact form to send the artwork title or LWV serial and the product you want.
-              LWVader will check print suitability, available Gelato product variations and pricing.
-              A request does not guarantee that a product or destination can be supported.
-            </p>
-          </details>
-        </div>
-        <a class="text-link" href="/faq.html">Read all buyer answers →</a>
-      </section>
-      <section class="feature" id="studio-updates" aria-labelledby="updates-heading">
-        <div class="shell updates-layout">
-          <div>
-            <p class="eyebrow">Keep in touch</p>
-            <h2 id="updates-heading">A little imagination in your inbox.</h2>
-            <p>
-              Request occasional studio news, new designs and product updates, or ask to hear when
-              an NFT release is ready.
-            </p>
-            <p>
-              The studio manages signup requests personally. Choose the updates you want;
-              unsubscribe by replying to an update or contacting us.
-            </p>
-            <a class="text-link" href="/privacy.html">How we use your information →</a>
-          </div>
-          <form id="studio-updates-form" class="updates-form" method="post" action="/contact.html">
-            <label
-              >Your name<input
-                name="name"
-                type="text"
-                autocomplete="name"
-                maxlength="100"
-                required="" /></label
-            ><label
-              >Email address<input
-                name="email"
-                type="email"
-                autocomplete="email"
-                maxlength="254"
-                required=""
-            /></label>
-            <fieldset>
-              <legend>Choose your updates</legend>
-              <label class="check-label"
-                ><input name="studio" type="checkbox" checked="" />New artwork, products and studio
-                news</label
-              ><label class="check-label"
-                ><input name="nft" type="checkbox" />NFT release notifications</label
-              >
-            </fieldset>
-            <label class="check-label"
-              ><input name="consent" type="checkbox" required="" />I agree to receive my selected
-              updates from Pixel Shroom Studio by email. I can unsubscribe at any time.</label
-            ><label class="contact-honeypot" aria-hidden="true"
-              >Website<input name="website" type="text" tabindex="-1" autocomplete="off" /></label
-            ><button class="button" type="submit">Request email updates →</button>
-            <p id="updates-status" role="status" aria-live="polite"></p>
-            <noscript
-              ><p>
-                Please <a href="mailto:lwvader@pixelshroomstudio.com">email the studio</a> to
-                request updates.
-              </p></noscript
-            >
-          </form>
-        </div>
-      </section>
-
-      <section class="feature">
-        <div class="shell split">
-          <div>
-            <p class="eyebrow">Custom work</p>
-            <h2>Your own strange<br />corner of the world.</h2>
-          </div>
-          <div>
-            <p class="lede">A subject, a mood, a world you can’t stop imagining.</p>
-            <p>
-              Ask LWVader about a custom digital design or request any listed artwork for apparel or
-              canvas prints. We’ll discuss the product, specifications and price before you commit.
-            </p>
-            <a class="button" href="/contact.html">Start a conversation ↗</a>
-          </div>
-        </div>
-      </section>
-    </main>
-    <footer>
-      <div class="shell footer-grid forge-footer">
-        <div>
-          <a class="brand" href="/">Pixel Shroom <b>Studio</b></a>
-          <p>
-            Imagination by LWVader. Individually identified digital art, with a studio story you can
-            trace.
-          </p>
-          <p>
-            Roll a variant. Combine eligible editions. Print when you choose. Availability is shown
-            before payment.
-          </p>
-        </div>
-        <div>
-          <h2>Studio</h2>
-          <a href="/about.html">About LWVader</a
-          ><a href="/about.html#journal" data-journal-link hidden>Studio Journal</a
-          ><a href="/about.html#sir-shroomalot">Sir Shroomalot’s story</a
-          ><a href="/contact.html">Contact</a><a href="/all-artwork.html">Explore gallery</a
-          ><a href="/apparel.html">Apparel &amp; gifts</a>
-        </div>
-        <div>
-          <h2>The mechanics</h2>
-          <a href="/drop-odds.html">Complete drop odds</a
-          ><a href="/forge.html#recipes">Forge trade-up rules</a
-          ><a href="/canvas-specs.html">Canvas specs &amp; sizing</a
-          ><a href="/how-it-works.html">How it works</a><a href="/collection.html">My Vault</a
-          ><a href="/collection.html?tab=orders">My orders</a
-          ><a href="/market.html">Secondary marketplace</a>
-        </div>
-        <div>
-          <h2>Provenance &amp; legal</h2>
-          <a href="/verify-mint.html">Verify a delivered file</a
-          ><a href="/verify.html">Verify source artwork</a
-          ><a href="/usage-rights.html">Commercial usage rights</a
-          ><a href="/terms.html">Terms of sale</a><a href="/privacy.html">Privacy policy</a
-          ><a href="/faq.html">Buyer FAQ</a><a href="/canvases.html">Current canvas products</a>
+      <figure class="hero-art">
+        <img src="/assets/campaigns/orbit-roast.webp" srcset="/assets/campaigns/orbit-roast-640.webp 640w, /assets/campaigns/orbit-roast.webp 1440w" sizes="(max-width: 850px) 94vw, 52vw" width="1440" height="960" fetchpriority="high" alt="A giant coffee bean hangs over a violet city, circled by a streak of lime light">
+        <figcaption><span>Featured concept</span><strong>Orbit Roast <span aria-hidden="true">↗</span></strong></figcaption>
+      </figure>
+    </section>
+    <div class="sector-bar"><div class="wrap sectors"><span>FOOD &amp; DRINK</span><b aria-hidden="true">✦</b><span>INDIE GAMES</span><b aria-hidden="true">✦</b><span>MUSIC &amp; CREATORS</span><b aria-hidden="true">✦</b><span>STREETWEAR</span></div></div>
+    <section id="work" class="section wrap" aria-labelledby="work-title">
+      <div class="section-top">
+        <div><p class="eyebrow">The portfolio</p><h2 id="work-title">Strange by design.</h2></div>
+        <p>Five fictional brands. Five ways to turn a product into a scene people want to look at.</p>
+      </div>
+      <div class="filters" aria-label="Filter campaigns">
+        <button type="button" aria-pressed="true" data-filter="all">All work</button>
+        <button type="button" aria-pressed="false" data-filter="food">Food &amp; drink</button>
+        <button type="button" aria-pressed="false" data-filter="games">Indie games</button>
+        <button type="button" aria-pressed="false" data-filter="music">Music</button>
+        <button type="button" aria-pressed="false" data-filter="fashion">Streetwear</button>
+      </div>
+      <div class="work-grid">
+        <button class="work-card" type="button" data-case="orbit" data-sector="food" aria-haspopup="dialog"><img src="/assets/campaigns/orbit-roast-640.webp" width="640" height="427" loading="lazy" alt="Giant coffee bean floating above a nighttime city"><span class="card-info"><span><small>COFFEE LAUNCH</small><strong>Orbit Roast</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
+        <button class="work-card" type="button" data-case="boom" data-sector="food" aria-haspopup="dialog"><img src="/assets/campaigns/boom-bun.webp" width="960" height="640" loading="lazy" alt="A terrier with a cheeseburger races down a retro diner"><span class="card-info"><span><small>DINER CAMPAIGN</small><strong>Boom Bun</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
+        <button class="work-card" type="button" data-case="moss" data-sector="games" aria-haspopup="dialog"><img src="/assets/campaigns/mossbyte.webp" width="960" height="640" loading="lazy" alt="A tiny explorer stands beside a luminous pink mushroom in a strange forest"><span class="card-info"><span><small>INDIE GAME REVEAL</small><strong>Mossbyte Games</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
+        <button class="work-card" type="button" data-case="static" data-sector="music" aria-haspopup="dialog"><img src="/assets/campaigns/static-bloom.webp" width="960" height="640" loading="lazy" alt="Chrome headphones in the shape of a neon jellyfish float above a city"><span class="card-info"><span><small>EP RELEASE</small><strong>Static Bloom</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
+        <button class="work-card" type="button" data-case="sole" data-sector="fashion" aria-haspopup="dialog"><img src="/assets/campaigns/midnight-sole.webp" width="960" height="640" loading="lazy" alt="A black and lime high-top sneaker breaks through dark water"><span class="card-info"><span><small>STREETWEAR DROP</small><strong>Midnight Sole</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
+      </div>
+      <p id="filter-status" class="sr-only" aria-live="polite"></p>
+    </section>
+    <section id="pack" class="section offer-section" aria-labelledby="pack-title">
+      <div class="wrap offer">
+        <div class="offer-copy"><p class="eyebrow">Fixed-price campaign art</p><h2 id="pack-title">The Attention Pack</h2><p>Five AI-assisted images art-directed around your product, audience and campaign. A consistent visual world you can put to work across your launch.</p></div>
+        <div class="price-card"><p class="price"><b>$199</b><span>USD · One-time</span></p><ul class="checks"><li>Five coordinated campaign visuals</li><li>Ready-to-use JPG or PNG exports</li><li>One ZIP download from your order page</li></ul>
+          <button type="button" class="button" data-checkout="attention" disabled>Buy the Attention Pack <span aria-hidden="true">↗</span></button>
+          <p id="order-status" class="status" role="status">Checking checkout availability…</p>
+          <noscript><p>Email the studio to ask about ordering.</p></noscript>
         </div>
       </div>
-      <div class="shell footer-bottom">
-        <span>© 2026 Pixel Shroom Studio · LWVader</span>
-        <div>
-          <a href="/cookies.html">Cookies</a
-          ><a class="owner-access" href="/admin.html">Owner access</a>
-        </div>
+    </section>
+    <section id="process" class="section wrap" aria-labelledby="process-title">
+      <div class="section-top"><div><p class="eyebrow">The process</p><h2 id="process-title">From brief to feed.</h2></div></div>
+      <ol class="steps">
+        <li><span>01</span><h3>Book your pack</h3><p>Pay the fixed price through Stripe Checkout.</p></li>
+        <li><span>02</span><h3>Set the vibe</h3><p>Tell me what you’re launching, give me three words for the mood, and pick colors or let me surprise you.</p></li>
+        <li><span>03</span><h3>Get your visuals</h3><p>I’ll art-direct your five images and publish the finished ZIP to your private order page.</p></li>
+      </ol>
+    </section>
+    <section id="monthly" class="section wrap monthly" hidden><div><p class="eyebrow">Monthly Asset Pack</p><h2>Keep your feed fresh.</h2><p>Ten new AI-generated social backgrounds per month, art-directed to fit your brand. $49 USD per month.</p></div><div><button type="button" class="button" data-checkout="monthly" disabled>Subscribe for $49/month <span aria-hidden="true">↗</span></button><p class="status" data-monthly-status role="status"></p><a class="text-link" data-billing-link hidden>Manage billing</a></div></section>
+    <section id="faq" class="section wrap faq" aria-labelledby="faq-title">
+      <div><p class="eyebrow">FAQ</p><h2 id="faq-title">Good to know.</h2></div>
+      <div class="questions">
+        <details><summary>What can I use the visuals for?</summary><p>Tell me where the campaign will run. I can compose visuals for social posts, ads, banners, thumbnails, or website hero sections.</p></details>
+        <details><summary>Is this a logo or branding package?</summary><p>The Attention Pack includes five campaign images. Send any existing logo, palette, or brand guidelines as links in your brief.</p></details>
+        <details><summary>How do I plan around a launch date?</summary><p>Put your launch date in the brief. For a time-sensitive campaign, email the studio before ordering to confirm availability.</p></details>
+        <details><summary>Who makes the images?</summary><p>I’m Loren, the digital artist behind Pixel Shroom Studio and LWVader. I use AI image tools and my own art direction to develop the concept and prepare the finished files.</p></details>
       </div>
-    </footer>
-    <script type="module" src="/app.js?v=20261022-loop"></script>
-    <script type="module" src="/studio-home.js?v=20261022-loop"></script>
-    <script type="module" src="/forge-print.js?v=20261024-portrait-v2"></script>
-    <script type="module" src="/storefront-shell.js?v=20261022-loop"></script>
-  </body>
+    </section>
+  </main>
+  <footer class="site-footer" id="contact"><div class="wrap footer-row"><a class="wordmark" href="/"><img src="/assets/pixel-shroom-logo-128.webp" width="36" height="36" alt=""><span>PIXEL SHROOM <b>STUDIO</b></span></a><a href="mailto:lwvader@pixelshroomstudio.com">Email the studio</a><a href="/privacy.html">Privacy</a><span>© 2026 Pixel Shroom Studio</span></div></footer>
+  <dialog id="case-dialog" aria-labelledby="case-title">
+    <div class="dialog-inner">
+      <form method="dialog"><button type="submit" class="close" aria-label="Close case study">×</button></form>
+      <img class="case-image" width="960" height="640" alt="">
+      <div class="case-copy"><p class="eyebrow">Fictional campaign</p><h2 id="case-title"></h2>
+        <div class="case-layout"><div><h3>The brief</h3><p id="case-brief"></p><h3>Why it works</h3><p id="case-value"></p><h3>Palette</h3><ul id="case-palette" class="palette"></ul></div>
+        <div><h3>Social placement</h3><figure class="mockup"><figcaption id="case-brand"></figcaption><img class="mockup-image" width="960" height="640" alt=""><strong id="case-tagline"></strong></figure></div></div>
+      </div>
+    </div>
+  </dialog>
+</body>
 </html>

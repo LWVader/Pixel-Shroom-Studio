@@ -149,6 +149,10 @@ Deno.serve(async (request: Request): Promise<Response> => {
     }
     const session = event.data.object as Stripe.Checkout.Session;
 
+    if (session.metadata?.kind === "studio-campaign-v1") {
+      return json({ received: true, ignored: true });
+    }
+
     if (session.metadata?.kind === "gelato") {
       if (event.type === "checkout.session.expired") {
         const { error } = await service()
