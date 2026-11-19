@@ -6,6 +6,20 @@ The storefront sells a $199 USD Attention Pack with five coordinated campaign im
 
 From the project folder, run `py -m http.server 8000 --directory public` on Windows. Use `python3` in place of `py` on macOS or Linux. Open http://localhost:8000. The static preview is for the public design. The footer logo opens the admin sign-in page. Use Wrangler’s Worker preview to test signing in or checking out.
 
+## Run site tests
+
+Use Node.js 22.13 or newer. Open PowerShell in the extracted project directory and run:
+
+```powershell
+npm.cmd ci
+npm.cmd run test:install-browsers
+npm.cmd test
+```
+
+On macOS and Linux, use `npm` in place of `npm.cmd`. Run `npm run test:api` for browser-free Worker checks or `npm run test:e2e` for Chromium browser checks. On Linux, use `npx playwright install --with-deps chromium` if Chromium needs system libraries.
+
+The suite starts a local test site on port 4173 with an in-memory SQLite database and simulated Stripe Checkout. It checks desktop and mobile navigation, portfolio filtering, footer sign-in, checkout and brief submission, Campaign Admin, the Gmail draft, and AD Studio access. Failed browser tests save traces in `test-results`. Production credentials and deployed infrastructure are unnecessary for these tests.
+
 ## Set up Cloudflare
 
 1. Create a D1 database and copy its ID into the `CAMPAIGN_DB` entry in `wrangler.jsonc`. Apply the campaign migration. On Windows run:

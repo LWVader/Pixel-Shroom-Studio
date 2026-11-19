@@ -1,0 +1,16 @@
+{
+  "name": "pixel-shroom-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22.13.0"},
+  "scripts": {
+    "test": "npm run test:api && npm run test:e2e",
+    "test:api": "node --test tests/worker.test.mjs",
+    "test:e2e": "playwright test",
+    "test:install-browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
