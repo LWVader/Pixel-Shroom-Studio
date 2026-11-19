@@ -16,7 +16,7 @@
   <header class="site-header">
     <div class="wrap header-row">
       <a class="wordmark" href="/" aria-label="Pixel Shroom Studio home"><img src="/assets/pixel-shroom-logo-128.webp" width="40" height="40" alt=""><span>PIXEL SHROOM <b>STUDIO</b></span></a>
-      <a class="secondary" href="/cdn-cgi/access/logout">Sign out</a>
+      <button class="secondary" id="sign-out" type="button" hidden>Sign out</button>
     </div>
   </header>
   <main class="wrap admin-main" id="main">
@@ -24,8 +24,20 @@
       <button type="button" id="refresh" class="secondary">Refresh orders</button>
       <a class="button" id="ad-studio-view" href="/admin-ad-studio/">Open AD Studio</a>
     </div></div>
-    <p id="access-status" class="status" role="status">Loading Campaign Admin…</p>
-    <noscript><p>Enable JavaScript to manage campaign orders.</p></noscript>
+    <p id="access-status" class="status" role="status">Checking sign-in…</p>
+    <noscript><p>Enable JavaScript to sign in and manage campaign orders.</p></noscript>
+    <form class="admin-panel brief-form" id="admin-login">
+      <h2>Administrator sign-in</h2>
+      <label>Administrator password <input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="button" type="submit" disabled>Sign in</button>
+    </form>
+    <section class="admin-panel" id="stripe-panel" aria-labelledby="stripe-title" hidden>
+      <div class="orders-top">
+        <h2 id="stripe-title">Stripe connection</h2>
+        <button class="secondary" id="check-stripe" type="button">Check Stripe connection</button>
+      </div>
+      <p id="stripe-status" class="status" role="status">Check which Stripe mode the Worker is using.</p>
+    </section>
     <section class="admin-panel orders" id="orders" aria-labelledby="orders-title" hidden>
       <div class="orders-top"><h2 id="orders-title">Submitted briefs</h2><label>Find in loaded orders <input id="order-search" type="search" placeholder="Business, email or industry"></label></div>
       <p class="status" id="order-status" role="status"></p>

@@ -1,4 +1,5 @@
 import {authenticatedAdmin} from "./lib/admin-access.mjs";
+import {clearPasswordSession, passwordAdmin, passwordConfigured, signInWithPassword} from "./lib/admin-session.mjs";
 import {handleSocial} from "./lib/ad-studio-social.mjs";
 import {createCampaignOrders, sessionPattern} from "./lib/campaign-orders.mjs";
 import {campaignStore} from "./lib/campaign-store.mjs";
@@ -109,6 +110,7 @@ async function buyerRoute(request, env, url) {
     const ready = Boolean(env.STRIPE_SECRET_KEY && env.CAMPAIGN_DB);
     const options = {
       attention: ready && env.CAMPAIGN_ATTENTION_ENABLED === "true",
+      attentionPrice: env.CAMPAIGN_ATTENTION_PRICE_ID || "",
       landing: ready && env.CAMPAIGN_LANDING_ENABLED === "true",
       monthlyPrice: ready && portal ? env.CAMPAIGN_MONTHLY_PRICE_ID : "",
       billingPortal: portal,
@@ -127,6 +129,49 @@ async function buyerRoute(request, env, url) {
     return json(await handle(input));
   } catch (error) {
     return routeFailure(error, "Your request could not be completed. Try again or email the studio for help.");
+  }
+}
+
+async function adminUser(request, env, url) {
+  const owner = await passwordAdmin(request, env, url);
+  if (owner) return {...owner, mode: "password"};
+  const accessUser = await authenticatedAdmin(request, env);
+  return accessUser ? {...accessUser, mode: "access"} : null;
+}
+
+async function adminSessionRoute(request, env, url) {
+  if (request.method === "GET") {
+    const user = await adminUser(request, env, url);
+    return json({authenticated: Boolean(user), mode: user?.mode, passwordConfigured: passwordConfigured(env)});
+  }
+  if (!["POST", "DELETE"].includes(request.method)) return methodNotAllowed("GET, POST, DELETE");
+  if (!sameOriginJson(request, url)) return apiError("Same-origin requests required.", 403);
+  if (request.method === "DELETE") {
+    return new Response(null, {status: 204, headers: {...apiHeaders, "Set-Cookie": clearPasswordSession(url)}});
+  }
+  try {
+    const input = await readJson(request);
+    const cookie = await signInWithPassword(request, env, url, input?.password);
+    return Response.json({authenticated: true, mode: "password"},
+      {headers: {...apiHeaders, "Set-Cookie": cookie}});
+  } catch (error) {
+    return routeFailure(error, "Could not sign in. Check the admin password and database setup.");
+  }
+}
+
+async function stripeStatusRoute(request, env) {
+  if (request.method !== "GET") return methodNotAllowed("GET");
+  if (!env.STRIPE_SECRET_KEY) {
+    return json({state: "missing", message: "Set the existing Stripe account’s STRIPE_SECRET_KEY in the Worker."});
+  }
+  const mode = /^(?:sk|rk)_(live|test)_/.exec(env.STRIPE_SECRET_KEY)?.[1];
+  if (!mode) return json({state: "error", message: "The Worker needs a Stripe secret or restricted API key."});
+  try {
+    await stripeApi(env.STRIPE_SECRET_KEY).checkConnection();
+    return json({state: "connected", mode,
+      message: `Stripe Checkout API reachable in ${mode} mode${env.CAMPAIGN_DB ? "." : ". Add the CAMPAIGN_DB binding to accept orders."}`});
+  } catch {
+    return json({state: "error", message: "Stripe could not verify this key. Check the key and its Checkout Sessions permissions."});
   }
 }
 
@@ -207,14 +252,23 @@ export default {
     }
     if (url.pathname === "/api/campaign-orders") return buyerRoute(request, env, url);
 
+    if (url.pathname === "/api/admin/session") return adminSessionRoute(request, env, url);
+
     const isAdmin = url.pathname === "/admin.html";
     const isEditor = url.pathname.startsWith("/admin-ad-studio/");
     const isAdminApi = url.pathname === "/api/admin/campaigns";
+    const isStripeStatus = url.pathname === "/api/admin/stripe";
     const isSocialApi = url.pathname.startsWith("/api/ad-studio/social/");
-    if (isAdmin || isEditor || isAdminApi || isSocialApi) {
-      const user = await authenticatedAdmin(request, env);
-      if (!user) return apiError("Cloudflare Access administrator sign-in required.", 401);
+    if (isEditor || isAdminApi || isStripeStatus || isSocialApi) {
+      const user = await adminUser(request, env, url);
+      if (!user) {
+        if (isEditor && (!url.pathname.split("/").at(-1) || url.pathname.endsWith(".html"))) {
+          return Response.redirect(new URL("/admin.html#ad-studio-view", url.origin), 302);
+        }
+        return apiError("Administrator sign-in required.", 401);
+      }
       if (isAdminApi) return adminCampaignRoute(request, env, url);
+      if (isStripeStatus) return stripeStatusRoute(request, env);
       if (isSocialApi) return socialRoute(request, env, url, user);
     }
 

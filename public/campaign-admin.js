@@ -52,14 +52,19 @@ function renderOrders() {
     : query ? "No loaded briefs match this search." : "No campaign briefs have been submitted.";
 }
 
-async function adminApi(query = "", body) {
-  const options = body ? {
-    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)
-  } : {};
-  const response = await fetch("/api/admin/campaigns" + query, options);
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Could not load Campaign Admin.");
+async function api(path, method = "GET", body) {
+  const options = method === "GET" ? {} : {
+    method, headers: {"Content-Type": "application/json"}, body: JSON.stringify(body ?? {})
+  };
+  const response = await fetch(path, options);
+  if (response.status === 204) return null;
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Could not reach Campaign Admin.");
   return data;
+}
+
+function adminApi(query = "", body) {
+  return api("/api/admin/campaigns" + query, body ? "POST" : "GET", body);
 }
 
 async function loadOrders(reset = false) {
@@ -157,6 +162,73 @@ $("close-order").addEventListener("click", () => { if (!busy) panel.close(); });
 panel.addEventListener("cancel", (event) => { if (busy) event.preventDefault(); });
 panel.addEventListener("close", () => { selected = null; });
 
-$("access-status").textContent = "";
-orders.hidden = $("admin-actions").hidden = false;
-await loadOrders(true);
+const login = $("admin-login");
+const signOut = $("sign-out");
+const stripePanel = $("stripe-panel");
+const accessStatus = $("access-status");
+let mode = "";
+
+async function openWorkspace(session) {
+  mode = session.mode || "";
+  login.hidden = session.authenticated;
+  signOut.hidden = orders.hidden = stripePanel.hidden = $("admin-actions").hidden = !session.authenticated;
+  if (session.authenticated) {
+    accessStatus.textContent = "";
+    await loadOrders(true);
+  } else {
+    login.querySelector("button").disabled = !session.passwordConfigured;
+    accessStatus.textContent = session.passwordConfigured ? "" :
+      "The admin login needs the ADMIN_PASSWORD Worker secret and the campaign database.";
+  }
+}
+
+login.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const submit = event.submitter;
+  submit.disabled = true;
+  try {
+    const session = await api("/api/admin/session", "POST", {password: login.elements.password.value});
+    login.reset();
+    await openWorkspace(session);
+  } catch (error) {
+    accessStatus.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+signOut.addEventListener("click", async () => {
+  if (mode === "access") {
+    location.assign("/cdn-cgi/access/logout");
+    return;
+  }
+  try {
+    await api("/api/admin/session", "DELETE");
+    location.reload();
+  } catch (error) {
+    accessStatus.textContent = error.message;
+  }
+});
+
+$("check-stripe").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  const status = $("stripe-status");
+  button.disabled = true;
+  status.textContent = "Checking the Stripe Checkout API…";
+  try {
+    const result = await api("/api/admin/stripe");
+    status.textContent = result.message;
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+try {
+  const session = await api("/api/admin/session");
+  if (typeof session.authenticated !== "boolean") throw new Error("Missing login status.");
+  await openWorkspace(session);
+} catch {
+  accessStatus.textContent = "Open this site through its Cloudflare Worker to sign in.";
+}
