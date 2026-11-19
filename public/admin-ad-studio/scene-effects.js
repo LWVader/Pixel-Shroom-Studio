@@ -1,5 +1,6 @@
 /* Deterministic effects: the same timeline position renders the same export frame. */
 const MOTION_PRESETS=[
+{id:"none",name:"None",description:"Keep the artwork and character still."},
 {id:'burst',name:'Breakthrough',icon:'↗',description:'Move toward the viewer and cross the post border.'},
 {id:'bounce',name:'Bounce',icon:'↕',description:'Bounce out of the post with a springy landing.'},
 {id:'float',name:'Float',icon:'≈',description:'Hover outside the frame with gentle swaying.'},
@@ -14,13 +15,18 @@ const MOTION_PRESETS=[
 const SceneEffects=(()=>{
 const clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>{x=clamp(x);return x*x*(3-2*x)},hash=n=>{const a=Math.sin(n*127.1+311.7)*43758.5453;return a-Math.floor(a)},TAU=Math.PI*2;
 function envelope(u){return ease((u-.08)/.24)*(1-ease((u-.80)/.20))}
-function motion(time,state){const u=clamp(time/Number(state.duration)),base=envelope(u);let emerge=base,bob=0,angle=0;
+function motion(time,state){const u=clamp(time/Number(state.duration)),base=envelope(u);let emerge=base,bob=0,angle=0,slideX=0;
+if(state.motion==='none')return {u:0,emerge:0,bob:0,angle:0,slideX:0};
+if(state.motion==='slide'){
+  const inMove=1-ease((u-.05)/.32),outMove=ease((u-.79)/.21),overshoot=Math.sin(clamp((u-.27)/.25)*Math.PI)*42;
+  slideX=-864*inMove+864*outMove+overshoot;
+}
 if(state.motion==='bounce'){bob=-Math.abs(Math.sin(Math.max(0,u-.25)*TAU*2.6))*55*base;emerge=base*(1+Math.sin(u*TAU*2)*.06)}
 if(state.motion==='float'){emerge=base*.9;bob=Math.sin(u*TAU*2)*25*base;angle=Math.sin(u*TAU)*.07*base}
 if(state.motion==='spin')angle=TAU*ease((u-.1)/.75);
 if(state.motion==='page-burn')emerge=ease((u-.25)/.28)*(1-ease((u-.85)/.15));
 if(state.motion==='melt')emerge=ease((u-.22)/.27)*(1-ease((u-.82)/.18));
-return{u,emerge,bob,angle}}
+return{u,emerge,bob,angle,slideX}}
 
 function burn(ctx,state,time,rect,u,e){const{x,y,w,h,edge}=rect,progress=ease((u-.08)/.65),fade=1-ease((u-.82)/.18),strength=Number(state.burnIntensity)/100;ctx.save();ctx.beginPath();ctx.rect(x-8,y,w+16,h+90);ctx.clip();ctx.globalAlpha=fade;const points=[],center=state.burnOrigin==='center',cx=x+w/2,cy=y+h*.6;
 if(center){const radius=progress*w*.48;for(let i=0;i<=100;i++){const a=i/100*TAU,r=radius*(1+.06*Math.sin(a*7.2)+.03*Math.sin(a*19)+.025*Math.sin(a*31));points.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r*.82])}}else{const front=edge+68-progress*(h+88);for(let i=0;i<=70;i++){const xx=x+i*w/70,rough=Math.sin(i*.65)*13+Math.sin(i*1.31)*7+Math.sin(i*2.7)*3;points.push([xx,front+rough*(.3+progress*.7)])}}
@@ -51,7 +57,6 @@ function after(ctx,state,time,rect){if(state.motion==='weather'&&state.weatherLa
 function subject(ctx,layer,state,time,bounds){const u=clamp(time/Number(state.duration)),e=envelope(u);ctx.save();
 if(state.motion==='melt'){const amount=meltProgress(u,state);if(amount>.001){const top=Math.max(0,bounds.cy-bounds.size*.7),bottom=Math.min(layer.height,bounds.cy+bounds.size*.7),height=bottom-top;ctx.beginPath();ctx.rect(0,0,layer.width,layer.height);ctx.clip();if(!meltSubjectLayer)meltSubjectLayer=document.createElement('canvas');const crop=meltSubjectLayer;if(crop.width!==layer.width||crop.height!==Math.ceil(height)){crop.width=layer.width;crop.height=Math.ceil(height)}crop.getContext('2d').clearRect(0,0,crop.width,crop.height);crop.getContext('2d').drawImage(layer,0,top,layer.width,height,0,0,layer.width,height);meltImage(ctx,crop,0,top,layer.width,height,amount,Math.min(330,bounds.size*.65));ctx.restore();return}}
 if(state.motion==='explode'){const blast=u<.52?ease((u-.27)/.25):1-ease((u-.52)/.27);if(blast>.001){const size=Math.max(bounds.size*1.12,(bounds.width||0)*1.1),objectHeight=Math.max(bounds.size*1.3,(bounds.height||0)*1.15),x=Math.max(0,bounds.cx-size/2),y=Math.max(0,bounds.cy-objectHeight/2),w=Math.min(size,layer.width-x),h=Math.min(objectHeight,layer.height-y),cols=10,rows=12,tw=w/cols,th=h/rows;for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const id=r*cols+c,sx=x+c*tw,sy=y+r*th,cx=sx+tw/2,cy=sy+th/2,dx=(c-(cols-1)/2)*(25+hash(id)*24),dy=(r-(rows-1)/2)*(18+hash(id+90)*24);ctx.save();ctx.translate(cx+dx*blast,cy+dy*blast+Math.sin(blast*Math.PI)*55);ctx.rotate((hash(id+70)-.5)*blast*2.7);ctx.globalAlpha=1-blast*.13;ctx.drawImage(layer,sx,sy,tw,th,-tw/2,-th/2,tw,th);ctx.restore()}ctx.restore();return}}
-if(state.motion==='slide'){const inMove=1-ease((u-.05)/.32),outMove=ease((u-.79)/.21),overshoot=Math.sin(clamp((u-.27)/.25)*Math.PI)*42;ctx.translate(-760*inMove+760*outMove+overshoot,0)}
 if(state.motion==='glitch'){const intensity=(1-ease((u-.7)/.14))*e*.8,frame=Math.floor(u*45);if(intensity>.03){const bands=24,height=layer.height/bands;for(let i=0;i<bands;i++){const off=(hash(i+frame*43)-.5)*110*intensity;ctx.drawImage(layer,0,i*height,layer.width,height,off,i*height,layer.width,height);if(i%4===0&&i*height>bounds.cy-bounds.size*.6&&i*height<bounds.cy+bounds.size*.6){ctx.globalAlpha=.3*intensity;ctx.fillStyle=i%8?'#ff64c6':'#74ffe9';ctx.fillRect(bounds.cx-bounds.size*.4+off,i*height,bounds.size*.8,2);ctx.globalAlpha=1}}ctx.restore();return}}
 ctx.drawImage(layer,0,0);ctx.restore()}
 return{motion,before,subject,after,fireReady:()=>true};})();

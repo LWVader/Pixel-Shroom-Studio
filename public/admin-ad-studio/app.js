@@ -1,6 +1,6 @@
 'use strict';
 const $=id=>document.getElementById(id), canvas=$('scene');let ctx=canvas.getContext('2d');const subjectLayer=document.createElement('canvas');
-let state={layout:'popout',model:'shroom',motion:'burst',brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',accent:'#b8ff65',platform:'Instagram',background:'dark',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,image:null,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgColor:'#203b30',outerColor:'#12221e',cardColor:'#fcfcfa',textColor:'#203a2b',bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,bgMode:'preset',outerMode:'color',frameMaterial:'wood',productDepth:26,borderWidth:15,matWidth:10,matColor:'#f3eee2',photoFit:'cover',productAspect:'portrait',bevel:6,edgeColor:'#e9e5dc',gloss:45,subjectX:0,subjectY:0,faceImages:{},productRendering:'cutout',productTemplate:'frame-oak',characterName:'Shroom Mascot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,texture=null,recording=false;
+let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',accent:'#b8ff65',platform:'Instagram',background:'dark',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgColor:'#203b30',outerColor:'#12221e',cardColor:'#fcfcfa',textColor:'#203a2b',bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,bgMode:'preset',outerMode:'color',subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
 const PLAYBACK_RATE = .5;
 const BUNDLED_ARTWORK = "/assets/campaigns/orbit-roast.webp";
 const BUNDLED_LOGO = "/assets/pixel-shroom-logo-128.webp";
@@ -19,8 +19,13 @@ function drawCaption(s,x,y,w,h){let size=Number(s.captionFontSize)||28,wrapped=[
 const characters={};
 for(const entry of CHARACTER_CATALOG){const img=new Image();img.src=entry.src;characters[entry.id]=img;}
 const isCharacterModel=model=>model==='custom'||Object.hasOwn(characters,model);
-let characterUpload=null,backdrop=null,outerBackdrop=null,brandLogo=null,faceTextures={};
-const extraControls=['captionFont','captionFontSize','captionWeight','captionAlign','bgColor','outerColor','cardColor','textColor','bgZoom','bgX','bgY','bgDim','bgBlur','bgMode','outerMode','frameMaterial','productDepth','borderWidth','matWidth','matColor','photoFit','productAspect','bevel','edgeColor','gloss','subjectX','subjectY','productRendering','productTemplate','weatherType','weatherLayer','weatherDensity','weatherSpeed','weatherWind','burnOrigin','burnIntensity','burnSmoke','burnEmbers','emberAmount'];
+let characterUpload=null,backdrop=null,outerBackdrop=null,brandLogo=null;
+let characterHitArea = null;
+const extraControls = [
+  "captionFont", "captionFontSize", "captionWeight", "captionAlign", "bgColor", "outerColor", "cardColor", "textColor",
+  "bgZoom", "bgX", "bgY", "bgDim", "bgBlur", "bgMode", "outerMode", "weatherType", "weatherLayer",
+  "weatherDensity", "weatherSpeed", "weatherWind", "burnOrigin", "burnIntensity", "burnSmoke", "burnEmbers", "emberAmount"
+];
 function coverImage(img,x,y,w,h,zoom=100,fx=50,fy=50){const k=Math.max(w/img.naturalWidth,h/img.naturalHeight)*zoom/100,dw=img.naturalWidth*k,dh=img.naturalHeight*k;ctx.drawImage(img,x+(w-dw)*fx/100,y+(h-dh)*fy/100,dw,dh)}
 
 function paintCanvas(height) {
@@ -45,41 +50,100 @@ function paintArtwork(x, y, width, height, zoom = Number(state.bgZoom)) {
   }
 }
 
-function motionAt(time){return SceneEffects.motion(time,state)}
+const canvasHeights = {square: 864, story: 1536, portrait: 1080};
+const hasCharacter = () => state.layout === "popout" || state.showCharacter;
+const characterImage = () => state.model === "custom" ? characterUpload : characters[state.model];
+
+function artworkRect(height) {
+  const marketing = state.layout === "marketing";
+  const y = marketing ? 132 : 172;
+  const h = marketing ? Math.min(height * .48, height - 425) : Math.min(440, height * .36);
+  return {x: marketing ? 56 : 122, y, w: marketing ? 752 : 620, h, edge: y + h};
+}
+
+function characterCenterY(rect) {
+  return Math.round(rect.y + rect.h * .49);
+}
+
+function syncPlacement(x = state.subjectX, y = state.subjectY) {
+  const height = canvas.height;
+  const anchorY = characterCenterY(artworkRect(height));
+  state.subjectX = Math.round(Math.max(-432, Math.min(432, Number(x) || 0)));
+  state.subjectY = Math.round(Math.max(-anchorY, Math.min(height - anchorY, Number(y) || 0)));
+  $("subjectY").min = -anchorY;
+  $("subjectY").max = height - anchorY;
+  $("subjectX").value = state.subjectX;
+  $("subjectY").value = state.subjectY;
+  $("subjectXOut").value = Math.round((432 + state.subjectX) / 864 * 100) + "%";
+  $("subjectYOut").value = Math.round((anchorY + state.subjectY) / height * 100) + "%";
+  $("sizeOut").value = state.size + "%";
+}
+
+function paintCharacter(rect, height) {
+  characterHitArea = null;
+  if (state.motion !== "none") SceneEffects.before(ctx, state, t, rect);
+  const image = characterImage();
+  if (hasCharacter() && image?.complete && image.naturalWidth) {
+    const {u, emerge, bob, angle, slideX} = SceneEffects.motion(t, state);
+    const reach = emerge * Number(state.depth) / 100;
+    const h = rect.h * .73 * Number(state.size) / 90 * (1 + reach * .78);
+    const w = h * image.naturalWidth / image.naturalHeight * (1 + Math.sin(orbit) * .12);
+    const drawnHeight = h * (1 - Math.abs(tilt) * .07);
+    const x = 432 + state.subjectX + Math.sin(u * 6.28) * reach * 8 + slideX;
+    const y = Math.max(0, Math.min(height, characterCenterY(rect) + state.subjectY + reach * rect.h * .32 + bob));
+    const rotation = angle + orbit * .1;
+    const c = Math.abs(Math.cos(rotation)), s = Math.abs(Math.sin(rotation));
+    characterHitArea = {x, y, w: c * w + s * drawnHeight, h: s * w + c * drawnHeight};
+
+    const effects = state.motion === "melt" || state.motion === "explode" || state.motion === "glitch";
+    if (effects && (subjectLayer.width !== 864 || subjectLayer.height !== height)) {
+      subjectLayer.width = 864;
+      subjectLayer.height = height;
+    }
+    const layer = effects ? subjectLayer.getContext("2d") : ctx;
+    if (effects) layer.clearRect(0, 0, 864, height);
+    layer.save();
+    layer.translate(x, y);
+    layer.rotate(rotation);
+    if (state.shadows) {
+      layer.shadowColor = "#10191365";
+      layer.shadowBlur = Math.min(22, h * .04);
+      layer.shadowOffsetY = Math.min(16, h * .035);
+    }
+    layer.drawImage(image, -w / 2, -drawnHeight / 2, w, drawnHeight);
+    layer.restore();
+
+    if (effects) SceneEffects.subject(ctx, subjectLayer, state, t, {cx: x, cy: y, size: h, width: w, height: drawnHeight});
+  }
+  if (state.motion !== "none") SceneEffects.after(ctx, state, t, rect);
+}
+
 function draw(){const W=canvas.width,H=canvas.height,s=W/864;ctx.setTransform(s,0,0,s,0,0);const h=H/s;
 paintCanvas(h);
 if(state.layout==='marketing'&&typeof renderMarketingAd==='function'){
   renderMarketingAd(ctx,state,t,h,brandLogo);
+  paintCharacter(artworkRect(h), h);
   updatePlaybackClock();
   return;
 }
 const light=state.background==='light',bg=state.background==='purple'?'#251631':light?'#e7ebe5':'#12221e';
-const px=104,pw=656,py=62,ph=h-124,mediaY=py+110,mediaH=Math.min(440,h*.36),mediaX=px+18,mediaW=pw-36,edge=mediaY+mediaH;
+const px=104,pw=656,py=62,ph=h-124;
+const rect=artworkRect(h),{x:mediaX,y:mediaY,w:mediaW,h:mediaH,edge}=rect;
 ctx.save();ctx.shadowColor='#0005';ctx.shadowBlur=28;ctx.shadowOffsetY=12;rounded(px,py,pw,ph,18,state.cardColor);ctx.restore();
 if(brandLogo?.complete&&brandLogo.naturalWidth){ctx.save();ctx.beginPath();ctx.arc(px+51,py+53,25,0,Math.PI*2);ctx.clip();coverImage(brandLogo,px+26,py+28,50,50);ctx.restore()}text(state.brand,brandLogo?.complete&&brandLogo.naturalWidth?px+91:px+29,py+47,22,state.textColor,700,state.captionFont,pw-156);text(state.platform+' · Sponsored',brandLogo?.complete&&brandLogo.naturalWidth?px+91:px+29,py+73,15,'#758176');text('•••',px+pw-60,py+55,25,'#49554c');
 ctx.save();ctx.beginPath();ctx.roundRect(mediaX,mediaY,mediaW,mediaH,5);ctx.clip();let grad=ctx.createLinearGradient(mediaX,mediaY,mediaX,edge);grad.addColorStop(0,bg);grad.addColorStop(1,state.background==='purple'?'#5a3467':light?'#718b6b':'#3b5941');ctx.fillStyle=grad;ctx.fillRect(mediaX,mediaY,mediaW,mediaH);
 const glow=ctx.createRadialGradient(432,mediaY+mediaH*.55,5,432,mediaY+mediaH*.55,300);glow.addColorStop(0,'#b8ff6528');glow.addColorStop(1,'#b8ff6500');ctx.fillStyle=glow;ctx.fillRect(mediaX,mediaY,mediaW,mediaH);ctx.strokeStyle='#b3d69720';for(let k=0;k<10;k++){ctx.beginPath();ctx.ellipse(432,edge+60,80+k*45,20+k*35,0,0,Math.PI*2);ctx.stroke()}paintArtwork(mediaX, mediaY, mediaW, mediaH);ctx.restore();
 // The post UI is drawn BEFORE the foreground subject so the breakout can occlude it.
 text('♡   ◯   ↗',px+29,edge+44,30,'#26372c');text('⌑',px+pw-51,edge+44,30,'#26372c');text('1,248 likes',px+29,edge+75,14,'#384b3c',700);
-SceneEffects.before(ctx,state,t,{x:mediaX,y:mediaY,w:mediaW,h:mediaH,edge});
-const {u,emerge,bob,angle}=motionAt(t),depth=Number(state.depth)/100,reach=emerge*depth,isCharacter=isCharacterModel(state.model),base=isCharacter?mediaH*.73:mediaH*.61,subjectH=base*(Number(state.size)/90)*(1+reach*.78),centerY=mediaY+mediaH*.49+reach*mediaH*.32+bob;
-if(state.shadows&&reach>.01){ctx.save();ctx.translate(432+Number(state.subjectX),edge+40+reach*60+Number(state.subjectY));ctx.scale(1,.26);const g=ctx.createRadialGradient(0,0,5,0,0,170);g.addColorStop(0,`rgba(16,25,19,${.16+reach*.24})`);g.addColorStop(1,'rgba(16,25,19,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,170,0,Math.PI*2);ctx.fill();ctx.restore();}
-const displayCtx=ctx;if(subjectLayer.width!==864||subjectLayer.height!==h){subjectLayer.width=864;subjectLayer.height=h}ctx=subjectLayer.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,864,h);ctx.save();ctx.translate(Number(state.subjectX),Number(state.subjectY));
-// A small depth remains behind the post aperture; the mask opens as the subject emerges.
-if(reach<.09){ctx.beginPath();ctx.rect(mediaX,mediaY,mediaW,mediaH);ctx.clip();}else{ctx.beginPath();ctx.rect(px-48,mediaY,pw+96,ph);ctx.clip();}
-if(isCharacter){const img=state.model==='custom'?characterUpload:characters[state.model];if(img&&img.complete&&img.naturalWidth){const width=subjectH*(img.naturalWidth/img.naturalHeight);ctx.translate(432+Math.sin(u*6.28)*reach*8,centerY);ctx.rotate(angle+orbit*.1);ctx.scale(1+Math.sin(orbit)*.12,1-Math.abs(tilt)*.07);if(state.shadows&&reach>.05){ctx.shadowColor='#0b160c45';ctx.shadowBlur=8+reach*16;ctx.shadowOffsetX=reach*11;ctx.shadowOffsetY=reach*18;}ctx.drawImage(img,-width/2,-subjectH/2,width,subjectH);}
-else{text('Loading character…',330,centerY,19,'#d4e2c4');}}
-else if(state.productRendering==='cutout'){const id=state.productTemplate;ProductCutouts.render(ctx,id,state,{...faceTextures,front:faceTextures.front||texture},432,centerY,subjectH*1.1,angle+orbit*.1);}else{Product3D.render(ctx,state,t,432,centerY,subjectH,orbit,tilt,{...faceTextures,front:faceTextures.front||texture});}ctx.restore();ctx=displayCtx;SceneEffects.subject(ctx,subjectLayer,state,t,{cx:432+Number(state.subjectX),cy:centerY+Number(state.subjectY),size:subjectH,width:!isCharacter&&state.productRendering==='cutout'?subjectH*1.1*(ProductCutouts.assets[state.productTemplate]?.prepared?.w||1)/(ProductCutouts.assets[state.productTemplate]?.prepared?.h||1):subjectH,height:!isCharacter&&state.productRendering==='cutout'?subjectH*1.1:subjectH});
-SceneEffects.after(ctx,state,t,{x:mediaX,y:mediaY,w:mediaW,h:mediaH,edge});
-const copyY=Math.max(edge+145,h-300);drawCaption(state,px+30,copyY,pw-60,h-191-copyY);rounded(px+28,h-171,pw-56,55,8,'#1d3024');text(state.cta,px+49,h-136,20,'#fff',700,state.captionFont,pw-100);text(state.website,px+30,h-88,15,state.textColor,400,state.captionFont,pw-60);updatePlaybackClock();}
+const copyY=Math.max(edge+145,h-300);drawCaption(state,px+30,copyY,pw-60,h-191-copyY);rounded(px+28,h-171,pw-56,55,8,'#1d3024');text(state.cta,px+49,h-136,20,'#fff',700,state.captionFont,pw-100);text(state.website,px+30,h-88,15,state.textColor,400,state.captionFont,pw-60);paintCharacter(rect,h);updatePlaybackClock();}
 function updatePlaybackClock() {
   $('time').textContent=(t/PLAYBACK_RATE).toFixed(1)+' / '+(Number(state.duration)/PLAYBACK_RATE).toFixed(1)+'s';
   $('seek').value=t/PLAYBACK_RATE;
 }
 
 
-function frame(now){if(last&&playing&&!recording)t=(t+(now-last)/1000*PLAYBACK_RATE)%Number(state.duration);last=now;if(!recording)draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
-const regularControls = ["brand", "headline", "cta", "website", "platform", "background", "depth", "size", "duration", "ratio", "shadows"];
+function frame(now){if(last&&playing&&!recording&&!drag)t=(t+(now-last)/1000*PLAYBACK_RATE)%Number(state.duration);last=now;if(!recording)draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
+const regularControls = ["brand", "headline", "cta", "website", "platform", "background", "depth", "size", "duration", "ratio", "shadows", "showCharacter"];
 
 function sync() {
   document.body.dataset.adLayout = state.layout;
@@ -87,28 +151,12 @@ function sync() {
   if (typeof syncSocialCopy === "function") syncSocialCopy();
   FontLibrary.sync({...state, cardColor: state[colorKey("cardColor")], textColor: state[colorKey("textColor")]});
 
-  const isProduct = ["canvas", "box"].includes(state.model);
   const isPopout = state.layout === "popout";
-  const isMesh = state.productRendering === "mesh";
-  $("characterSection").hidden = isProduct;
-  $("productSection").hidden = !isProduct;
-  $("productSettings").hidden = !isProduct;
-  $("productTemplateOptions").hidden = isMesh;
-  $("meshSettings").hidden = !isMesh;
-  $("frameOptions").hidden = state.model !== "canvas";
-  $("cubeOptions").hidden = state.model !== "box";
-  if (isPopout && !isProduct && typeof updateCharacterSelection === "function") updateCharacterSelection();
-  if (isPopout && isProduct) {
-    const face = $("faceTarget");
-    for (const option of face.options) {
-      option.disabled = state.model === "canvas" ? option.value !== "front" :
-        !isMesh && !["front", "right", "top"].includes(option.value);
-    }
-    if (face.selectedOptions[0]?.disabled) face.value = "front";
-    face.closest("label").hidden = state.model === "canvas";
-    $("cube-face-help").hidden = state.model === "canvas";
-    ProductCutouts.thumbnails(state, {...faceTextures, front: faceTextures.front || texture});
-  }
+  const visible = hasCharacter();
+  $("characterSection").hidden = $("character-placement").hidden = $("character-stage-note").hidden = !visible;
+  $("depth-setting").hidden = state.motion === "none";
+  canvas.classList.toggle("character-visible", visible);
+  if (typeof updateCharacterSelection === "function") updateCharacterSelection();
 
   $("artwork-title").textContent = isPopout ? "Scene background" : "Campaign artwork";
   $("background").closest("label").hidden = state.bgMode !== "preset";
@@ -134,14 +182,13 @@ function sync() {
   $("depthOut").value = state.depth + "%";
   $("durationOut").value = Number(state.duration) / PLAYBACK_RATE + "s";
   $("seek").max = Number(state.duration) / PLAYBACK_RATE;
-  const height = {square: 864, story: 1536, portrait: 1080}[state.ratio];
+  const height = canvasHeights[state.ratio];
   if (canvas.height !== height) canvas.height = height;
-
-  const mode = isProduct ? "product" : "character";
-  for (const button of document.querySelectorAll("[data-model], [data-motion], [data-mode], [data-product-template]")) {
-    const {model, motion, productTemplate, mode: buttonMode} = button.dataset;
-    button.classList.toggle("selected", model === state.model || motion === state.motion ||
-      buttonMode === mode || (!isMesh && productTemplate === state.productTemplate));
+  syncPlacement();
+  for (const button of document.querySelectorAll("[data-motion]")) {
+    const selected = button.dataset.motion === state.motion;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", selected);
   }
 }
 
@@ -150,31 +197,13 @@ for (const id of [...regularControls, ...extraControls]) {
     const input = event.currentTarget;
     state[colorKey(id)] = id === "duration" ? Number(input.value) * PLAYBACK_RATE :
       input.type === "checkbox" ? input.checked : input.value;
-    if (id === "productTemplate") state.model = input.value.startsWith("frame") ? "canvas" : "box";
-    if (["photoFit", "matColor", "productAspect", "matWidth", "borderWidth"].includes(id)) {
-      Product3D.clear();
-      ProductCutouts.clear();
-    }
     t = Math.min(t, Number(state.duration));
     sync();
   });
 }
 
-for (const button of document.querySelectorAll("[data-model], [data-mode]")) {
-  button.addEventListener("click", () => {
-    const {model, mode} = button.dataset;
-    if (mode === "character" && isCharacterModel(state.model) ||
-        mode === "product" && !isCharacterModel(state.model)) return;
-    state.model = model || (mode === "character" ? "shroom" : "canvas");
-    if (state.model === "canvas" && !state.productTemplate.startsWith("frame")) state.productTemplate = "frame-oak";
-    if (state.model === "box" && !state.productTemplate.startsWith("cube")) state.productTemplate = "cube-white";
-    if (state.model === "shroom") {
-      characterUpload = null;
-      state.characterImage = null;
-    }
-    sync();
-  });
-}
+$("subjectX").oninput = () => syncPlacement($("subjectX").value, state.subjectY);
+$("subjectY").oninput = () => syncPlacement(state.subjectX, $("subjectY").value);
 
 for (const button of document.querySelectorAll("[data-motion]")) {
   button.addEventListener("click", () => {
@@ -199,19 +228,72 @@ $("seek").oninput = () => {
 };
 
 canvas.onpointerdown = (event) => {
-  if (state.layout !== "popout") return;
-  drag = [event.clientX, event.clientY];
+  if (!hasCharacter() || recording || !event.isPrimary || event.button !== 0 || !characterHitArea) return;
+  const bounds = canvas.getBoundingClientRect();
+  const sx = canvas.width / bounds.width, sy = canvas.height / bounds.height;
+  const x = (event.clientX - bounds.left) * sx, y = (event.clientY - bounds.top) * sy;
+  const area = characterHitArea;
+  if (Math.abs(x - area.x) > area.w / 2 || Math.abs(y - area.y) > area.h / 2) return;
+  drag = {pointer: event.pointerId, x: event.clientX, y: event.clientY, sx, sy, startX: state.subjectX, startY: state.subjectY};
   canvas.setPointerCapture(event.pointerId);
+  canvas.classList.add("character-dragging");
 };
 canvas.onpointermove = (event) => {
-  if (!drag) return;
-  orbit += (event.clientX - drag[0]) * .01;
-  tilt = Math.max(-.8, Math.min(.8, tilt + (event.clientY - drag[1]) * .01));
+  if (drag?.pointer !== event.pointerId) return;
+  syncPlacement(drag.startX + (event.clientX - drag.x) * drag.sx, drag.startY + (event.clientY - drag.y) * drag.sy);
 };
-canvas.onpointerup = canvas.onpointercancel = () => { drag = null; };
+canvas.onlostpointercapture = () => {
+  drag = null;
+  last = 0;
+  canvas.classList.remove("character-dragging");
+};
 function download(blob,name){let url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-$('upload').onchange=e=>{const file=e.target.files[0],face=$('faceTarget').value;if(!file)return;if(file.size>12*1024*1024)return toast('Choose an image under 12 MB.');const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{if(face==='front'){texture=img;state.image=reader.result;}faceTextures[face]=img;state.faceImages[face]=reader.result;if(!['canvas','box'].includes(state.model)){state.model='canvas';state.productTemplate='frame-oak'}Product3D.clear();ProductCutouts.clear();sync();toast('Photo added to '+face+' face.')};img.onerror=()=>toast('This image could not be loaded.');img.src=reader.result};reader.readAsDataURL(file)};
-$('save').onclick=()=>{download(new Blob([JSON.stringify({...state,orbit,tilt},null,2)],{type:'application/json'}),'popout-project.json');try{localStorage.setItem('popout',JSON.stringify({...state,orbit,tilt}))}catch{}toast('Project downloaded as JSON.')};$('load').onclick=()=>{if(!recording)$('projectFile').click()};$('projectFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file||recording)return;try{const data=JSON.parse(await file.text());if((!isCharacterModel(data.model)&&!['canvas','box'].includes(data.model))||(!MOTION_PRESETS.some(m=>m.id===data.motion)&&!['zoom','portal','page-peel','lava'].includes(data.motion)))throw Error();state=JSON.parse(JSON.stringify(defaults));for(const k of Object.keys(state)){if(k in data)state[k]=data[k]}if(state.weatherType==='embers'){state.motion='page-burn';state.burnEmbers=true;state.weatherType='snow'}if(['zoom','portal'].includes(state.motion))state.motion='weather';if(['page-peel','lava'].includes(state.motion))state.motion='melt';sanitizeProject();state.duration=Math.max(3,Math.min(12,Number(state.duration)||6));state.depth=Math.max(0,Math.min(100,Number(state.depth)||0));state.size=Math.max(50,Math.min(130,Number(state.size)||90));if(!/^#[0-9a-f]{6}$/i.test(state.accent))state.accent='#b8ff65';orbit=Number(data.orbit)||0;tilt=Number(data.tilt)||0;restoreCustomAssets();texture=null;characterUpload=null;if(state.characterImage){characterUpload=new Image();characterUpload.src=state.characterImage}if(state.image){texture=new Image();texture.src=state.image}t=0;sync();toast('Project opened.')}catch{toast('Please select a valid AD Studio project JSON.')}};
+$("save").onclick = () => {
+  const project = JSON.stringify({...state, orbit, tilt}, null, 2);
+  download(new Blob([project], {type: "application/json"}), state.layout === "marketing" ? "campaign-project.json" : "popout-project.json");
+  try { localStorage.setItem("popout", project); } catch {}
+  toast("Project downloaded as JSON.");
+};
+$("load").onclick = () => { if (!recording) $("projectFile").click(); };
+$("projectFile").onchange = async (event) => {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file || recording) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const oldProduct = ["canvas", "box"].includes(data?.model);
+    const oldMotions = {zoom: "weather", portal: "weather", "page-peel": "melt", lava: "melt"};
+    if ((!isCharacterModel(data?.model) && !oldProduct) ||
+        (!MOTION_PRESETS.some(({id}) => id === data.motion) && !Object.hasOwn(oldMotions, data.motion))) throw Error();
+    state = {...defaults};
+    for (const key of Object.keys(state)) if (Object.hasOwn(data, key)) state[key] = data[key];
+    if (oldProduct) {
+      state.model = "shroom";
+      state.characterImage = null;
+      const photo = data.faceImages?.front || data.image;
+      if (!state.bgImage && typeof photo === "string" && /^data:image\//.test(photo)) {
+        state.bgImage = photo;
+        state.bgMode = "image";
+      }
+    }
+    if (Object.hasOwn(oldMotions, state.motion)) state.motion = oldMotions[state.motion];
+    if (state.weatherType === "embers") {
+      state.motion = "page-burn";
+      state.burnEmbers = true;
+      state.weatherType = "snow";
+    }
+    sanitizeProject();
+    orbit = Number.isFinite(Number(data.orbit)) ? Number(data.orbit) : 0;
+    tilt = Math.max(-.8, Math.min(.8, Number(data.tilt) || 0));
+    restoreCustomAssets();
+    characterUpload = loadImage(state.characterImage);
+    t = 0;
+    sync();
+    toast(oldProduct ? "Project opened as a character ad." : "Project opened.");
+  } catch {
+    toast("Please select a valid AD Studio project JSON.");
+  }
+};
 $('snapshot').onclick=()=>{if(!assetsReady())return toast('Wait for your images and selected font to load.');draw();canvas.toBlob(b=>download(b,state.layout==='marketing'?'campaign-ad.png':'popout-frame.png'),'image/png')};
 async function renderAnimation(onProgress=()=>{}){if(recording)throw Error('Already recording.');if(!assetsReady())throw Error('Wait for your images and selected font to load.');if(!canvas.captureStream||!window.MediaRecorder)throw Error('Video recording is unavailable in this browser.');const mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m));if(!mime)throw Error('No supported video encoder.');return new Promise((resolve,reject)=>{const previous=playing,oldTime=t,stream=canvas.captureStream(30),chunks=[];let rec,finished=false;const restore=()=>{if(finished)return;finished=true;stream.getTracks().forEach(x=>x.stop());recording=false;playing=previous;t=oldTime;$('editorPage').inert=false;$('export').disabled=false;$('export').textContent='Export video ↗';last=0};try{rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:8000000})}catch{stream.getTracks().forEach(x=>x.stop());return reject(Error('Could not start video encoder.'))}recording=true;playing=false;t=0;$('editorPage').inert=true;$('export').disabled=true;$('export').textContent='Recording…';rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onerror=()=>{restore();reject(Error('Video recording failed.'))};rec.onstop=()=>{const blob=new Blob(chunks,{type:mime.split(';')[0]});restore();blob.size?resolve(blob):reject(Error('Empty video.'))};draw();rec.start();const start=performance.now();function tick(now){if(finished)return;t=Math.min(Number(state.duration),(now-start)/1000*PLAYBACK_RATE);draw();onProgress(t/Number(state.duration));t>=Number(state.duration)?rec.stop():requestAnimationFrame(tick)}requestAnimationFrame(tick)})}
 $('export').onclick=async()=>{try{const blob=await renderAnimation();download(blob,(state.layout==='marketing'?'campaign-ad.':'popout-ad.')+(blob.type.includes('mp4')?'mp4':'webm'));toast('Video downloaded.')}catch(error){toast(error.message)}};
@@ -223,36 +305,71 @@ function assetsReady() {
   const images = [brandLogo];
   if (state.bgMode === "image") images.push(backdrop);
   if (state.outerMode === "image") images.push(outerBackdrop);
-  if (state.layout === "popout") {
-    if (isCharacterModel(state.model)) {
-      images.push(state.model === "custom" ? characterUpload : characters[state.model]);
-    } else {
-      if (state.productRendering === "cutout" && !ProductCutouts.ready(state.productTemplate)) return false;
-      images.push(texture, ...Object.values(faceTextures));
-    }
-  }
+  if (hasCharacter()) images.push(characterImage());
   return images.filter(Boolean).every((image) => image.complete && image.naturalWidth > 0);
 }
 $('characterUpload').onchange=e=>{const file=e.target.files[0];if(!file)return;if(file.size>12*1024*1024)return toast('Choose an image under 12 MB.');const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{characterUpload=img;state.characterImage=reader.result;state.model='custom';state.characterName=file.name.replace(/\.[^.]+$/,'');sync();toast('Character loaded. Name it and save it to your character collection.')};img.onerror=()=>toast('This image could not be loaded.');img.src=reader.result};reader.readAsDataURL(file)};
 
-function restoreCustomAssets(){for(const id of ['bgUpload','outerUpload','logoUpload','characterUpload','upload'])$(id).value='';const img=s=>{if(!s)return null;const i=new Image();i.src=s;return i};backdrop=img(state.bgImage);outerBackdrop=img(state.outerImage);brandLogo=img(state.logoImage);faceTextures={};for(const [k,v]of Object.entries(state.faceImages||{}))faceTextures[k]=img(v);Product3D.clear()}
+function loadImage(source) {
+  if (!source) return null;
+  const image = new Image();
+  image.src = source;
+  return image;
+}
+
+function restoreCustomAssets() {
+  for (const id of ["bgUpload", "outerUpload", "logoUpload"]) $(id).value = "";
+  backdrop = loadImage(state.bgImage);
+  outerBackdrop = loadImage(state.outerImage);
+  brandLogo = loadImage(state.logoImage);
+}
 function uploadAsset(id,key,setter){$(id).onchange=e=>{const file=e.target.files[0];if(!file)return;if(file.size>12*1024*1024)return toast('Choose an image under 12 MB.');const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{state[key]=reader.result;setter(img);sync();toast('Image updated.')};img.onerror=()=>toast('This image could not be loaded.');img.src=reader.result};reader.readAsDataURL(file)}}
 uploadAsset('bgUpload','bgImage',img=>{backdrop=img;state.bgMode='image'});uploadAsset('outerUpload','outerImage',img=>{outerBackdrop=img;state.outerMode='image'});uploadAsset('logoUpload','logoImage',img=>brandLogo=img);
 $('clearBg').onclick=()=>{state.bgImage=null;backdrop=null;state.bgMode='preset';$('bgUpload').value='';sync()};$('clearOuter').onclick=()=>{state.outerImage=null;outerBackdrop=null;state.outerMode='color';$('outerUpload').value='';sync()};$('clearLogo').onclick=()=>{state.logoImage=null;brandLogo=null;$('logoUpload').value='';sync()};
-$('clearPhoto').onclick=()=>{const face=$('faceTarget').value;delete state.faceImages[face];delete faceTextures[face];$('upload').value='';if(face==='front'){state.image=null;texture=null}Product3D.clear();ProductCutouts.clear();toast('Selected photo removed.')};
-$('resetView').onclick=()=>{orbit=0;tilt=0;state.subjectX=state.subjectY=0;state.size=90;sync()};
+$("resetView").onclick = () => {
+  orbit = tilt = state.subjectX = state.subjectY = 0;
+  state.size = defaults.size;
+  sync();
+};
 
-function sanitizeProject(){
-  for (const [id, limit] of Object.entries({brand: 45, cta: 45, website: 60})) {
+function sanitizeProject() {
+  const textFields = {brand: 45, cta: 45, website: 60, headline: 600, socialTitle: 100, socialCaption: 25000,
+    pinterestBoard: 100, characterName: 60};
+  for (const [id, limit] of Object.entries(textFields)) {
     state[id] = String(state[id] ?? "").slice(0, limit);
   }
-if(!['marketing','popout'].includes(state.layout))state.layout='popout';state.socialTitle=String(state.socialTitle||'').slice(0,100);state.socialCaption=String(state.socialCaption||'').slice(0,25000);state.pinterestBoard=String(state.pinterestBoard||'').slice(0,100);if(!['public','unlisted','private'].includes(state.youtubePrivacy))state.youtubePrivacy='public';if(typeof state.aiGenerated!=='boolean')state.aiGenerated=true;state.headline=String(state.headline||'').slice(0,600);if(typeof FontLibrary!=='undefined'&&!FontLibrary.valid(state.captionFont))state.captionFont='Arial';if(!['left','center','right'].includes(state.captionAlign))state.captionAlign='left';if(!['400','700'].includes(String(state.captionWeight)))state.captionWeight='700';if(state.model==='custom'&&!state.characterImage)state.model='shroom';state.characterName=String(state.characterName||'Custom character').slice(0,60);const bounds={captionFontSize:[14,40],bgZoom:[100,250],bgX:[0,100],bgY:[0,100],bgDim:[0,80],bgBlur:[0,12],productDepth:[8,60],borderWidth:[6,30],matWidth:[0,30],bevel:[1,16],gloss:[0,100],subjectX:[-160,160],subjectY:[-100,100],weatherDensity:[20,120],weatherSpeed:[40,200],weatherWind:[-80,80],burnIntensity:[20,100],emberAmount:[10,100]};for(const [k,[lo,hi]]of Object.entries(bounds)){state[k]=Math.max(lo,Math.min(hi,Number.isFinite(Number(state[k]))?Number(state[k]):defaults[k]))}for(const k of ['bgColor','outerColor','cardColor','textColor','matColor','edgeColor',...Object.values(marketingColors)])if(!/^#[0-9a-f]{6}$/i.test(state[k]))state[k]=defaults[k];for(const[k,opts]of Object.entries({weatherType:['snow','rain','storm','petals','confetti'],weatherLayer:['behind','front','both'],burnOrigin:['bottom','center'],bgMode:['preset','color','image'],outerMode:['color','image'],photoFit:['cover','contain'],frameMaterial:['wood','black','white','gold'],productAspect:['portrait','square','landscape'],productRendering:['cutout','mesh'],productTemplate:ProductCutouts.definitions.map(d=>d[0]),ratio:['portrait','square','story']}))if(!opts.includes(state[k]))state[k]=defaults[k];const bundledImages = {bgImage: BUNDLED_ARTWORK, logoImage: BUNDLED_LOGO};
-for (const key of ["bgImage", "outerImage", "logoImage", "characterImage", "image"]) {
-  if (state[key] && state[key] !== bundledImages[key] && !/^data:image\//.test(state[key])) state[key] = null;
+  const bounds = {
+    size: [10, 180], duration: [3, 12], depth: [0, 100], captionFontSize: [14, 40], bgZoom: [100, 250],
+    bgX: [0, 100], bgY: [0, 100], bgDim: [0, 80], bgBlur: [0, 12], weatherDensity: [20, 120],
+    weatherSpeed: [40, 200], weatherWind: [-80, 80], burnIntensity: [20, 100], emberAmount: [10, 100]
+  };
+  for (const [key, [low, high]] of Object.entries(bounds)) {
+    const value = Number(state[key]);
+    state[key] = Math.max(low, Math.min(high, Number.isFinite(value) ? value : defaults[key]));
+  }
+  for (const key of ["showCharacter", "aiGenerated", "shadows", "burnSmoke", "burnEmbers"]) {
+    if (typeof state[key] !== "boolean") state[key] = defaults[key];
+  }
+  for (const key of ["bgColor", "outerColor", "cardColor", "textColor", "accent", ...Object.values(marketingColors)]) {
+    if (!/^#[0-9a-f]{6}$/i.test(state[key])) state[key] = defaults[key];
+  }
+  const options = {
+    layout: ["marketing", "popout"], ratio: Object.keys(canvasHeights), background: ["dark", "purple", "light"],
+    platform: ["Instagram", "Facebook", "TikTok"], captionAlign: ["left", "center", "right"], captionWeight: ["400", "700"],
+    youtubePrivacy: ["public", "unlisted", "private"], weatherType: ["snow", "rain", "storm", "petals", "confetti"],
+    weatherLayer: ["behind", "front", "both"], burnOrigin: ["bottom", "center"],
+    bgMode: ["preset", "color", "image"], outerMode: ["color", "image"]
+  };
+  state.captionWeight = String(state.captionWeight);
+  for (const [key, values] of Object.entries(options)) if (!values.includes(state[key])) state[key] = defaults[key];
+  if (!FontLibrary.valid(state.captionFont)) state.captionFont = defaults.captionFont;
+  const bundledImages = {bgImage: BUNDLED_ARTWORK, logoImage: BUNDLED_LOGO};
+  for (const key of ["bgImage", "outerImage", "logoImage", "characterImage"]) {
+    const value = state[key];
+    if (typeof value !== "string" || (value !== bundledImages[key] && !/^data:image\//.test(value))) state[key] = null;
+  }
+  if (state.model === "custom" && !state.characterImage) state.model = "shroom";
+  state.characterName ||= "Custom character";
 }
-if(state.model==='box'&&!state.productTemplate.startsWith('cube'))state.productTemplate='cube-white';if(state.model==='canvas'&&!state.productTemplate.startsWith('frame'))state.productTemplate='frame-oak';if(!state.faceImages||typeof state.faceImages!=='object'||Array.isArray(state.faceImages))state.faceImages={};for(const k of Object.keys(state.faceImages))if(!['front','back','left','right','top','bottom'].includes(k)||!/^data:image\//.test(state.faceImages[k]))delete state.faceImages[k];}
-
-document.querySelectorAll('[data-product-template]').forEach(b=>b.onclick=()=>{state.productTemplate=b.dataset.productTemplate;state.model=state.productTemplate.startsWith('frame')?'canvas':'box';state.productRendering='cutout';sync()});
-ProductCutouts.load();
 
 $('resetEffect').onclick=()=>{for(const id of ['weatherType','weatherLayer','weatherDensity','weatherSpeed','weatherWind','burnOrigin','burnIntensity','burnSmoke','burnEmbers','emberAmount'])state[id]=defaults[id];t=0;sync();toast('Effect settings reset.')};

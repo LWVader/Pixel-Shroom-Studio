@@ -1,11 +1,7 @@
 'use strict';
 
 function renderMarketingAd(ctx, state, time, height, logo) {
-  const margin = 56;
-  const width = 864 - margin * 2;
-  const mediaTop = 132;
-  const mediaHeight = Math.min(height * .48, height - 425);
-  const mediaBottom = mediaTop + mediaHeight;
+  const {x: margin, w: width, y: mediaTop, h: mediaHeight, edge: mediaBottom} = artworkRect(height);
   const ink = state[colorKey("textColor")];
 
   rounded(22, 22, 820, height - 44, 24, state[colorKey("cardColor")]);
@@ -35,7 +31,7 @@ function renderMarketingAd(ctx, state, time, height, logo) {
   ctx.fillStyle = gradient;
   ctx.fillRect(margin, mediaTop, width, mediaHeight);
   const progress = time / Math.max(1, Number(state.duration));
-  const zoom = Number(state.bgZoom) + (1 - Math.cos(progress * Math.PI * 2)) * 2.5;
+  const zoom = Number(state.bgZoom) + (state.motion === "none" ? 0 : (1 - Math.cos(progress * Math.PI * 2)) * 2.5);
   paintArtwork(margin, mediaTop, width, mediaHeight, zoom);
   ctx.restore();
 
