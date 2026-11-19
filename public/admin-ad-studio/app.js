@@ -1,16 +1,20 @@
 'use strict';
 const $=id=>document.getElementById(id), canvas=$('scene');let ctx=canvas.getContext('2d');const subjectLayer=document.createElement('canvas');
-let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',accent:'#b8ff65',platform:'Instagram',background:'dark',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgColor:'#203b30',outerColor:'#12221e',cardColor:'#fcfcfa',textColor:'#203a2b',bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,bgMode:'preset',outerMode:'color',subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
+let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',platform:'Instagram',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
 const PLAYBACK_RATE = .5;
 const BUNDLED_ARTWORK = "/assets/campaigns/orbit-roast.webp";
 const BUNDLED_LOGO = "/assets/pixel-shroom-logo-128.webp";
-const marketingColors = {outerColor: "marketingCanvasColor", cardColor: "marketingPostColor", textColor: "marketingTextColor"};
-Object.assign(state, {marketingCanvasColor: "#100e15", marketingPostColor: "#21162f", marketingTextColor: "#f8f4ff"});
+state.palette = AdPalette.defaultPalette;
+state.paletteName = "";
+const defaults = {...state};
+let paletteTheme = AdPalette.roles(state.palette);
+let renderedPalette = state.palette;
+const syncPaletteEditor = AdPalette.editor((colors, name) => {
+  state.palette = colors;
+  state.paletteName = name;
+  sync();
+});
 
-function colorKey(id) {
-  return state.layout === "marketing" && Object.hasOwn(marketingColors, id) ? marketingColors[id] : id;
-}
-const defaults=JSON.parse(JSON.stringify(state));
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',3500)}
 function rounded(x,y,w,h,r,fill){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill()}
 function text(s,x,y,size,color='#fff',weight=500,family='sans-serif',maxWidth=0){ctx.fillStyle=color;ctx.font=`${weight} ${size}px "${family}", sans-serif`;while(maxWidth&&size>8&&ctx.measureText(s).width>maxWidth){size--;ctx.font=`${weight} ${size}px "${family}", sans-serif`}ctx.fillText(s,x,y)}
@@ -22,25 +26,27 @@ const isCharacterModel=model=>model==='custom'||Object.hasOwn(characters,model);
 let characterUpload=null,backdrop=null,outerBackdrop=null,brandLogo=null;
 let characterHitArea = null;
 const extraControls = [
-  "captionFont", "captionFontSize", "captionWeight", "captionAlign", "bgColor", "outerColor", "cardColor", "textColor",
-  "bgZoom", "bgX", "bgY", "bgDim", "bgBlur", "bgMode", "outerMode", "weatherType", "weatherLayer",
+  "captionFont", "captionFontSize", "captionWeight", "captionAlign",
+  "bgZoom", "bgX", "bgY", "bgDim", "bgBlur", "weatherType", "weatherLayer",
   "weatherDensity", "weatherSpeed", "weatherWind", "burnOrigin", "burnIntensity", "burnSmoke", "burnEmbers", "emberAmount"
 ];
 function coverImage(img,x,y,w,h,zoom=100,fx=50,fy=50){const k=Math.max(w/img.naturalWidth,h/img.naturalHeight)*zoom/100,dw=img.naturalWidth*k,dh=img.naturalHeight*k;ctx.drawImage(img,x+(w-dw)*fx/100,y+(h-dh)*fy/100,dw,dh)}
 
 function paintCanvas(height) {
-  ctx.fillStyle = state[colorKey("outerColor")];
+  ctx.fillStyle = paletteTheme.canvas;
   ctx.fillRect(0, 0, 864, height);
-  if (state.outerMode === "image" && outerBackdrop?.complete && outerBackdrop.naturalWidth) {
+  if (outerBackdrop?.complete && outerBackdrop.naturalWidth) {
     coverImage(outerBackdrop, 0, 0, 864, height);
   }
 }
 
 function paintArtwork(x, y, width, height, zoom = Number(state.bgZoom)) {
-  if (state.bgMode === "color") {
-    ctx.fillStyle = state.bgColor;
-    ctx.fillRect(x, y, width, height);
-  } else if (state.bgMode === "image" && backdrop?.complete && backdrop.naturalWidth) {
+  const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+  gradient.addColorStop(0, paletteTheme.post);
+  gradient.addColorStop(1, paletteTheme.scene);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x, y, width, height);
+  if (backdrop?.complete && backdrop.naturalWidth) {
     ctx.save();
     ctx.filter = `blur(${state.bgBlur}px)`;
     coverImage(backdrop, x, y, width, height, zoom, Number(state.bgX), Number(state.bgY));
@@ -126,16 +132,52 @@ if(state.layout==='marketing'&&typeof renderMarketingAd==='function'){
   updatePlaybackClock();
   return;
 }
-const light=state.background==='light',bg=state.background==='purple'?'#251631':light?'#e7ebe5':'#12221e';
-const px=104,pw=656,py=62,ph=h-124;
-const rect=artworkRect(h),{x:mediaX,y:mediaY,w:mediaW,h:mediaH,edge}=rect;
-ctx.save();ctx.shadowColor='#0005';ctx.shadowBlur=28;ctx.shadowOffsetY=12;rounded(px,py,pw,ph,18,state.cardColor);ctx.restore();
-if(brandLogo?.complete&&brandLogo.naturalWidth){ctx.save();ctx.beginPath();ctx.arc(px+51,py+53,25,0,Math.PI*2);ctx.clip();coverImage(brandLogo,px+26,py+28,50,50);ctx.restore()}text(state.brand,brandLogo?.complete&&brandLogo.naturalWidth?px+91:px+29,py+47,22,state.textColor,700,state.captionFont,pw-156);text(state.platform+' · Sponsored',brandLogo?.complete&&brandLogo.naturalWidth?px+91:px+29,py+73,15,'#758176');text('•••',px+pw-60,py+55,25,'#49554c');
-ctx.save();ctx.beginPath();ctx.roundRect(mediaX,mediaY,mediaW,mediaH,5);ctx.clip();let grad=ctx.createLinearGradient(mediaX,mediaY,mediaX,edge);grad.addColorStop(0,bg);grad.addColorStop(1,state.background==='purple'?'#5a3467':light?'#718b6b':'#3b5941');ctx.fillStyle=grad;ctx.fillRect(mediaX,mediaY,mediaW,mediaH);
-const glow=ctx.createRadialGradient(432,mediaY+mediaH*.55,5,432,mediaY+mediaH*.55,300);glow.addColorStop(0,'#b8ff6528');glow.addColorStop(1,'#b8ff6500');ctx.fillStyle=glow;ctx.fillRect(mediaX,mediaY,mediaW,mediaH);ctx.strokeStyle='#b3d69720';for(let k=0;k<10;k++){ctx.beginPath();ctx.ellipse(432,edge+60,80+k*45,20+k*35,0,0,Math.PI*2);ctx.stroke()}paintArtwork(mediaX, mediaY, mediaW, mediaH);ctx.restore();
-// The post UI is drawn BEFORE the foreground subject so the breakout can occlude it.
-text('♡   ◯   ↗',px+29,edge+44,30,'#26372c');text('⌑',px+pw-51,edge+44,30,'#26372c');text('1,248 likes',px+29,edge+75,14,'#384b3c',700);
-const copyY=Math.max(edge+145,h-300);drawCaption(state,px+30,copyY,pw-60,h-191-copyY);rounded(px+28,h-171,pw-56,55,8,'#1d3024');text(state.cta,px+49,h-136,20,'#fff',700,state.captionFont,pw-100);text(state.website,px+30,h-88,15,state.textColor,400,state.captionFont,pw-60);paintCharacter(rect,h);updatePlaybackClock();}
+  const px = 104, pw = 656, py = 62, ph = h - 124;
+  const {post, ink, outline, button, buttonInk} = paletteTheme;
+  const rect = artworkRect(h);
+  const {x, y, w, h: mediaHeight, edge} = rect;
+  ctx.save();
+  ctx.shadowColor = "#0005";
+  ctx.shadowBlur = 28;
+  ctx.shadowOffsetY = 12;
+  rounded(px, py, pw, ph, 18, outline);
+  ctx.restore();
+  rounded(px + 1, py + 1, pw - 2, ph - 2, 17, post);
+  let brandX = px + 29;
+  if (brandLogo?.complete && brandLogo.naturalWidth) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(px + 51, py + 53, 25, 0, Math.PI * 2);
+    ctx.clip();
+    coverImage(brandLogo, px + 26, py + 28, 50, 50);
+    ctx.restore();
+    brandX = px + 91;
+  }
+  text(state.brand, brandX, py + 47, 22, ink, 700, state.captionFont, pw - 156);
+  text(state.platform + " · Sponsored", brandX, py + 73, 15, ink);
+  text("•••", px + pw - 60, py + 55, 25, ink);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, mediaHeight, 5);
+  ctx.clip();
+  paintArtwork(x, y, w, mediaHeight);
+  ctx.restore();
+
+  text("♡   ◯   ↗", px + 29, edge + 44, 30, ink);
+  text("⌑", px + pw - 51, edge + 44, 30, ink);
+  text("1,248 likes", px + 29, edge + 75, 14, ink, 700);
+  const copyY = Math.max(edge + 145, h - 300);
+  drawCaption({...state, textColor: ink}, px + 30, copyY, pw - 60, h - 191 - copyY);
+  if (state.cta.trim()) {
+    rounded(px + 28, h - 171, pw - 56, 55, 8, button);
+    text(state.cta, px + 49, h - 136, 20, buttonInk, 700, state.captionFont, pw - 100);
+  }
+  text(state.website, px + 30, h - 88, 15, ink, 400, state.captionFont, pw - 60);
+  paintCharacter(rect, h);
+  updatePlaybackClock();
+}
+
 function updatePlaybackClock() {
   $('time').textContent=(t/PLAYBACK_RATE).toFixed(1)+' / '+(Number(state.duration)/PLAYBACK_RATE).toFixed(1)+'s';
   $('seek').value=t/PLAYBACK_RATE;
@@ -143,13 +185,18 @@ function updatePlaybackClock() {
 
 
 function frame(now){if(last&&playing&&!recording&&!drag)t=(t+(now-last)/1000*PLAYBACK_RATE)%Number(state.duration);last=now;if(!recording)draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
-const regularControls = ["brand", "headline", "cta", "website", "platform", "background", "depth", "size", "duration", "ratio", "shadows", "showCharacter"];
+const regularControls = ["brand", "headline", "cta", "website", "platform", "depth", "size", "duration", "ratio", "shadows", "showCharacter"];
 
 function sync() {
   document.body.dataset.adLayout = state.layout;
   $("creative-layout").value = state.layout;
   if (typeof syncSocialCopy === "function") syncSocialCopy();
-  FontLibrary.sync({...state, cardColor: state[colorKey("cardColor")], textColor: state[colorKey("textColor")]});
+  if (renderedPalette !== state.palette) {
+    renderedPalette = state.palette;
+    paletteTheme = AdPalette.roles(state.palette);
+  }
+  syncPaletteEditor(state.palette, state.paletteName, paletteTheme);
+  FontLibrary.sync(state, paletteTheme);
 
   const isPopout = state.layout === "popout";
   const visible = hasCharacter();
@@ -159,11 +206,8 @@ function sync() {
   if (typeof updateCharacterSelection === "function") updateCharacterSelection();
 
   $("artwork-title").textContent = isPopout ? "Scene background" : "Campaign artwork";
-  $("background").closest("label").hidden = state.bgMode !== "preset";
-  $("bgColor").closest("label").hidden = state.bgMode !== "color";
-  $("bgAdjust").hidden = state.bgMode !== "image" || !state.bgImage;
+  $("bgAdjust").hidden = !state.bgImage;
   $("clearBg").hidden = !state.bgImage;
-  $("outerColor").closest("label").hidden = state.outerMode === "image" && !!state.outerImage;
   $("clearOuter").hidden = !state.outerImage;
   $("clearLogo").hidden = !state.logoImage;
 
@@ -175,7 +219,7 @@ function sync() {
   $("effectTitle").textContent = state.motion === "weather" ? "Weather settings" : "Burn settings";
   for (const id of [...regularControls, ...extraControls]) {
     const input = $(id);
-    const value = state[colorKey(id)];
+    const value = state[id];
     if (input.type === "checkbox") input.checked = value;
     else input.value = id === "duration" ? Number(value) / PLAYBACK_RATE : value;
   }
@@ -195,7 +239,7 @@ function sync() {
 for (const id of [...regularControls, ...extraControls]) {
   $(id).addEventListener("input", (event) => {
     const input = event.currentTarget;
-    state[colorKey(id)] = id === "duration" ? Number(input.value) * PLAYBACK_RATE :
+    state[id] = id === "duration" ? Number(input.value) * PLAYBACK_RATE :
       input.type === "checkbox" ? input.checked : input.value;
     t = Math.min(t, Number(state.duration));
     sync();
@@ -267,13 +311,18 @@ $("projectFile").onchange = async (event) => {
         (!MOTION_PRESETS.some(({id}) => id === data.motion) && !Object.hasOwn(oldMotions, data.motion))) throw Error();
     state = {...defaults};
     for (const key of Object.keys(state)) if (Object.hasOwn(data, key)) state[key] = data[key];
+    if (!AdPalette.normalize(data.palette)) {
+      state.palette = AdPalette.fromLegacy(data) || defaults.palette;
+      state.paletteName = "";
+    }
+    if (Object.hasOwn(data, "bgMode") && data.bgMode !== "image") state.bgImage = null;
+    if (Object.hasOwn(data, "outerMode") && data.outerMode !== "image") state.outerImage = null;
     if (oldProduct) {
       state.model = "shroom";
       state.characterImage = null;
       const photo = data.faceImages?.front || data.image;
       if (!state.bgImage && typeof photo === "string" && /^data:image\//.test(photo)) {
         state.bgImage = photo;
-        state.bgMode = "image";
       }
     }
     if (Object.hasOwn(oldMotions, state.motion)) state.motion = oldMotions[state.motion];
@@ -303,8 +352,7 @@ sync();
 function assetsReady() {
   if (!FontLibrary.ready(state.captionFont)) return false;
   const images = [brandLogo];
-  if (state.bgMode === "image") images.push(backdrop);
-  if (state.outerMode === "image") images.push(outerBackdrop);
+  images.push(backdrop, outerBackdrop);
   if (hasCharacter()) images.push(characterImage());
   return images.filter(Boolean).every((image) => image.complete && image.naturalWidth > 0);
 }
@@ -324,8 +372,8 @@ function restoreCustomAssets() {
   brandLogo = loadImage(state.logoImage);
 }
 function uploadAsset(id,key,setter){$(id).onchange=e=>{const file=e.target.files[0];if(!file)return;if(file.size>12*1024*1024)return toast('Choose an image under 12 MB.');const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{state[key]=reader.result;setter(img);sync();toast('Image updated.')};img.onerror=()=>toast('This image could not be loaded.');img.src=reader.result};reader.readAsDataURL(file)}}
-uploadAsset('bgUpload','bgImage',img=>{backdrop=img;state.bgMode='image'});uploadAsset('outerUpload','outerImage',img=>{outerBackdrop=img;state.outerMode='image'});uploadAsset('logoUpload','logoImage',img=>brandLogo=img);
-$('clearBg').onclick=()=>{state.bgImage=null;backdrop=null;state.bgMode='preset';$('bgUpload').value='';sync()};$('clearOuter').onclick=()=>{state.outerImage=null;outerBackdrop=null;state.outerMode='color';$('outerUpload').value='';sync()};$('clearLogo').onclick=()=>{state.logoImage=null;brandLogo=null;$('logoUpload').value='';sync()};
+uploadAsset('bgUpload','bgImage',img=>backdrop=img);uploadAsset('outerUpload','outerImage',img=>outerBackdrop=img);uploadAsset('logoUpload','logoImage',img=>brandLogo=img);
+$('clearBg').onclick=()=>{state.bgImage=null;backdrop=null;$('bgUpload').value='';sync()};$('clearOuter').onclick=()=>{state.outerImage=null;outerBackdrop=null;$('outerUpload').value='';sync()};$('clearLogo').onclick=()=>{state.logoImage=null;brandLogo=null;$('logoUpload').value='';sync()};
 $("resetView").onclick = () => {
   orbit = tilt = state.subjectX = state.subjectY = 0;
   state.size = defaults.size;
@@ -350,15 +398,13 @@ function sanitizeProject() {
   for (const key of ["showCharacter", "aiGenerated", "shadows", "burnSmoke", "burnEmbers"]) {
     if (typeof state[key] !== "boolean") state[key] = defaults[key];
   }
-  for (const key of ["bgColor", "outerColor", "cardColor", "textColor", "accent", ...Object.values(marketingColors)]) {
-    if (!/^#[0-9a-f]{6}$/i.test(state[key])) state[key] = defaults[key];
-  }
+  state.palette = AdPalette.normalize(state.palette) || defaults.palette;
+  state.paletteName = typeof state.paletteName === "string" ? state.paletteName.trim().slice(0, 48) : "";
   const options = {
-    layout: ["marketing", "popout"], ratio: Object.keys(canvasHeights), background: ["dark", "purple", "light"],
+    layout: ["marketing", "popout"], ratio: Object.keys(canvasHeights),
     platform: ["Instagram", "Facebook", "TikTok"], captionAlign: ["left", "center", "right"], captionWeight: ["400", "700"],
     youtubePrivacy: ["public", "unlisted", "private"], weatherType: ["snow", "rain", "storm", "petals", "confetti"],
-    weatherLayer: ["behind", "front", "both"], burnOrigin: ["bottom", "center"],
-    bgMode: ["preset", "color", "image"], outerMode: ["color", "image"]
+    weatherLayer: ["behind", "front", "both"], burnOrigin: ["bottom", "center"]
   };
   state.captionWeight = String(state.captionWeight);
   for (const [key, values] of Object.entries(options)) if (!values.includes(state[key])) state[key] = defaults[key];

@@ -69,3 +69,12 @@ body[data-ad-layout="popout"] .marketing-tools { display: none; }
   .stage { height: clamp(300px, 105vw, 470px); }
   #snapshot { margin-left: 0; }
 }
+
+.palette-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#palette-input { display: block; width: 100%; margin-top: 8px; padding: 8px; border: 1px solid #475044; border-radius: 7px; background: #1b1f1d; color: #f1f4ef; font: inherit; resize: vertical; }
+#palette-input[aria-invalid="true"] { border-color: #f16c79; }
+#palette-message:empty { display: none; }
+.palette-swatches { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; list-style: none; padding: 0; margin: 14px 0 0; }
+.palette-swatches li { display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 0 6px; align-items: center; font-size: 11px; color: #d9ded7; }
+.palette-swatches li > span:first-child { grid-row: span 2; height: 22px; border: 1px solid #899188; border-radius: 4px; }
+.palette-swatches code { color: #aeb6ad; font-size: 10px; }

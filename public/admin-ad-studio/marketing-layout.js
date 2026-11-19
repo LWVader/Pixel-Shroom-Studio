@@ -2,9 +2,10 @@
 
 function renderMarketingAd(ctx, state, time, height, logo) {
   const {x: margin, w: width, y: mediaTop, h: mediaHeight, edge: mediaBottom} = artworkRect(height);
-  const ink = state[colorKey("textColor")];
+  const {ink, post, outline, button, buttonInk} = paletteTheme;
 
-  rounded(22, 22, 820, height - 44, 24, state[colorKey("cardColor")]);
+  rounded(22, 22, 820, height - 44, 24, outline);
+  rounded(23, 23, 818, height - 46, 23, post);
   let brandX = margin;
   if (logo?.complete && logo.naturalWidth) {
     ctx.save();
@@ -21,15 +22,6 @@ function renderMarketingAd(ctx, state, time, height, logo) {
   ctx.beginPath();
   ctx.roundRect(margin, mediaTop, width, mediaHeight, 18);
   ctx.clip();
-  const artworkColors = {
-    dark: ["#171326", "#322044"], purple: ["#26143e", "#684184"], light: ["#e7e1ed", "#b8aac5"]
-  };
-  const [top, bottom] = artworkColors[state.background] || artworkColors.dark;
-  const gradient = ctx.createLinearGradient(margin, mediaTop, margin + width, mediaBottom);
-  gradient.addColorStop(0, top);
-  gradient.addColorStop(1, bottom);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(margin, mediaTop, width, mediaHeight);
   const progress = time / Math.max(1, Number(state.duration));
   const zoom = Number(state.bgZoom) + (state.motion === "none" ? 0 : (1 - Math.cos(progress * Math.PI * 2)) * 2.5);
   paintArtwork(margin, mediaTop, width, mediaHeight, zoom);
@@ -37,8 +29,8 @@ function renderMarketingAd(ctx, state, time, height, logo) {
 
   drawCaption({...state, textColor: ink}, margin, mediaBottom + 30, width, height - mediaBottom - 207);
   if (state.cta.trim()) {
-    rounded(margin, height - 148, width, 62, 11, "#d9ff55");
-    text(state.cta, margin + 24, height - 108, 23, "#121408", 700, state.captionFont, width - 48);
+    rounded(margin, height - 148, width, 62, 11, button);
+    text(state.cta, margin + 24, height - 108, 23, buttonInk, 700, state.captionFont, width - 48);
   }
   text(state.website, margin, height - 53, 18, ink, 400, state.captionFont, width);
 }
@@ -62,7 +54,11 @@ function applyMarketingAd(kind, campaign, artwork) {
   state.socialCaption = `${body}\n\n${destination}`;
   state.captionFontSize = 40;
   state.captionAlign = "left";
-  state.bgMode = "image";
+  const campaignPalette = AdPalette.normalize(campaign?.colors);
+  if (campaignPalette) {
+    state.palette = campaignPalette;
+    state.paletteName = "";
+  }
   state.bgZoom = 100;
   state.bgX = state.bgY = 50;
   state.bgDim = state.bgBlur = 0;
