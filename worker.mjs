@@ -4,7 +4,7 @@ import {clearPasswordSession, passwordAdmin, passwordConfigured, signInWithPassw
 import {handleSocial} from "./lib/ad-studio-social.mjs";
 import {createCampaignOrders, sessionPattern} from "./lib/campaign-orders.mjs";
 import {campaignStore} from "./lib/campaign-store.mjs";
-import {stripeApi} from "./lib/stripe-api.mjs";
+import {StripeRequestError, stripeApi} from "./lib/stripe-api.mjs";
 
 const canonicalHost = "www.pixelshroomstudio.com";
 const aliases = new Set(["pixelshroomstudio.com", "pixel-shroom-studio.phantasmocazdor.workers.dev"]);
@@ -171,8 +171,25 @@ async function stripeStatusRoute(request, env) {
     await stripeApi(env.STRIPE_SECRET_KEY).checkConnection();
     return json({state: "connected", mode,
       message: `Stripe Checkout API reachable in ${mode} mode${env.CAMPAIGN_DB ? "." : ". Add the CAMPAIGN_DB binding to accept orders."}`});
-  } catch {
-    return json({state: "error", message: "Stripe could not verify this key. Check the key and its Checkout Sessions permissions."});
+  } catch (error) {
+    const failure = error instanceof StripeRequestError ? error : null;
+    let message = "The Worker could not run the Stripe connection check. Check that the secret contains only the key.";
+    if (failure?.status === 401) {
+      message = "Stripe rejected the API key. Check that the full key is active and copied into the Production Worker secret.";
+    } else if (failure?.status === 403) {
+      message = "Stripe denied the Checkout Sessions request. Check the key’s Checkout Sessions permissions and access policy.";
+    } else if (failure?.status && failure.status >= 400) {
+      message = "Stripe returned an error while listing Checkout Sessions.";
+    } else if (failure?.code === "worker_timeout") {
+      message = "The Worker timed out waiting for Stripe.";
+    } else if (failure?.code === "worker_connection") {
+      message = "The Worker could not connect to Stripe. No HTTP response was received.";
+    } else if (failure) {
+      message = "Stripe returned an unexpected response to the Checkout Sessions check.";
+    }
+    if (failure?.status) message += ` HTTP ${failure.status}.`;
+    if (failure?.requestId) message += ` Stripe request ID ${failure.requestId}.`;
+    return json({state: "error", mode, message});
   }
 }
 
