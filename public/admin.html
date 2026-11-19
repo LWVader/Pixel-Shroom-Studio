@@ -21,6 +21,7 @@
   </header>
   <main class="wrap admin-main" id="main">
     <div class="admin-heading"><div><p class="eyebrow">Studio admin</p><h1>Campaign orders</h1></div><div class="admin-actions" id="admin-actions" hidden>
+      <a class="secondary" href="#campaign-publisher">Publish campaigns</a>
       <button type="button" id="refresh" class="secondary">Refresh orders</button>
       <a class="button" id="ad-studio-view" href="/admin-ad-studio/">Open AD Studio</a>
     </div></div>
@@ -38,11 +39,47 @@
       </div>
       <p id="stripe-status" class="status" role="status">Check which Stripe mode the Worker is using.</p>
     </section>
+    <section id="workflow-overview" class="admin-panel" aria-labelledby="workflow-title" hidden>
+      <div class="orders-top"><h2 id="workflow-title">Campaign workflow</h2><span id="workflow-total"></span></div>
+      <div id="workflow-bar" class="workflow-bar" aria-hidden="true"></div>
+      <div id="workflow-counts" class="workflow-counts"></div>
+      <h3 class="activity-heading">Recent order activity</h3>
+      <ul id="workflow-activity" class="workflow-activity"></ul>
+    </section>
     <section class="admin-panel orders" id="orders" aria-labelledby="orders-title" hidden>
       <div class="orders-top"><h2 id="orders-title">Submitted briefs</h2><label>Find in loaded orders <input id="order-search" type="search" placeholder="Business, email or industry"></label></div>
       <p class="status" id="order-status" role="status"></p>
       <ul id="order-list" class="order-list"></ul>
       <button class="secondary" type="button" id="more-orders" hidden>Load more orders</button>
+    </section>
+    <section class="admin-panel" id="campaign-publisher" aria-labelledby="publisher-title" hidden>
+      <div class="orders-top"><div><p class="eyebrow">Public portfolio</p><h2 id="publisher-title">Campaign publisher</h2></div>
+        <button class="secondary" type="button" id="new-campaign">New campaign</button></div>
+      <p id="publisher-status" class="status" role="status"></p>
+      <ul class="order-list" id="publisher-list"></ul>
+      <button class="secondary" type="button" id="more-campaigns" hidden>Load more campaigns</button>
+      <form class="brief-form portfolio-form" id="portfolio-form" hidden>
+        <div class="publisher-fields">
+          <label>Campaign name<input name="name" maxlength="100" required></label>
+          <label>Category<select name="sector">
+            <option value="food">Food &amp; drink</option><option value="games">Indie games</option>
+            <option value="music">Music</option><option value="fashion">Streetwear</option><option value="other">Other</option>
+          </select></label>
+          <label>Tagline<input name="tagline" maxlength="160" required></label>
+          <label>Palette <input name="palette" placeholder="#D9FF55, #21192B" maxlength="60"></label>
+          <label>Campaign brief<textarea name="brief" maxlength="600" required></textarea></label>
+          <label>Why this creative works<textarea name="value" maxlength="800" required></textarea></label>
+          <label>Artwork<input name="image" type="file" accept="image/jpeg,image/png,image/webp"></label>
+          <label>Artwork description<input name="alt" maxlength="160" required></label>
+        </div>
+        <img id="publisher-image" alt="" hidden>
+        <div class="admin-actions">
+          <button class="secondary" type="submit" value="draft">Save as draft</button>
+          <button class="button" type="submit" value="live">Publish to site</button>
+          <button class="secondary" id="cancel-campaign" type="button">Cancel</button>
+        </div>
+        <p id="publisher-form-status" class="status" role="status"></p>
+      </form>
     </section>
     <dialog id="order-detail" aria-labelledby="detail-title">
       <div class="detail-inner">
@@ -50,6 +87,12 @@
         <p class="eyebrow" id="detail-offer"></p>
         <h2 id="detail-title"></h2>
         <dl id="brief-details" class="brief-details"></dl>
+        <form class="admin-actions stage-form" id="stage-form">
+          <label>Production stage <select id="production-stage">
+            <option value="new">New brief</option><option value="production">In production</option>
+            <option value="ready">Ready to email</option><option value="delivered" disabled>Delivered</option>
+          </select></label><button type="submit" class="secondary">Update stage</button>
+        </form>
         <section class="order-files" aria-labelledby="delivery-title">
           <h3 id="delivery-title">Email delivery</h3>
           <p id="delivery-help" class="status"></p>

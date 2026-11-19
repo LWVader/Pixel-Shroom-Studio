@@ -44,7 +44,7 @@ The suite starts a local test site on port 4173 with an in-memory SQLite databas
    ```
 
    Sign in to Campaign Admin and choose **Check Stripe connection** to confirm the API responds and shows the expected test or live mode. An existing one-time $199 USD Stripe Price can be linked with `CAMPAIGN_ATTENTION_PRICE_ID`. Without that setting, the Worker uses the old checkout pattern of creating the line item from the offer price on the server. It verifies the paid Checkout Session before accepting a brief.
-4. Run `npm.cmd run deploy` in PowerShell. This applies both D1 migrations before deploying the Worker to its existing route or domain. For a Git-connected Cloudflare Worker, commit the updated `wrangler.jsonc` and `package.json` to the branch Cloudflare deploys. Set its deploy command to `npm run deploy` and give the build token permission to run D1 migrations, or run `npm.cmd run db:migrate` locally before the Git deployment.
+4. Run `npm.cmd run deploy` in PowerShell. This applies pending D1 migrations before deploying the Worker to its existing route or domain. For a Git-connected Cloudflare Worker, commit the updated `wrangler.jsonc` and `package.json` to the branch Cloudflare deploys. Set its deploy command to `npm run deploy` and give the build token permission to run D1 migrations, or run `npm.cmd run db:migrate` locally before the Git deployment.
 
    Verify the public homepage, footer sign-in, a test Stripe purchase and return to the campaign brief, and AD Studio. Set `CAMPAIGN_SITE_URL` if checkout should return to a specific origin. Optionally set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `ADMIN_ALERT_EMAIL` for notifications about submitted briefs.
 
@@ -70,6 +70,18 @@ These files contain buyer data. Keep them outside the public assets folder and s
 Click the small mushroom logo in the homepage footer to sign in to Campaign Admin. **Open AD Studio** opens the restored editor, assets, and video export tools under the same administrator sign-in.
 
 For social publishing, reuse the previous Worker’s `AD_STUDIO_DB` binding and `BUFFER_CREDENTIAL_ENCRYPTION_KEY` secret where available. If your saved connection uses an old Supabase administrator UUID, set `AD_STUDIO_LEGACY_USER_ID` to that UUID. Otherwise reconnect Buffer under the new administrator identity. For a fresh setup, create the AD Studio D1 database, add the binding, and apply `migrations/ad-studio.sql` to that database. Store a randomly generated 32-byte key encoded as 64 hex characters in the Worker secret `BUFFER_CREDENTIAL_ENCRYPTION_KEY`. Connect Buffer and, if needed, Cloudinary from AD Studio.
+
+### Track and publish campaigns
+
+From the footer mushroom, sign in to Campaign Admin. The workflow overview shows all orders by stage and the latest activity. Open a brief to move it from New brief to In production or Ready to email. Marking the delivery email as sent moves it to Delivered. For a recurring Monthly Asset Pack, you can move a delivered order back into production for the next delivery.
+
+Use **New campaign** in Campaign publisher to add artwork and a case study. **Save as draft** holds it in admin. **Publish to site** adds it to the public portfolio. **View live** opens its shareable case-study link, and **Unpublish to draft** takes it off the portfolio. The form converts JPG, PNG, or WebP uploads to WebP for the site. The five bundled examples are still available.
+
+### Create ads for the site
+
+Choose **Create ad** on a published campaign to load its artwork, tagline and link into AD Studio. Use **Attention Pack promotion** or **Studio portfolio promotion** when you want a general studio ad. Choose a square, portrait, or story format, edit the copy, and download a PNG or export the video. The **Publish to social** tab uses the existing Buffer connection. Choose **Pop-out editor** to work with the original character and product layouts.
+
+If you're upgrading an existing deployment, apply `0003_campaign_workflow.sql` before deploying this version. `npm.cmd run deploy` does both. If Git builds still deploy with `npx wrangler deploy`, run `npm.cmd run db:migrate` first.
 
 ## Email a finished ZIP
 

@@ -166,3 +166,5 @@ dialog::backdrop { background: #09060de0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+#more-work { margin-top: 1.25rem; }

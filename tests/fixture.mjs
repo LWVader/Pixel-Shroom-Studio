@@ -1,4 +1,4 @@
-import {readFile} from "node:fs/promises";
+import {readFile, readdir} from "node:fs/promises";
 import {DatabaseSync} from "node:sqlite";
 import worker from "../worker.mjs";
 
@@ -55,7 +55,8 @@ async function asset(request) {
 
 export async function createFixture() {
   const db = new DatabaseSync(":memory:");
-  for (const file of ["0001_campaign_briefs.sql", "0002_admin_login_attempts.sql"]) {
+  const migrations = await readdir(new URL("../migrations/campaign/", import.meta.url));
+  for (const file of migrations.filter((name) => name.endsWith(".sql")).sort()) {
     db.exec(await readFile(new URL("../migrations/campaign/" + file, import.meta.url), "utf8"));
   }
   const requests = [];

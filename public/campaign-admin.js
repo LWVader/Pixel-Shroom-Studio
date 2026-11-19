@@ -1,3 +1,5 @@
+import {loadPortfolio} from "./campaign-publisher.js";
+
 const $ = (id) => document.getElementById(id);
 const orders = $("orders");
 const list = $("order-list");
@@ -36,12 +38,48 @@ function row(title, description, action) {
   return element;
 }
 
+const stages = {
+  new: ["New brief", "#bca1ff"], production: ["In production", "#ec9bff"],
+  ready: ["Ready to email", "#f5c177"], delivered: ["Delivered", "#d9ff55"]
+};
+
+function renderWorkflow(counts, activity) {
+  const total = Object.keys(stages).reduce((sum, key) => sum + (counts[key] || 0), 0);
+  $("workflow-total").textContent = `${total} total ${total === 1 ? "order" : "orders"}`;
+  const segments = [], stats = [];
+  for (const [key, [label, color]] of Object.entries(stages)) {
+    const count = counts[key] || 0;
+    const segment = document.createElement("span");
+    segment.style.backgroundColor = color;
+    segment.style.width = total ? (100 * count / total) + "%" : "0%";
+    segments.push(segment);
+    const stat = document.createElement("div");
+    stat.className = "workflow-stat";
+    const value = document.createElement("strong");
+    value.textContent = count;
+    value.style.color = color;
+    const title = document.createElement("span");
+    title.textContent = label;
+    stat.append(value, title);
+    stats.push(stat);
+  }
+  $("workflow-bar").replaceChildren(...segments);
+  $("workflow-counts").replaceChildren(...stats);
+  $("workflow-activity").replaceChildren(...activity.map((entry) => {
+    const item = document.createElement("li");
+    item.textContent = `${entry.business} · ${stages[entry.fulfillment_stage][0]} · ${date.format(new Date(entry.activity_at))}`;
+    return item;
+  }));
+  $("workflow-activity").hidden = !activity.length;
+  document.querySelector(".activity-heading").hidden = !activity.length;
+}
+
 function renderOrders() {
   const query = $("order-search").value.trim().toLowerCase();
   const shown = rows.filter((order) =>
     [order.business, order.industry, order.buyer_email].some((field) => field.toLowerCase().includes(query)));
   list.replaceChildren(...shown.map((order) => {
-    const delivery = order.email_delivered_at ? "Email sent" : "Awaiting email delivery";
+    const delivery = stages[order.fulfillment_stage]?.[0] || "New brief";
     return row(order.business,
       `${offers[order.offer]} · ${order.buyer_email} · ${delivery}`,
       button("Open brief", () => openOrder(order)));
@@ -75,13 +113,14 @@ async function loadOrders(reset = false) {
   refresh.disabled = moreButton.disabled = true;
   $("order-status").textContent = "Loading briefs…";
   try {
-    const {orders: page, more: hasNext} = await adminApi(`?offset=${offset}`);
+    const {orders: page, more: hasNext, counts, activity} = await adminApi(`?offset=${offset}`);
     if (request !== generation) return;
     more = hasNext;
     nextOffset = offset + page.length;
     rows = reset ? page : rows.concat(page.filter((order) => !rows.some((existing) =>
       existing.checkout_session_id === order.checkout_session_id)));
     renderOrders();
+    renderWorkflow(counts || {}, activity || []);
   } catch {
     if (request === generation) $("order-status").textContent = "Briefs could not be loaded. Try refreshing.";
   } finally {
@@ -108,6 +147,7 @@ function openOrder(order) {
   }));
   status.textContent = "";
   renderDelivery(order);
+  renderStage(order);
   panel.showModal();
 }
 
@@ -133,21 +173,47 @@ function renderDelivery(order) {
   $("compose-email").href = draft.href;
 }
 
+function renderStage(order) {
+  $("production-stage").value = order.fulfillment_stage || "new";
+  $("stage-form").hidden = order.fulfillment_stage === "delivered" && order.offer !== "monthly";
+}
+
+$("stage-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (busy || !selected) return;
+  const order = selected;
+  const stage = $("production-stage").value;
+  if (stage === "delivered") return;
+  busy = event.submitter.disabled = true;
+  try {
+    const result = await adminApi("", {action: "set-stage", sessionId: order.checkout_session_id, stage});
+    Object.assign(order, result);
+    renderStage(order);
+    status.textContent = "Production stage updated.";
+    await loadOrders(true);
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    busy = event.submitter.disabled = false;
+  }
+});
+
 markSent.addEventListener("click", async () => {
   if (busy || !selected || !window.confirm("Have you sent the email with the ZIP attached?")) return;
   const order = selected;
   busy = markSent.disabled = true;
   try {
-    const {email_delivered_at: sent} = await adminApi("", {
+    const result = await adminApi("", {
       sessionId: order.checkout_session_id,
       previous: order.email_delivered_at ?? null
     });
-    if (!sent) throw new Error("The sent status could not be saved.");
+    if (!result.email_delivered_at) throw new Error("The sent status could not be saved.");
     if (selected !== order) return;
-    order.email_delivered_at = sent;
-    renderOrders();
+    Object.assign(order, result);
+    renderStage(order);
     renderDelivery(order);
     status.textContent = "Email marked as sent.";
+    await loadOrders(true);
   } catch {
     if (selected === order) status.textContent = "The sent status could not be saved. Try again.";
   } finally {
@@ -171,10 +237,11 @@ let mode = "";
 async function openWorkspace(session) {
   mode = session.mode || "";
   login.hidden = session.authenticated;
-  signOut.hidden = orders.hidden = stripePanel.hidden = $("admin-actions").hidden = !session.authenticated;
+  signOut.hidden = orders.hidden = stripePanel.hidden = $("admin-actions").hidden =
+    $("workflow-overview").hidden = $("campaign-publisher").hidden = !session.authenticated;
   if (session.authenticated) {
     accessStatus.textContent = "";
-    await loadOrders(true);
+    await Promise.all([loadOrders(true), loadPortfolio()]);
   } else {
     login.querySelector("button").disabled = !session.passwordConfigured;
     accessStatus.textContent = session.passwordConfigured ? "" :

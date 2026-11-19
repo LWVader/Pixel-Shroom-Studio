@@ -28,3 +28,29 @@
 .delivery-actions { margin-top: .75rem; }
 
 #admin-login { max-width: 480px; }
+
+.orders-top h2 { margin-top: .35rem; }
+.workflow-bar { height: .65rem; margin-block: 1rem; display: flex; border-radius: 1rem; overflow: hidden; background: var(--line); }
+.workflow-counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: .65rem; }
+.workflow-stat { padding: .75rem; border: 1px solid var(--line); border-radius: .5rem; }
+.workflow-stat strong, .workflow-stat span { display: block; }
+.workflow-stat strong { font-size: 1.65rem; }
+.workflow-stat span, #workflow-total { font-size: .85rem; color: var(--muted); }
+.stage-form { margin-top: 1rem; }
+.stage-form label { display: grid; gap: .25rem; }
+.stage-form select, .publisher-fields select { border: 1px solid #645375; border-radius: .35rem; background: var(--background); color: var(--text); padding: .65rem; font: inherit; }
+.portfolio-form { border-top: 1px solid var(--line); padding-top: 1.25rem; }
+.publisher-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+#publisher-image { width: min(100%, 320px); border-radius: .4rem; }
+.publisher-actions { display: flex; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
+#campaign-publisher { scroll-margin-top: 1rem; }
+@media (max-width: 650px) {
+  .workflow-counts { grid-template-columns: repeat(2, 1fr); }
+  .publisher-fields { grid-template-columns: 1fr; }
+  #publisher-list .order-row { align-items: stretch; flex-direction: column; }
+  .publisher-actions { justify-content: flex-start; }
+}
+
+.activity-heading { margin-top: 1rem; font-size: 1rem; }
+.workflow-activity { padding: 0; list-style: none; color: var(--muted); }
+.workflow-activity li { border-top: 1px solid var(--line); padding: .48rem 0; overflow-wrap: anywhere; }

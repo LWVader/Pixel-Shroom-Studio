@@ -38,45 +38,117 @@ const cases = {
 
 const filterButtons = [...document.querySelectorAll("[data-filter]")];
 const cards = [...document.querySelectorAll("[data-case]")];
-for (const button of filterButtons) {
-  button.addEventListener("click", () => {
-    for (const item of filterButtons) item.setAttribute("aria-pressed", String(item === button));
-    document.querySelector("#work").dataset.industry = button.dataset.filter;
-    let count = 0;
-    for (const card of cards) {
-      card.hidden = button.dataset.filter !== "all" && button.dataset.filter !== card.dataset.sector;
-      if (!card.hidden) count += 1;
+function filterCards(selected) {
+  const sector = selected.dataset.filter;
+  for (const button of filterButtons) button.setAttribute("aria-pressed", String(button === selected));
+  document.querySelector("#work").dataset.industry = sector;
+  let count = 0;
+  for (const card of cards) {
+    card.hidden = sector !== "all" && sector !== card.dataset.sector;
+    if (!card.hidden) count++;
+  }
+  document.querySelector("#filter-status").textContent = count === 1 ? "1 campaign shown" : `${count} campaigns shown`;
+}
+for (const button of filterButtons) button.addEventListener("click", () => filterCards(button));
+
+const dialog = document.querySelector("#case-dialog");
+
+function openCase(study) {
+  dialog.querySelector("#case-title").textContent = study.name;
+  dialog.querySelector("#case-brand").textContent = study.name;
+  dialog.querySelector("#case-brief").textContent = study.brief;
+  dialog.querySelector("#case-value").textContent = study.value;
+  dialog.querySelector("#case-tagline").textContent = study.tagline;
+  const mainImage = dialog.querySelector(".case-image");
+  mainImage.alt = study.alt;
+  mainImage.src = study.imageUrl || `/assets/campaigns/${study.image}.webp`;
+  dialog.querySelector(".mockup-image").src = mainImage.src;
+  const palette = dialog.querySelector("#case-palette");
+  palette.previousElementSibling.hidden = palette.hidden = !study.colors.length;
+  palette.replaceChildren(...study.colors.map((color) => {
+    const item = document.createElement("li");
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.backgroundColor = color;
+    swatch.setAttribute("aria-hidden", "true");
+    item.append(swatch, color);
+    return item;
+  }));
+  if (!dialog.open) dialog.showModal();
+}
+
+for (const card of cards) card.addEventListener("click", () => openCase(cases[card.dataset.case]));
+
+const workGrid = document.querySelector(".work-grid");
+if (workGrid) {
+  const more = document.querySelector("#more-work");
+  const labels = {food: "Food & drink", games: "Indie games", music: "Music", fashion: "Streetwear", other: "Campaign"};
+  const published = new Map();
+  let offset = 0;
+
+  async function loadPublished() {
+    more.disabled = true;
+    try {
+      const response = await fetch(`/api/portfolio?offset=${offset}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      const added = [];
+      for (const study of data.campaigns) {
+        if (published.has(study.id)) continue;
+        published.set(study.id, study);
+        const card = document.createElement("button");
+        card.className = "work-card";
+        card.type = "button";
+        card.dataset.sector = study.sector;
+        card.setAttribute("aria-haspopup", "dialog");
+        const img = document.createElement("img");
+        img.src = study.imageUrl;
+        img.alt = study.alt;
+        img.loading = "lazy";
+        img.width = 960;
+        img.height = 640;
+        const info = document.createElement("span");
+        info.className = "card-info";
+        const copy = document.createElement("span");
+        const category = document.createElement("small");
+        category.textContent = labels[study.sector];
+        const title = document.createElement("strong");
+        title.textContent = study.name;
+        copy.append(category, title);
+        info.append(copy);
+        card.append(img, info);
+        card.addEventListener("click", () => openCase(study));
+        cards.push(card);
+        added.push(card);
+        if (study.sector === "other") document.querySelector('[data-filter="other"]').hidden = false;
+      }
+      if (offset === 0) workGrid.prepend(...added);
+      else workGrid.append(...added);
+      offset += data.campaigns.length;
+      more.hidden = !data.more;
+      filterCards(filterButtons.find((button) => button.getAttribute("aria-pressed") === "true"));
+    } catch {
+      // The five bundled examples remain available if the portfolio API is offline.
+    } finally {
+      more.disabled = false;
     }
-    document.querySelector("#filter-status").textContent = count === 1 ? "1 campaign shown" : `${count} campaigns shown`;
+  }
+
+  more.addEventListener("click", loadPublished);
+  const requested = new URL(location.href).searchParams.get("campaign");
+  void loadPublished().then(async () => {
+    if (!/^[a-f0-9-]{36}$/.test(requested || "")) return;
+    if (published.has(requested)) {
+      openCase(published.get(requested));
+      return;
+    }
+    try {
+      const response = await fetch(`/api/portfolio?id=${encodeURIComponent(requested)}`);
+      if (response.ok) openCase(await response.json());
+    } catch { /* The gallery remains available. */ }
   });
 }
 
-const dialog = document.querySelector("#case-dialog");
-for (const card of cards) {
-  card.addEventListener("click", () => {
-    const study = cases[card.dataset.case];
-    dialog.querySelector("#case-title").textContent = study.name;
-    dialog.querySelector("#case-brand").textContent = study.name;
-    dialog.querySelector("#case-brief").textContent = study.brief;
-    dialog.querySelector("#case-value").textContent = study.value;
-    dialog.querySelector("#case-tagline").textContent = study.tagline;
-    const mainImage = dialog.querySelector(".case-image");
-    mainImage.alt = study.alt;
-    mainImage.src = `/assets/campaigns/${study.image}.webp`;
-    dialog.querySelector(".mockup-image").src = mainImage.src;
-    const palette = dialog.querySelector("#case-palette");
-    palette.replaceChildren(...study.colors.map((color) => {
-      const item = document.createElement("li");
-      const swatch = document.createElement("span");
-      swatch.className = "swatch";
-      swatch.style.backgroundColor = color;
-      swatch.setAttribute("aria-hidden", "true");
-      item.append(swatch, color);
-      return item;
-    }));
-    dialog.showModal();
-  });
-}
 dialog?.addEventListener("click", (event) => {
   if (event.target === dialog) dialog.close();
 });

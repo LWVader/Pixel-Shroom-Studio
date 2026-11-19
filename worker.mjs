@@ -1,3 +1,4 @@
+import {portfolioImage, portfolioItem, portfolioList, savePortfolio} from "./lib/portfolio.mjs";
 import {authenticatedAdmin} from "./lib/admin-access.mjs";
 import {clearPasswordSession, passwordAdmin, passwordConfigured, signInWithPassword} from "./lib/admin-session.mjs";
 import {handleSocial} from "./lib/ad-studio-social.mjs";
@@ -39,10 +40,10 @@ function sameOriginJson(request, url) {
     request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() === "application/json";
 }
 
-async function readJson(request) {
+async function readJson(request, limit = 12000) {
   const reader = request.body?.getReader();
   if (!reader) throw {error: "The request was empty.", status: 400};
-  const buffer = new Uint8Array(12000);
+  const buffer = new Uint8Array(limit);
   let size = 0;
   try {
     for (;;) {
@@ -186,7 +187,13 @@ async function adminCampaignRoute(request, env, url) {
       if (!Number.isSafeInteger(offset) || offset < 0) return apiError("Invalid order offset.", 400);
       return json(await store.list(offset));
     }
-    const {sessionId, previous} = await readJson(request) ?? {};
+    const {sessionId, previous, action, stage} = await readJson(request) ?? {};
+    if (action === "set-stage") {
+      if (typeof sessionId !== "string" || !sessionPattern.test(sessionId) ||
+          !["new", "production", "ready"].includes(stage)) return apiError("Invalid campaign stage.", 400);
+      const updated = await store.updateStage(sessionId, stage);
+      return updated ? json(updated) : apiError("This brief is missing or has already been delivered.", 409);
+    }
     if (typeof sessionId !== "string" || !sessionPattern.test(sessionId) ||
         !(previous === null || (typeof previous === "string" && previous.length <= 40 && Number.isFinite(Date.parse(previous))))) {
       return apiError("Invalid order or delivery date.", 400);
@@ -195,6 +202,35 @@ async function adminCampaignRoute(request, env, url) {
     return status ? json(status) : apiError("Campaign brief not found.", 404);
   } catch (error) {
     return routeFailure(error, "Could not update Campaign Admin. Please try again.");
+  }
+}
+
+async function portfolioRoute(request, env, url, admin) {
+  const base = admin ? "/api/admin/portfolio" : "/api/portfolio";
+  if (!["GET", "HEAD"].includes(request.method) && !(admin && request.method === "POST" && url.pathname === base)) {
+    return methodNotAllowed(admin ? "GET, HEAD, POST" : "GET, HEAD");
+  }
+  if (!env.CAMPAIGN_DB) return apiError("Portfolio storage is unavailable.", 503);
+  try {
+    if (request.method === "POST") {
+      if (!sameOriginJson(request, url)) return apiError("Same-origin requests required.", 403);
+      return json(await savePortfolio(env.CAMPAIGN_DB, await readJson(request, 1_125_000)));
+    }
+    if (url.pathname !== base) {
+      const match = /^\/([a-f0-9-]+)\/image$/.exec(url.pathname.slice(base.length));
+      const image = match && await portfolioImage(env.CAMPAIGN_DB, match[1], admin);
+      if (!image) return apiError("Campaign image not found.", 404);
+      return new Response(request.method === "HEAD" ? null : image, {headers: {...apiHeaders, "Content-Type": "image/webp"}});
+    }
+    if (!admin && url.searchParams.has("id")) {
+      const campaign = await portfolioItem(env.CAMPAIGN_DB, url.searchParams.get("id"));
+      return campaign ? json(campaign) : apiError("Campaign not found.", 404);
+    }
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    if (!Number.isSafeInteger(offset) || offset < 0) return apiError("Invalid campaign offset.", 400);
+    return json(await portfolioList(env.CAMPAIGN_DB, offset, admin));
+  } catch (error) {
+    return routeFailure(error, "Could not load or save the campaign. Check the database migration and try again.");
   }
 }
 
@@ -257,9 +293,12 @@ export default {
     const isAdmin = url.pathname === "/admin.html";
     const isEditor = url.pathname.startsWith("/admin-ad-studio/");
     const isAdminApi = url.pathname === "/api/admin/campaigns";
+    const isPortfolio = url.pathname === "/api/portfolio" || url.pathname.startsWith("/api/portfolio/");
+    if (isPortfolio) return portfolioRoute(request, env, url, false);
+    const isAdminPortfolio = url.pathname === "/api/admin/portfolio" || url.pathname.startsWith("/api/admin/portfolio/");
     const isStripeStatus = url.pathname === "/api/admin/stripe";
     const isSocialApi = url.pathname.startsWith("/api/ad-studio/social/");
-    if (isEditor || isAdminApi || isStripeStatus || isSocialApi) {
+    if (isEditor || isAdminApi || isAdminPortfolio || isStripeStatus || isSocialApi) {
       const user = await adminUser(request, env, url);
       if (!user) {
         if (isEditor && (!url.pathname.split("/").at(-1) || url.pathname.endsWith(".html"))) {
@@ -267,6 +306,7 @@ export default {
         }
         return apiError("Administrator sign-in required.", 401);
       }
+      if (isAdminPortfolio) return portfolioRoute(request, env, url, true);
       if (isAdminApi) return adminCampaignRoute(request, env, url);
       if (isStripeStatus) return stripeStatusRoute(request, env);
       if (isSocialApi) return socialRoute(request, env, url, user);

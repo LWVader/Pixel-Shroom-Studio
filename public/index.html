@@ -41,7 +41,7 @@
     <section id="work" class="section wrap" aria-labelledby="work-title">
       <div class="section-top">
         <div><p class="eyebrow">The portfolio</p><h2 id="work-title">Strange by design.</h2></div>
-        <p>Five fictional brands. Five ways to turn a product into a scene people want to look at.</p>
+        <p>See how a product becomes the center of a surreal campaign.</p>
       </div>
       <div class="filters" aria-label="Filter campaigns">
         <button type="button" aria-pressed="true" data-filter="all">All work</button>
@@ -49,6 +49,7 @@
         <button type="button" aria-pressed="false" data-filter="games">Indie games</button>
         <button type="button" aria-pressed="false" data-filter="music">Music</button>
         <button type="button" aria-pressed="false" data-filter="fashion">Streetwear</button>
+        <button type="button" aria-pressed="false" data-filter="other" hidden>Other campaigns</button>
       </div>
       <div class="work-grid">
         <button class="work-card" type="button" data-case="orbit" data-sector="food" aria-haspopup="dialog"><img src="/assets/campaigns/orbit-roast-640.webp" width="640" height="427" loading="lazy" alt="Giant coffee bean floating above a nighttime city"><span class="card-info"><span><small>COFFEE LAUNCH</small><strong>Orbit Roast</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
@@ -57,6 +58,7 @@
         <button class="work-card" type="button" data-case="static" data-sector="music" aria-haspopup="dialog"><img src="/assets/campaigns/static-bloom.webp" width="960" height="640" loading="lazy" alt="Chrome headphones in the shape of a neon jellyfish float above a city"><span class="card-info"><span><small>EP RELEASE</small><strong>Static Bloom</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
         <button class="work-card" type="button" data-case="sole" data-sector="fashion" aria-haspopup="dialog"><img src="/assets/campaigns/midnight-sole.webp" width="960" height="640" loading="lazy" alt="A black and lime high-top sneaker breaks through dark water"><span class="card-info"><span><small>STREETWEAR DROP</small><strong>Midnight Sole</strong></span><span class="arrow" aria-hidden="true">↗</span></span></button>
       </div>
+      <button id="more-work" type="button" class="button small" hidden>Load more campaigns</button>
       <p id="filter-status" class="sr-only" aria-live="polite"></p>
     </section>
     <section id="pack" class="section offer-section" aria-labelledby="pack-title">
@@ -93,7 +95,7 @@
     <div class="dialog-inner">
       <form method="dialog"><button type="submit" class="close" aria-label="Close case study">×</button></form>
       <img class="case-image" width="960" height="640" alt="">
-      <div class="case-copy"><p class="eyebrow">Fictional campaign</p><h2 id="case-title"></h2>
+      <div class="case-copy"><p class="eyebrow">Campaign case study</p><h2 id="case-title"></h2>
         <div class="case-layout"><div><h3>The brief</h3><p id="case-brief"></p><h3>Why it works</h3><p id="case-value"></p><h3>Palette</h3><ul id="case-palette" class="palette"></ul></div>
         <div><h3>Social placement</h3><figure class="mockup"><figcaption id="case-brand"></figcaption><img class="mockup-image" width="960" height="640" alt=""><strong id="case-tagline"></strong></figure></div></div>
       </div>

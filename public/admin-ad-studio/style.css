@@ -28,3 +28,13 @@ main{align-items:start}.properties{max-height:calc(100vh - 86px);overflow-y:auto
 .properties #publishCaption{background:#1b1f1d;color:#f1f4ef;border:1px solid #475044;border-radius:7px}.properties .compose-row{display:block}
 
 .post-error{color:#ffb4b4;background:#411b21;border:1px solid #f16c79;border-radius:8px;padding:12px;font-weight:700}.post-error[hidden]{display:none}.submission-row{flex-wrap:wrap}.delete-submission{color:#ffb4b4;border-color:#a94a57}
+
+.marketing-start { padding: 16px; border: 1px solid #49385d; border-radius: 10px; background: #21182f; margin-bottom: 14px; }
+.marketing-start h1 { font-size: 27px; margin: 10px 0 17px; }
+.marketing-start h1 em { color: #d9ff55; }
+.marketing-start label { display: grid; gap: 4px; margin: 9px 0; }
+.marketing-start select { width: 100%; }
+.marketing-start button { margin-top: 6px; }
+.marketing-start p:empty { display: none; }
+body[data-ad-layout="marketing"] .popout-tools { display: none; }
+body[data-ad-layout="popout"] #open-marketing-project { display: none; }
