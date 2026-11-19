@@ -3,7 +3,6 @@
 .admin-heading h1 { font: 900 clamp(2.9rem, 7vw, 5.2rem)/.95 var(--display); letter-spacing: -.075em; margin-top: .5rem; }
 .admin-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
 .admin-panel { margin-top: 1.5rem; border: 1px solid #574865; border-radius: .75rem; background: var(--surface); padding: clamp(1rem, 3vw, 2rem); }
-.sign-in { max-width: 480px; }
 .secondary { background: var(--surface); border: 1px solid #645375; color: var(--text); min-height: 42px; padding: .55rem .8rem; font-weight: 700; border-radius: .4rem; }
 .secondary:hover { border-color: var(--accent); }
 .secondary:disabled { opacity: .45; cursor: default; }
@@ -25,3 +24,5 @@
   .admin-heading, .orders-top { align-items: stretch; flex-direction: column; }
   .order-row { gap: .5rem; }
 }
+
+.delivery-actions { margin-top: .75rem; }

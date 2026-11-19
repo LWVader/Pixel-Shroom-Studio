@@ -9,48 +9,12 @@ surprise.addEventListener("change", () => {
   form.elements.colors.disabled = surprise.checked;
 });
 
-function showDownloads(deliveries) {
-  const panel = document.querySelector("#download-panel");
-  const list = panel.querySelector(".delivery-list");
-  const note = document.querySelector("#download-note");
-  const status = document.querySelector("#download-status");
-  panel.hidden = false;
-  note.textContent = deliveries.length
-    ? "Choose a ZIP to save your campaign files."
-    : "Your campaign ZIP will appear here when it’s ready. Save this private order link to come back.";
-  const entries = deliveries.map((delivery) => {
-    const item = document.createElement("li");
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "button small";
-    button.textContent = `Download ${delivery.file_name}`;
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      status.textContent = "Preparing your ZIP download…";
-      try {
-        const {url} = await campaignApi("download", {sessionId, deliveryId: delivery.id});
-        status.textContent = "Your download is starting.";
-        location.assign(url);
-      } catch (error) {
-        status.textContent = error.message;
-      } finally {
-        button.disabled = false;
-      }
-    });
-    item.append(button);
-    return item;
-  });
-  list.replaceChildren(...entries);
-  list.hidden = entries.length === 0;
-}
-
 function showThanks(order) {
   form.hidden = true;
   title.textContent = "Brief received.";
   status.textContent = order.offer === "monthly"
-    ? "Your Monthly Asset Pack brief is in. New ZIPs will appear on this order page as they’re published."
-    : "Your Attention Pack brief is in. Your finished ZIP will be available on this order page.";
-  showDownloads(order.deliveries ?? []);
+    ? "Your Monthly Asset Pack brief is in. I’ll send each finished ZIP from weirichloren@gmail.com to the email address you used at checkout."
+    : "Your Attention Pack brief is in. I’ll send the finished ZIP from weirichloren@gmail.com to the email address you used at checkout.";
   if (order.canAddLanding) {
     const panel = document.querySelector("#addon-panel");
     const confirm = panel.querySelector("#addon-confirm");

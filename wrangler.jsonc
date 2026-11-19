@@ -2,6 +2,8 @@
   "name": "pixel-shroom-studio",
   "main": "worker.mjs",
   "compatibility_date": "2026-11-18",
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
@@ -9,7 +11,19 @@
     "html_handling": "none",
     "not_found_handling": "404-page"
   },
+  "d1_databases": [
+    {
+      "binding": "CAMPAIGN_DB",
+      "database_name": "pixel-shroom-campaigns",
+      // Replace with the database ID from your Cloudflare account before deployment.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations/campaign"
+    }
+  ],
   "vars": {
-    "CAMPAIGN_SUPABASE_URL": "https://decizwtgsqhjdgjiqbui.supabase.co"
+    "CAMPAIGN_ATTENTION_ENABLED": "true",
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUDIENCE": "",
+    "ACCESS_ADMIN_EMAIL": ""
   }
 }

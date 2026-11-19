@@ -16,7 +16,7 @@
   <header class="site-header">
     <div class="wrap header-row">
       <a class="wordmark" href="/" aria-label="Pixel Shroom Studio home"><img src="/assets/pixel-shroom-logo-128.webp" width="40" height="40" alt=""><span>PIXEL SHROOM <b>STUDIO</b></span></a>
-      <button id="sign-out" type="button" class="secondary" hidden>Sign out</button>
+      <a class="secondary" href="/cdn-cgi/access/logout">Sign out</a>
     </div>
   </header>
   <main class="wrap admin-main" id="main">
@@ -24,14 +24,8 @@
       <button type="button" id="refresh" class="secondary">Refresh orders</button>
       <a class="button" id="ad-studio-view" href="/admin-ad-studio/">Open AD Studio</a>
     </div></div>
-    <p id="access-status" class="status" role="status">Checking your administrator session…</p>
-    <noscript><p>Enable JavaScript to sign in to Campaign Admin.</p></noscript>
-    <form class="brief-form admin-panel sign-in" id="sign-in" hidden>
-      <h2>Administrator sign-in</h2>
-      <label>Email <input name="email" type="email" autocomplete="username" required></label>
-      <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
-      <button class="button" type="submit">Sign in</button>
-    </form>
+    <p id="access-status" class="status" role="status">Loading Campaign Admin…</p>
+    <noscript><p>Enable JavaScript to manage campaign orders.</p></noscript>
     <section class="admin-panel orders" id="orders" aria-labelledby="orders-title" hidden>
       <div class="orders-top"><h2 id="orders-title">Submitted briefs</h2><label>Find in loaded orders <input id="order-search" type="search" placeholder="Business, email or industry"></label></div>
       <p class="status" id="order-status" role="status"></p>
@@ -44,17 +38,14 @@
         <p class="eyebrow" id="detail-offer"></p>
         <h2 id="detail-title"></h2>
         <dl id="brief-details" class="brief-details"></dl>
-        <div class="admin-actions order-actions">
-          <button type="button" id="copy-order-page" class="secondary">Copy buyer’s private order link</button>
-        </div>
-        <section class="order-files" aria-labelledby="file-title">
-          <h3 id="file-title">Campaign ZIPs</h3>
-          <p id="file-help" class="status"></p>
-          <ul id="file-list" class="order-list"></ul>
-          <form id="publish-zip" class="brief-form">
-            <label>Finished ZIP <input type="file" name="archive" accept=".zip,application/zip" required></label>
-            <button type="submit" class="button">Publish ZIP to order</button>
-          </form>
+        <section class="order-files" aria-labelledby="delivery-title">
+          <h3 id="delivery-title">Email delivery</h3>
+          <p id="delivery-help" class="status"></p>
+          <p id="delivery-state" class="status"></p>
+          <div class="admin-actions delivery-actions">
+            <a class="button" id="compose-email" target="_blank" rel="noopener noreferrer">Compose in Gmail</a>
+            <button type="button" id="mark-email-sent" class="secondary">Mark email sent</button>
+          </div>
         </section>
         <p class="status" id="detail-status" role="status"></p>
       </div>

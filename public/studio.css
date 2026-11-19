@@ -166,6 +166,3 @@ dialog::backdrop { background: #09060de0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
-
-.delivery-list { display: grid; gap: .6rem; padding: 0; list-style: none; }
-.delivery-list .button { overflow-wrap: anywhere; text-align: left; }
