@@ -1,21 +1,14 @@
 'use strict';
 
-function renderMarketingAd(ctx, state, time, height, artwork, logo) {
+function renderMarketingAd(ctx, state, time, height, logo) {
   const margin = 56;
   const width = 864 - margin * 2;
   const mediaTop = 132;
   const mediaHeight = Math.min(height * .48, height - 425);
   const mediaBottom = mediaTop + mediaHeight;
-  const accent = "#d9ff55";
+  const ink = state[colorKey("textColor")];
 
-  ctx.fillStyle = "#100e15";
-  ctx.fillRect(0, 0, 864, height);
-  const background = ctx.createLinearGradient(0, 0, 864, height);
-  background.addColorStop(0, "#21162f");
-  background.addColorStop(1, "#100e15");
-  ctx.fillStyle = background;
-  ctx.fillRect(0, 0, 864, height);
-
+  rounded(22, 22, 820, height - 44, 24, state[colorKey("cardColor")]);
   let brandX = margin;
   if (logo?.complete && logo.naturalWidth) {
     ctx.save();
@@ -26,28 +19,34 @@ function renderMarketingAd(ctx, state, time, height, artwork, logo) {
     ctx.restore();
     brandX += 76;
   }
-  text(state.brand, brandX, 83, 26, "#f8f4ff", 700, state.captionFont, width - (brandX - margin));
+  text(state.brand, brandX, 83, 26, ink, 700, state.captionFont, width - (brandX - margin));
 
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(margin, mediaTop, width, mediaHeight, 18);
   ctx.clip();
-  ctx.fillStyle = "#322044";
+  const artworkColors = {
+    dark: ["#171326", "#322044"], purple: ["#26143e", "#684184"], light: ["#e7e1ed", "#b8aac5"]
+  };
+  const [top, bottom] = artworkColors[state.background] || artworkColors.dark;
+  const gradient = ctx.createLinearGradient(margin, mediaTop, margin + width, mediaBottom);
+  gradient.addColorStop(0, top);
+  gradient.addColorStop(1, bottom);
+  ctx.fillStyle = gradient;
   ctx.fillRect(margin, mediaTop, width, mediaHeight);
-  if (artwork?.complete && artwork.naturalWidth) {
-    const progress = time / Math.max(1, Number(state.duration));
-    const zoom = Number(state.bgZoom) + (1 - Math.cos(progress * Math.PI * 2)) * 2.5;
-    coverImage(artwork, margin, mediaTop, width, mediaHeight, zoom, Number(state.bgX), Number(state.bgY));
-  }
+  const progress = time / Math.max(1, Number(state.duration));
+  const zoom = Number(state.bgZoom) + (1 - Math.cos(progress * Math.PI * 2)) * 2.5;
+  paintArtwork(margin, mediaTop, width, mediaHeight, zoom);
   ctx.restore();
 
-  drawCaption({...state, textColor: "#f8f4ff"}, margin, mediaBottom + 30, width, height - mediaBottom - 207);
-  rounded(margin, height - 148, width, 62, 11, accent);
-  text(state.cta, margin + 24, height - 108, 23, "#121408", 700, state.captionFont, width - 48);
-  text(state.website, margin, height - 44, 18, "#c9bfd3", 400, state.captionFont, width);
+  drawCaption({...state, textColor: ink}, margin, mediaBottom + 30, width, height - mediaBottom - 207);
+  if (state.cta.trim()) {
+    rounded(margin, height - 148, width, 62, 11, "#d9ff55");
+    text(state.cta, margin + 24, height - 108, 23, "#121408", 700, state.captionFont, width - 48);
+  }
+  text(state.website, margin, height - 53, 18, ink, 400, state.captionFont, width);
 }
 
-const marketingArt = "/assets/campaigns/orbit-roast.webp";
 const studioDomain = "pixelshroomstudio.com";
 
 function applyMarketingAd(kind, campaign, artwork) {
@@ -70,8 +69,9 @@ function applyMarketingAd(kind, campaign, artwork) {
   state.bgMode = "image";
   state.bgZoom = 100;
   state.bgX = state.bgY = 50;
+  state.bgDim = state.bgBlur = 0;
   state.bgImage = artwork;
-  state.logoImage ||= "/assets/pixel-shroom-logo-128.webp";
+  state.logoImage ||= BUNDLED_LOGO;
   restoreCustomAssets();
   t = 0;
   sync();
@@ -92,7 +92,9 @@ async function campaignArtwork(campaign) {
 const creative = $("creative-layout");
 const campaignPicker = $("marketing-campaign");
 const campaignMore = $("marketing-more");
+const preset = $("marketing-preset");
 const presetButton = $("apply-marketing");
+const spotlightSettings = $("spotlight-settings");
 const adStatus = $("marketing-status");
 let campaignOffset = 0;
 const publishedCampaigns = new Map();
@@ -121,15 +123,16 @@ async function loadCampaigns() {
 
 async function loadMarketingPreset() {
   if (recording) return;
-  const kind = $("marketing-preset").value;
-  const campaign = publishedCampaigns.get(campaignPicker.value);
+  const kind = preset.value;
+  const campaign = kind === "spotlight" ? publishedCampaigns.get(campaignPicker.value) : null;
   if (kind === "spotlight" && !campaign) {
     adStatus.textContent = "Choose a published campaign for the spotlight.";
     return;
   }
   presetButton.disabled = true;
   try {
-    const artwork = campaign ? await campaignArtwork(campaign) : marketingArt;
+    const artwork = campaign ? await campaignArtwork(campaign) : BUNDLED_ARTWORK;
+    if (recording || creative.value !== "marketing" || preset.value !== kind) return;
     applyMarketingAd(kind, campaign, artwork);
     adStatus.textContent = "Template loaded. Edit the copy, then export or publish.";
   } catch (error) {
@@ -139,6 +142,12 @@ async function loadMarketingPreset() {
   }
 }
 
+function syncSpotlightSettings() {
+  spotlightSettings.hidden = preset.value !== "spotlight";
+  adStatus.textContent = "";
+}
+
+preset.addEventListener("change", syncSpotlightSettings);
 creative.addEventListener("change", () => {
   state.layout = creative.value;
   sync();
@@ -147,11 +156,11 @@ presetButton.addEventListener("click", loadMarketingPreset);
 campaignMore.addEventListener("click", loadCampaigns);
 $("edit-marketing-copy").addEventListener("click", () => {
   const headline = $("headline");
-  headline.closest("details").open = true;
+  $("ad-copy-settings").open = true;
   headline.focus();
 });
 
-applyMarketingAd("offer", null, marketingArt);
+applyMarketingAd("offer", null, BUNDLED_ARTWORK);
 void loadCampaigns();
 const requestedCampaign = new URL(location.href).searchParams.get("campaign");
 if (/^[a-f0-9-]{36}$/.test(requestedCampaign || "")) {
@@ -162,7 +171,8 @@ if (/^[a-f0-9-]{36}$/.test(requestedCampaign || "")) {
       const item = await response.json();
       addCampaign(item);
       campaignPicker.value = item.id;
-      $("marketing-preset").value = "spotlight";
+      preset.value = "spotlight";
+      syncSpotlightSettings();
       await loadMarketingPreset();
     } catch (error) {
       adStatus.textContent = error.message;
