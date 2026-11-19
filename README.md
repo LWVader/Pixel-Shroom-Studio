@@ -22,29 +22,33 @@ The suite starts a local test site on port 4173 with an in-memory SQLite databas
 
 ## Set up Cloudflare
 
-1. Create a D1 database and copy its ID into the `CAMPAIGN_DB` entry in `wrangler.jsonc`. Apply the campaign migration. On Windows run:
+1. Sign in to Wrangler using the Cloudflare account that owns the Worker. In PowerShell run:
 
    ```powershell
-   npx.cmd wrangler d1 create pixel-shroom-campaigns
-   npx.cmd wrangler d1 migrations apply CAMPAIGN_DB --remote
+   npm.cmd run wrangler -- login
+   npm.cmd run db:info
    ```
 
-   Use `npx` on macOS or Linux. Use a separate database and hostname for staging.
+   If Cloudflare reports that `pixel-shroom-campaigns` does not exist, create it once with `npm.cmd run db:create`. If it already exists in the correct account, use that database. Wrangler resolves `CAMPAIGN_DB` by its `database_name` in `wrangler.jsonc`. Use `npm` on macOS or Linux. Use a separate database and hostname for staging.
 2. Set a unique, randomly generated administrator password of at least 24 characters as the `ADMIN_PASSWORD` Worker secret. Enter it when Wrangler prompts.
 
    ```powershell
-   npx.cmd wrangler secret put ADMIN_PASSWORD
+   npm.cmd run wrangler -- secret put ADMIN_PASSWORD
    ```
 
-   Apply the pending D1 migration even if the campaign database already exists. It adds rate limiting for sign-in. The homepage footer mushroom opens the password form.
+   The deployment command below applies pending D1 migrations, including the administrator sign-in rate limit. The homepage footer mushroom opens the password form.
 3. Connect the same Stripe account used by the earlier storefront. The archived Stripe checkout function reads `STRIPE_SECRET_KEY` from its server environment. The Worker uses that same secret name. If it is already set on this Worker, keep it. If it lived in the old checkout service, set the same authorized key directly in Cloudflare or through Wrangler. Use a test key for staging.
 
    ```powershell
-   npx.cmd wrangler secret put STRIPE_SECRET_KEY
+   npm.cmd run wrangler -- secret put STRIPE_SECRET_KEY
    ```
 
    Sign in to Campaign Admin and choose **Check Stripe connection** to confirm the API responds and shows the expected test or live mode. An existing one-time $199 USD Stripe Price can be linked with `CAMPAIGN_ATTENTION_PRICE_ID`. Without that setting, the Worker uses the old checkout pattern of creating the line item from the offer price on the server. It verifies the paid Checkout Session before accepting a brief.
-4. Deploy the Worker to the existing Cloudflare route or custom domain. Verify the public homepage, footer sign-in, a test purchase and return to the campaign brief, and AD Studio. Set `CAMPAIGN_SITE_URL` if checkout should return to a specific origin. Optionally set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `ADMIN_ALERT_EMAIL` for notifications about submitted briefs.
+4. Run `npm.cmd run deploy` in PowerShell. This applies both D1 migrations before deploying the Worker to its existing route or domain. For a Git-connected Cloudflare Worker, commit the updated `wrangler.jsonc` and `package.json` to the branch Cloudflare deploys. Set its deploy command to `npm run deploy` and give the build token permission to run D1 migrations, or run `npm.cmd run db:migrate` locally before the Git deployment.
+
+   Verify the public homepage, footer sign-in, a test Stripe purchase and return to the campaign brief, and AD Studio. Set `CAMPAIGN_SITE_URL` if checkout should return to a specific origin. Optionally set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `ADMIN_ALERT_EMAIL` for notifications about submitted briefs.
+
+   If Cloudflare reports **10181**, check the config file in the deployment’s working directory and branch. Remove any all-zero database ID for `CAMPAIGN_DB`. If you use a database with a different name, use its actual name and ID in the binding, and run migrations against that binding.
 
 ### If you already configured Cloudflare Access
 
@@ -56,7 +60,7 @@ This package contains no Supabase runtime, keys, webhook, or legacy Worker fallb
 
 ```powershell
 py tools/prepare-campaign-import.py campaign-briefs.csv campaign-briefs-import.sql
-npx.cmd wrangler d1 execute CAMPAIGN_DB --remote --file=campaign-briefs-import.sql
+npm.cmd run wrangler -- d1 execute CAMPAIGN_DB --remote --file=campaign-briefs-import.sql
 ```
 
 These files contain buyer data. Keep them outside the public assets folder and source control. The import preserves previously recorded delivery times and skips sessions already present in D1. Once the new Worker is live and verified, retire the old campaign function and the former campaign-only configuration. Keep any unrelated legacy marketplace project or Stripe webhook active while it still serves historical orders. If that webhook also receives the new campaign sessions, retain its existing guard for the Stripe metadata kind `studio-campaign-v1` so those events do not enter the legacy fulfillment flow.

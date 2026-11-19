@@ -15,8 +15,6 @@
     {
       "binding": "CAMPAIGN_DB",
       "database_name": "pixel-shroom-campaigns",
-      // Replace with the database ID from your Cloudflare account before deployment.
-      "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations/campaign"
     }
   ],
