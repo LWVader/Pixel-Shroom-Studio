@@ -41,6 +41,52 @@ const cases = {
 
 const filterButtons = [...document.querySelectorAll("[data-filter]")];
 const cards = [...document.querySelectorAll("[data-case]")];
+const workGrid = document.querySelector(".work-grid");
+let portfolioFrame;
+
+function queuePortfolioLayout() {
+  cancelAnimationFrame(portfolioFrame);
+  portfolioFrame = requestAnimationFrame(() => {
+    const width = workGrid.clientWidth;
+    if (!width) return;
+    const style = getComputedStyle(workGrid);
+    const columns = Number(style.getPropertyValue("--work-columns"));
+    if (!columns) return;
+    const gap = parseFloat(style.columnGap);
+    const visible = Array.from(workGrid.children).filter(card => !card.hidden && card.classList.contains("work-card"));
+    const maxImageHeight = columns === 1 ? 420 : 430;
+    const regularWidth = (width - gap * (columns - 1)) / columns;
+
+    for (let start = 0; start < visible.length; start += columns) {
+      const row = visible.slice(start, start + columns);
+      const ratios = row.map(card => {
+        const image = card.querySelector("img");
+        return image.naturalWidth ? image.naturalWidth / image.naturalHeight : 1.5;
+      });
+      const gaps = gap * (row.length - 1);
+      // Account for the two one-pixel borders so the image heights align within the row.
+      const available = width - gaps;
+      const imageHeight = Math.min(maxImageHeight,
+        (available - 2 * row.length) / ratios.reduce((total, ratio) => total + ratio, 0));
+      const limit = row.length === columns ? available : regularWidth;
+      const widths = ratios.map(ratio => Math.min(limit, Math.max(140, ratio * imageHeight + 2)));
+      const used = widths.reduce((total, cardWidth) => total + cardWidth, 0);
+      // In extreme aspect ratios, keep the captions readable and let the images keep their shape.
+      const scale = Math.min(1, available / used);
+      let offset = Math.max(0, (available - used * scale) / 2);
+
+      for (const [index, card] of row.entries()) {
+        const cardWidth = widths[index] * scale;
+        card.style.setProperty("--work-row", String(Math.floor(start / columns) + 1));
+        card.style.setProperty("--work-width", `${cardWidth}px`);
+        card.style.setProperty("--work-offset", `${offset}px`);
+        offset += cardWidth + gap;
+      }
+    }
+    workGrid.classList.add("is-arranged");
+  });
+}
+
 function filterCards(selected) {
   const sector = selected.dataset.filter;
   for (const button of filterButtons) button.setAttribute("aria-pressed", String(button === selected));
@@ -51,6 +97,7 @@ function filterCards(selected) {
     if (!card.hidden) count++;
   }
   document.querySelector("#filter-status").textContent = count === 1 ? "1 campaign shown" : `${count} campaigns shown`;
+  queuePortfolioLayout();
 }
 for (const button of filterButtons) button.addEventListener("click", () => filterCards(button));
 
@@ -108,8 +155,15 @@ for (const card of cards) {
   card.addEventListener("click", () => openCase(cases[card.dataset.case]));
 }
 
-const workGrid = document.querySelector(".work-grid");
 if (workGrid) {
+  workGrid.addEventListener("load", queuePortfolioLayout, true);
+  let previousWidth;
+  new ResizeObserver(([entry]) => {
+    const width = entry.contentRect.width;
+    if (width === previousWidth) return;
+    previousWidth = width;
+    queuePortfolioLayout();
+  }).observe(workGrid);
   const more = document.querySelector("#more-work");
   const published = new Map();
   let offset = 0;

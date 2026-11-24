@@ -75,12 +75,20 @@ nav a:hover, .site-footer a:hover { color: var(--accent); }
 .filters button { border: 1px solid var(--line); border-radius: 5rem; padding: .42rem .87rem; color: var(--muted); background: transparent; font-size: .78rem; font-weight: 700; }
 .filters button:hover { border-color: var(--accent); }
 .filters button[aria-pressed=true] { color: #17190c; background: var(--accent); border-color: var(--accent); }
-.work-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); align-items: start; gap: 1rem; }
+.work-grid { --work-columns: 3; display: grid; grid-template-columns: repeat(var(--work-columns), minmax(0,1fr)); align-items: start; gap: 1rem; }
+.work-grid.is-arranged { grid-template-columns: minmax(0, 1fr); }
+.work-grid.is-arranged > .work-card {
+  grid-area: var(--work-row) / 1;
+  justify-self: start;
+  width: var(--work-width);
+  margin-inline-start: var(--work-offset);
+}
 .work-card { border: 1px solid var(--line); border-radius: .65rem; overflow: hidden; padding: 0; color: var(--text); background: var(--surface); text-align: left; }
 .work-card:hover { border-color: var(--accent); }
 .work-card img { width: 100%; height: auto; }
 .card-info { padding: .95rem; display: flex; justify-content: space-between; align-items: center; gap: .7rem; }
 .card-info small, .card-info strong { display: block; }
+.card-info > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .card-info small { color: #d2acd9; font-size: .65rem; font-weight: 750; letter-spacing: .11em; margin-bottom: .15rem; }
 .card-info strong { font-size: 1.14rem; }
 .arrow { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #554363; border-radius: 50%; color: var(--accent); flex: none; }
@@ -143,7 +151,7 @@ dialog::backdrop { background: #09060de0; }
 .checkout-panel p { margin-block: .6rem; }
 @media (max-width: 1050px) { .wrap { width: min(calc(100% - 56px), 1320px); } }
 @media (max-width: 850px) {
-  .work-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .work-grid { --work-columns: 2; }
 }
 @media (max-width: 700px) {
   .hero { align-items: start; min-height: 0; }
@@ -165,7 +173,8 @@ dialog::backdrop { background: #09060de0; }
   .sectors { justify-content: center; letter-spacing: .06em; column-gap: .55rem; font-size: .64rem; }
   .section-top { display: block; }
   .section-top > p { margin-top: .65rem; }
-  .work-grid, .offer, .steps, .faq, .monthly, .case-layout { grid-template-columns: 1fr; }
+  .work-grid { --work-columns: 1; }
+  .offer, .steps, .faq, .monthly, .case-layout { grid-template-columns: 1fr; }
   .offer, .faq, .monthly { gap: 1.2rem; }
   .actions { gap: .75rem 1rem; }
 }
