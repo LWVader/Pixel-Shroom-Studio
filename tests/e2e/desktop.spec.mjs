@@ -13,10 +13,14 @@ test("portfolio filter and keyboard dismissal", async ({page}) => {
   await page.goto("/");
   await expect.poll(() => page.locator(".hero-background img").evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
   await expect(page.locator(".work-card:visible")).toHaveCount(5);
+  await expect(page.locator('.work-card img[src^="/assets/campaign-examples/"]')).toHaveCount(5);
   await page.getByRole("button", {name: "Gaming", exact: true}).click();
   await expect(page.locator(".work-card:visible")).toHaveCount(1);
   await page.getByRole("button", {name: /Mossbyte Games/}).click();
   await expect(page.getByRole("dialog", {name: "Mossbyte Games"})).toBeVisible();
+  await expect(page.locator(".case-image")).toHaveAttribute("src", "/assets/campaign-examples/mossbyte.webp");
+  await expect(page.locator(".mockup-image")).toHaveAttribute("src", /\/assets\/campaign-examples\/mossbyte\.webp$/);
+  await expect.poll(() => page.locator(".case-image").evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
   await expect(page.locator("#case-palette li")).toHaveCount(4);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();

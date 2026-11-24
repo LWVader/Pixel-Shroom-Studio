@@ -81,6 +81,8 @@ Use **New campaign** in Campaign publisher to add artwork and a case study. **Sa
 
 The homepage gallery and enlarged previews use WebP files with the **Example** watermark baked in. Uploads in Campaign Publisher create a protected preview alongside the clean image. The clean copy is available to signed-in admins for editing and ad creation.
 
+The built-in gallery now loads its thumbnails and enlarged previews from `/assets/campaign-examples/`. Older image links serve the same protected artwork through the Worker. Keep `assets.run_worker_first` enabled in the Wrangler configuration and deploy the Worker and assets together.
+
 Apply migration `0005_protected_campaign_previews.sql` before deploying the Worker and static assets together. Open Campaign Publisher and click **Protect existing previews** once after deployment. Previously uploaded campaigns return to the public gallery as their previews are generated. The button can be run again after an interruption.
 
 ### Create ads for the site

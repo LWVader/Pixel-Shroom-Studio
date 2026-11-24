@@ -5,6 +5,7 @@ import {handleSocial} from "./lib/ad-studio-social.mjs";
 import {createCampaignOrders, sessionPattern} from "./lib/campaign-orders.mjs";
 import {campaignStore} from "./lib/campaign-store.mjs";
 import {StripeRequestError, stripeApi} from "./lib/stripe-api.mjs";
+import {exampleArtworkPath} from "./public/campaign-artwork-paths.js";
 
 const canonicalHost = "www.pixelshroomstudio.com";
 const aliases = new Set(["pixelshroomstudio.com", "pixel-shroom-studio.phantasmocazdor.workers.dev"]);
@@ -340,9 +341,16 @@ export default {
     if (!["GET", "HEAD"].includes(request.method)) return methodNotAllowed("GET, HEAD");
     const target = retargeted.get(url.pathname);
     if (target) return Response.redirect(new URL(target, url.origin), 302);
+    const preview = exampleArtworkPath(url.pathname);
+    if (preview) url.pathname = preview;
     if (url.pathname === "/") url.pathname = "/index.html";
     if (url.pathname === "/admin-ad-studio/") url.pathname = "/admin-ad-studio/index.html";
-    const response = await env.ASSETS.fetch(new Request(url, request));
+    const response = await env.ASSETS.fetch(new Request(url, preview ? {method: request.method} : request));
+    if (preview) {
+      const freshResponse = new Response(response.body, response);
+      freshResponse.headers.set("Cache-Control", "no-store");
+      return freshResponse;
+    }
     return isAdmin || isEditor ? adminResponse(response, isEditor && url.pathname.endsWith(".html")) : response;
   }
 };

@@ -25,6 +25,21 @@ async function login(site, password = testPassword) {
   });
 }
 
+test("legacy gallery artwork URLs serve the same protected files as the new URLs", async (t) => {
+  const site = await setup(t);
+  for (const filename of ["orbit-roast", "orbit-roast-640", "boom-bun", "mossbyte", "static-bloom", "midnight-sole"]) {
+    const legacy = await site.call(`/assets/campaigns/${filename}.webp`, {
+      headers: {"If-None-Match": '"unmarked-cached-image"'}
+    });
+    const preview = await site.call(`/assets/campaign-examples/${filename}.webp`);
+    assert.equal(legacy.status, 200);
+    assert.equal(legacy.headers.get("Cache-Control"), "no-store");
+    assert.equal(preview.status, 200);
+    assert.equal(preview.headers.get("Content-Type"), "image/webp");
+    assert.deepEqual(await legacy.arrayBuffer(), await preview.arrayBuffer());
+  }
+});
+
 test("the footer opens admin sign-in and protected routes require a valid session", async (t) => {
   const site = await setup(t);
   const home = await site.call("/");

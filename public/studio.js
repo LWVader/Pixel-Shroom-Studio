@@ -1,4 +1,5 @@
 import {industries} from "./industries.js";
+import {exampleArtworkPath, legacyArtworkDirectory} from "./campaign-artwork-paths.js";
 
 const cases = {
   orbit: {
@@ -75,7 +76,7 @@ function openCase(study) {
   dialog.querySelector("#case-tagline").textContent = study.tagline;
   const mainImage = dialog.querySelector(".case-image");
   mainImage.alt = study.alt;
-  mainImage.src = study.imageUrl || `/assets/campaigns/${study.image}.webp`;
+  mainImage.src = study.imageUrl || exampleArtworkPath(`${legacyArtworkDirectory}${study.image}.webp`);
   dialog.querySelector(".mockup-image").src = mainImage.src;
   const palette = dialog.querySelector("#case-palette");
   palette.previousElementSibling.hidden = palette.hidden = !study.colors.length;
@@ -91,7 +92,12 @@ function openCase(study) {
   if (!dialog.open) dialog.showModal();
 }
 
-for (const card of cards) card.addEventListener("click", () => openCase(cases[card.dataset.case]));
+for (const card of cards) {
+  const image = card.querySelector("img[src]");
+  const preview = image && exampleArtworkPath(new URL(image.src).pathname);
+  if (preview) image.src = preview;
+  card.addEventListener("click", () => openCase(cases[card.dataset.case]));
+}
 
 const workGrid = document.querySelector(".work-grid");
 if (workGrid) {
