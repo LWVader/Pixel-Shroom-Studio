@@ -1,4 +1,5 @@
 import {industries} from "./industries.js";
+import {protectedCampaignPreview} from "./campaign-preview.js";
 
 const list = document.querySelector("#publisher-list");
 const form = document.querySelector("#portfolio-form");
@@ -6,6 +7,7 @@ const preview = document.querySelector("#publisher-image");
 const status = document.querySelector("#publisher-status");
 const formStatus = document.querySelector("#publisher-form-status");
 const more = document.querySelector("#more-campaigns");
+const protectExisting = document.querySelector("#protect-existing-previews");
 let current, offset = 0;
 for (const [id, label] of Object.entries(industries)) {
   form.elements.sector.add(new Option(label, id));
@@ -56,12 +58,13 @@ function row(item) {
   const name = document.createElement("strong");
   const label = document.createElement("small");
   name.textContent = item.name;
-  label.textContent = `${item.published ? "Live on the site" : "Draft"} · ${industries[item.sector] || industries.other}`;
+  const state = item.published ? item.previewReady ? "Live on the site" : "Preview needs protection" : "Draft";
+  label.textContent = `${state} · ${industries[item.sector] || industries.other}`;
   copy.append(name, label);
   const controls = document.createElement("div");
   controls.className = "publisher-actions";
   controls.append(action("Edit", null, () => edit(item)));
-  if (item.published) {
+  if (item.published && item.previewReady) {
     controls.append(action("View live", `/?campaign=${item.id}#work`),
       action("Create ad", `/admin-ad-studio/?campaign=${item.id}`));
   }
@@ -72,6 +75,7 @@ function row(item) {
 export async function loadPortfolio(reset = true) {
   if (reset) {
     offset = 0;
+    protectExisting.hidden = true;
     list.replaceChildren();
   }
   more.disabled = true;
@@ -80,6 +84,7 @@ export async function loadPortfolio(reset = true) {
     list.append(...data.campaigns.map(row));
     offset += data.campaigns.length;
     more.hidden = !data.more;
+    if (data.more || data.campaigns.some(item => !item.previewReady)) protectExisting.hidden = false;
     status.textContent = offset ? "" : "No custom campaigns yet.";
   } catch (error) {
     status.textContent = error.message;
@@ -109,6 +114,42 @@ async function prepareImage(file) {
   }
 }
 
+async function prepareExistingPreview(item) {
+  const response = await fetch(item.imageUrl);
+  if (!response.ok) throw new Error("The original artwork could not be loaded.");
+  const preview = await protectedCampaignPreview(await response.blob());
+  await request("", {action: "protect-preview", id: item.id, version: item.version, preview});
+}
+
+protectExisting.addEventListener("click", async () => {
+  protectExisting.disabled = true;
+  let protectedCount = 0, failed = 0, next = 0;
+  try {
+    do {
+      const data = await request(`?offset=${next}`);
+      for (const item of data.campaigns.filter(item => !item.previewReady)) {
+        status.textContent = `Protecting the preview for ${item.name}…`;
+        try {
+          await prepareExistingPreview(item);
+          protectedCount++;
+        } catch (error) {
+          failed++;
+          console.warn("Campaign preview was not rebuilt", item.id, error.message);
+        }
+      }
+      next = data.more ? next + data.campaigns.length : 0;
+    } while (next);
+    await loadPortfolio();
+    status.textContent = failed
+      ? `${protectedCount} updated. ${failed} could not be protected. Retry the remaining previews.`
+      : protectedCount ? `Protected previews updated for ${protectedCount} campaign(s).` : "All campaign previews are protected.";
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    protectExisting.disabled = false;
+  }
+});
+
 document.querySelector("#new-campaign").addEventListener("click", () => edit());
 document.querySelector("#cancel-campaign").addEventListener("click", () => { form.hidden = true; });
 more.addEventListener("click", () => loadPortfolio(false));
@@ -122,7 +163,11 @@ form.addEventListener("submit", async (event) => {
   try {
     const fields = Object.fromEntries(new FormData(form));
     const image = await prepareImage(fields.image);
-    const saved = await request("", {...fields, id: current.id, version: current.version, image, published});
+    const preview = image ? await protectedCampaignPreview(fields.image) : null;
+    if (!image && !current.previewReady && published) {
+      throw new Error("Use Protect existing previews or upload the artwork again before publishing.");
+    }
+    const saved = await request("", {...fields, id: current.id, version: current.version, image, preview, published});
     form.hidden = true;
     current = null;
     await loadPortfolio();

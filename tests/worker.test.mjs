@@ -105,17 +105,21 @@ test("Stripe creates a $199 session and only a paid session can save a brief", a
 
 test("portfolio drafts stay private and published campaigns can be edited or withdrawn", async (t) => {
   const site = await setup(t);
-  const image = await (await site.call("/assets/campaigns/orbit-roast-640.webp")).arrayBuffer();
   const admin = "/api/admin/portfolio";
   const published = "/api/portfolio";
+  const cleanAsset = "/admin-ad-studio/assets/campaign-art/orbit-roast.webp";
   const id = crypto.randomUUID();
-  const body = {id, version: 0, published: false, image: Buffer.from(image).toString("base64"),
+  const signed = await login(site);
+  const headers = {Cookie: signed.headers.get("Set-Cookie").split(";")[0]};
+  const preview = Buffer.from(await (await site.call("/assets/campaigns/orbit-roast-640.webp")).arrayBuffer()).toString("base64");
+  assert.equal((await site.call(cleanAsset)).status, 401);
+  const image = Buffer.from(await (await site.call(cleanAsset, {headers})).arrayBuffer()).toString("base64");
+  const body = {id, version: 0, published: false, image, preview,
     name: "Roast launch", sector: "food", tagline: "A new roast", brief: "Introduce a roast",
     value: "The image makes the product recognizable", alt: "A giant coffee bean", palette: "#D9FF55"};
   assert.equal((await site.call(admin, {body})).status, 401);
+  assert.equal((await site.call(admin, {headers, body: {...body, preview: image}})).status, 400);
 
-  const signed = await login(site);
-  const headers = {Cookie: signed.headers.get("Set-Cookie").split(";")[0]};
   const original = await site.call(admin, {body, headers});
   assert.equal(original.status, 200);
   assert.equal((await original.json()).version, 1);
@@ -123,17 +127,49 @@ test("portfolio drafts stay private and published campaigns can be edited or wit
   assert.equal((await site.call(`${published}/${id}/image`)).status, 404);
   assert.equal((await site.call(`${admin}/${id}/image`, {headers})).status, 200);
 
-  const release = {...body, version: 1, image: null, published: true};
+  const release = {...body, version: 1, image: null, preview: null, published: true};
   const live = await site.call(admin, {body: release, headers});
   assert.equal(live.status, 200);
   assert.equal((await live.json()).version, 2);
   const publicData = await (await site.call(published)).json();
   assert.equal(publicData.campaigns[0].id, id);
   assert.equal(publicData.campaigns[0].image_webp, undefined);
-  assert.equal((await site.call(`${published}/${id}/image`)).headers.get("Content-Type"), "image/webp");
+  const publicImage = await site.call(`${published}/${id}/image`);
+  assert.equal(publicImage.headers.get("Content-Type"), "image/webp");
+  assert.equal(Buffer.from(await publicImage.arrayBuffer()).toString("base64"), preview);
+  const privateImage = await site.call(`${admin}/${id}/image`, {headers});
+  assert.equal(Buffer.from(await privateImage.arrayBuffer()).toString("base64"), image);
+  assert.equal((await site.call(`${admin}/${id}/image`)).status, 401);
   assert.equal((await site.call(admin, {body: release, headers})).status, 409);
   assert.equal((await site.call(admin, {body: {...release, version: 2, published: false}, headers})).status, 200);
   assert.equal((await site.call(`${published}?id=${id}`)).status, 404);
+});
+
+test("previously published art stays private until a protected preview is generated", async t => {
+  const site = await setup(t);
+  const response = await login(site);
+  const headers = {Cookie: response.headers.get("Set-Cookie").split(";")[0]};
+  const id = crypto.randomUUID();
+  const cleanPath = "/admin-ad-studio/assets/campaign-art/orbit-roast.webp";
+  const file = async (path, auth = {}) => Buffer.from(await (await site.call(path, auth)).arrayBuffer()).toString("base64");
+  const image = await file(cleanPath, {headers});
+  const preview = await file("/assets/campaigns/orbit-roast-640.webp");
+  await site.env.CAMPAIGN_DB.prepare(`INSERT INTO portfolio_campaigns
+    (id, name, sector, tagline, brief, creative_value, image_alt, palette, image_webp, published, updated_at)
+    VALUES (?, 'Legacy campaign', 'food', 'Tagline', 'Brief', 'Value', 'Image', '', ?, 1, '2026-11-23')`)
+    .bind(id, image).run();
+  const admin = "/api/admin/portfolio";
+  const publicUrl = "/api/portfolio";
+  assert.equal((await site.call(publicUrl + "/" + id + "/image")).status, 404);
+  assert.equal((await (await site.call(publicUrl)).json()).campaigns.length, 0);
+  const [item] = (await (await site.call(admin, {headers})).json()).campaigns;
+  assert.equal(item.previewReady, false);
+  const body = {action: "protect-preview", id, version: item.version, preview};
+  assert.equal((await site.call(admin, {body})).status, 401);
+  assert.equal((await site.call(admin, {body, headers})).status, 200);
+  assert.equal((await site.call(admin, {body, headers})).status, 409);
+  assert.equal(await file(publicUrl + "/" + id + "/image"), preview);
+  assert.equal(await file(admin + "/" + id + "/image", {headers}), image);
 });
 
 test("AD publishing requires admin authentication and same-origin writes", async t => {

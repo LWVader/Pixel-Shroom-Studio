@@ -77,6 +77,12 @@ From the footer mushroom, sign in to Campaign Admin. The workflow overview shows
 
 Use **New campaign** in Campaign publisher to add artwork and a case study. **Save as draft** holds it in admin. **Publish to site** adds it to the public portfolio. **View live** opens its shareable case-study link, and **Unpublish to draft** takes it off the portfolio. The form converts JPG, PNG, or WebP uploads to WebP for the site. The five bundled examples are still available.
 
+### Example watermarks for campaign previews
+
+The homepage gallery and enlarged previews use WebP files with the **Example** watermark baked in. Uploads in Campaign Publisher create a protected preview alongside the clean image. The clean copy is available to signed-in admins for editing and ad creation.
+
+Apply migration `0005_protected_campaign_previews.sql` before deploying the Worker and static assets together. Open Campaign Publisher and click **Protect existing previews** once after deployment. Previously uploaded campaigns return to the public gallery as their previews are generated. The button can be run again after an interruption.
+
 ### Create ads for the site
 
 Choose **Create ad** on a published campaign to load its artwork, tagline and link into AD Studio. Use **Attention Pack promotion** or **Studio portfolio promotion** when you want a general studio ad. Choose a square, portrait, or story format, edit the copy, and download a PNG or export the video. The **Publish to social** tab uses the existing Buffer connection. Choose **Pop-out editor** for character layouts. PNGs and videos use a 1080 px canvas width. The story safe-zone guide is visible in the preview only. The editor prefers frame-by-frame MP4 export and uses browser recording when needed. Buffer publishing requires MP4/MOV and supports per-platform captions.

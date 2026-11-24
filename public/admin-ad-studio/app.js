@@ -15,7 +15,8 @@ const $=id=>document.getElementById(id), canvas=$('scene');let ctx=canvas.getCon
 const CANVAS_WIDTH = 1080;
 export let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',channelCaptions:{},aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',platform:'Instagram',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
 const PLAYBACK_RATE = .5;
-const BUNDLED_ARTWORK = "/assets/campaigns/orbit-roast.webp";
+const BUNDLED_ARTWORK = "/admin-ad-studio/assets/campaign-art/orbit-roast.webp";
+const OLD_BUNDLED_ARTWORK = "/assets/campaigns/orbit-roast.webp";
 const BUNDLED_LOGO = "/assets/pixel-shroom-logo-128.webp";
 state.palette = AdPalette.defaultPalette;
 state.paletteName = "";
@@ -579,6 +580,7 @@ function sanitizeProject() {
   state.captionWeight = String(state.captionWeight);
   for (const [key, values] of Object.entries(options)) if (!values.includes(state[key])) state[key] = defaults[key];
   if (!FontLibrary.valid(state.captionFont)) state.captionFont = defaults.captionFont;
+  if (state.bgImage === OLD_BUNDLED_ARTWORK) state.bgImage = BUNDLED_ARTWORK;
   const bundledImages = {bgImage: BUNDLED_ARTWORK, logoImage: BUNDLED_LOGO};
   for (const key of ["bgImage", "outerImage", "logoImage", "characterImage"]) {
     const value = state[key];

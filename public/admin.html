@@ -54,7 +54,7 @@
     </section>
     <section class="admin-panel" id="campaign-publisher" aria-labelledby="publisher-title" hidden>
       <div class="orders-top"><div><p class="eyebrow">Public portfolio</p><h2 id="publisher-title">Campaign publisher</h2></div>
-        <button class="secondary" type="button" id="new-campaign">New campaign</button></div>
+        <div class="publisher-actions"><button class="secondary" type="button" id="protect-existing-previews" hidden>Protect existing previews</button><button class="secondary" type="button" id="new-campaign">New campaign</button></div></div>
       <p id="publisher-status" class="status" role="status"></p>
       <ul class="order-list" id="publisher-list"></ul>
       <button class="secondary" type="button" id="more-campaigns" hidden>Load more campaigns</button>
@@ -69,6 +69,7 @@
           <label>Artwork<input name="image" type="file" accept="image/jpeg,image/png,image/webp"></label>
           <label>Artwork description<input name="alt" maxlength="160" required></label>
         </div>
+        <p class="muted">Public artwork uses an Example watermark. Clean artwork stays in Campaign Admin and AD Studio.</p>
         <img id="publisher-image" alt="" hidden>
         <div class="admin-actions">
           <button class="secondary" type="submit" value="draft">Save as draft</button>

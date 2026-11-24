@@ -1,4 +1,4 @@
-import {portfolioImage, portfolioItem, portfolioList, savePortfolio} from "./lib/portfolio.mjs";
+import {portfolioImage, portfolioItem, portfolioList, protectPortfolioPreview, savePortfolio} from "./lib/portfolio.mjs";
 import {authenticatedAdmin} from "./lib/admin-access.mjs";
 import {clearPasswordSession, passwordAdmin, passwordConfigured, signInWithPassword} from "./lib/admin-session.mjs";
 import {handleSocial} from "./lib/ad-studio-social.mjs";
@@ -231,7 +231,11 @@ async function portfolioRoute(request, env, url, admin) {
   try {
     if (request.method === "POST") {
       if (!sameOriginJson(request, url)) return apiError("Same-origin requests required.", 403);
-      return json(await savePortfolio(env.CAMPAIGN_DB, await readJson(request, 1_125_000)));
+      const input = await readJson(request, 1_625_000);
+      const result = input?.action === "protect-preview"
+        ? await protectPortfolioPreview(env.CAMPAIGN_DB, input)
+        : await savePortfolio(env.CAMPAIGN_DB, input);
+      return json(result);
     }
     if (url.pathname !== base) {
       const match = /^\/([a-f0-9-]+)\/image$/.exec(url.pathname.slice(base.length));

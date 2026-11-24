@@ -95,7 +95,7 @@ test("publishes a campaign and starts a marketing ad from its artwork", async ({
   await page.getByLabel("Campaign brief").fill("Launch a new coffee subscription app.");
   await page.getByLabel("Why this creative works").fill("A giant coffee bean makes the app's purpose clear.");
   await page.getByLabel("Artwork description").fill("A giant coffee bean floating above a city.");
-  await page.locator('input[name="image"]').setInputFiles("public/assets/campaigns/orbit-roast-640.webp");
+  await page.locator('input[name="image"]').setInputFiles("public/admin-ad-studio/assets/campaign-art/orbit-roast.webp");
   await page.getByRole("button", {name: "Save as draft"}).click();
   await expect(page.getByText("Campaign saved as a draft.")).toBeVisible();
   expect((await (await request.get("/api/portfolio")).json()).campaigns).toHaveLength(0);

@@ -78,7 +78,7 @@ function applyMarketingAd(kind, campaign, artwork) {
 }
 
 async function campaignArtwork(campaign) {
-  const response = await fetch(campaign.imageUrl);
+  const response = await fetch(`/api/admin/portfolio/${encodeURIComponent(campaign.id)}/image`);
   if (!response.ok) throw new Error("Campaign artwork could not be loaded.");
   const blob = await response.blob();
   return new Promise((resolve, reject) => {
