@@ -1,12 +1,26 @@
+import {AdPalette} from "./ad-palette.js";
+import {CHARACTER_CATALOG} from "./character-catalog.js";
+import {MOTION_PRESETS, SceneEffects} from "./scene-effects.js";
+import {FontLibrary} from "./fonts.js";
+import {PROJECT_SCHEMA_VERSION, migrateAdProject} from "./project-version.js";
+import {CAPTION_PLATFORMS} from "../ad-studio-rules.mjs";
+import {exportAdVideo} from "./video-export.js";
+import {renderMarketingAd, initMarketing} from "./marketing-layout.js";
+import {updateCharacterSelection, initCharacterGallery} from "./character-gallery.js";
+import {syncSocialCopy, initSocialPublishing} from "./social-publish.js";
+import {initEmojiPicker} from "./emoji-picker.js";
+
 'use strict';
 const $=id=>document.getElementById(id), canvas=$('scene');let ctx=canvas.getContext('2d');const subjectLayer=document.createElement('canvas');
-let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',platform:'Instagram',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
+const CANVAS_WIDTH = 1080;
+export let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',channelCaptions:{},aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',platform:'Instagram',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
 const PLAYBACK_RATE = .5;
 const BUNDLED_ARTWORK = "/assets/campaigns/orbit-roast.webp";
 const BUNDLED_LOGO = "/assets/pixel-shroom-logo-128.webp";
 state.palette = AdPalette.defaultPalette;
 state.paletteName = "";
 const defaults = {...state};
+state.channelCaptions = {};
 let paletteTheme = AdPalette.roles(state.palette);
 let renderedPalette = state.palette;
 const syncPaletteEditor = AdPalette.editor((colors, name) => {
@@ -17,11 +31,58 @@ const syncPaletteEditor = AdPalette.editor((colors, name) => {
 
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',3500)}
 function rounded(x,y,w,h,r,fill){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill()}
-function text(s,x,y,size,color='#fff',weight=500,family='sans-serif',maxWidth=0){ctx.fillStyle=color;ctx.font=`${weight} ${size}px "${family}", sans-serif`;while(maxWidth&&size>8&&ctx.measureText(s).width>maxWidth){size--;ctx.font=`${weight} ${size}px "${family}", sans-serif`}ctx.fillText(s,x,y)}
-function lines(s,x,y,max,size,color){ctx.font=`700 ${size}px sans-serif`;let line='',n=0;for(const word of s.split(' ')){if(ctx.measureText(line+word).width>max&&line){text(line,x,y+n*size*1.16,size,color,700);line='';n++}line+=word+' '}text(line,x,y+n*size*1.16,size,color,700)}
-function drawCaption(s,x,y,w,h){let size=Number(s.captionFontSize)||28,wrapped=[];const family=s.captionFont||'Arial',weight=s.captionWeight||'700';function wrap(){ctx.font=`${weight} ${size}px "${family}", sans-serif`;const rows=[];for(const paragraph of String(s.headline).split('\n')){let line='';for(const word of paragraph.split(/\s+/)){if(!word)continue;const next=line?line+' '+word:word;if(ctx.measureText(next).width<=w){line=next;continue}if(line){rows.push(line);line=''}let part='';for(const char of word){if(ctx.measureText(part+char).width>w&&part){rows.push(part);part=''}part+=char}line=part}rows.push(line)}return rows}while(size>=6){wrapped=wrap();if(wrapped.length*size*1.22<=h||size===6)break;size--}ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.textAlign=s.captionAlign||'left';const anchor=s.captionAlign==='center'?x+w/2:s.captionAlign==='right'?x+w:x;for(let i=0;i<wrapped.length;i++)text(wrapped[i],anchor,y+size+i*size*1.22,size,s.textColor,weight,family);ctx.restore();$('captionFit').textContent=size<Number(s.captionFontSize)?'Caption fitted to '+size+'px on the ad. Shorten it for larger text.':'Caption uses '+size+'px on the ad.'}
+function text(s,x,y,size,color='#fff',weight=500,family='sans-serif',maxWidth=0){ctx.fillStyle=color;ctx.font=`${FontLibrary.weight(family,weight)} ${size}px "${family}", "Noto Emoji", sans-serif`;while(maxWidth&&size>8&&ctx.measureText(s).width>maxWidth){size--;ctx.font=`${FontLibrary.weight(family,weight)} ${size}px "${family}", "Noto Emoji", sans-serif`}ctx.fillText(s,x,y)}
+function setText(id, value) {
+  const element = $(id);
+  if (element.textContent !== value) element.textContent = value;
+}
+
+let captionLayout;
+function drawCaption(s, x, y, w, h) {
+  const family = s.captionFont || "Arial", requested = Number(s.captionFontSize) || 28;
+  const weight = FontLibrary.weight(family, s.captionWeight || "700");
+  const key = JSON.stringify([s.headline, requested, family, weight, w, h, FontLibrary.generation]);
+  if (captionLayout?.key !== key) {
+    let size = requested;
+    function wrap() {
+      ctx.font = `${weight} ${size}px "${family}", "Noto Emoji", sans-serif`;
+      const rows = [];
+      for (const paragraph of s.headline.split("\n")) {
+        let line = "";
+        for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+          const next = line ? line + " " + word : word;
+          if (ctx.measureText(next).width <= w) { line = next; continue; }
+          if (line) rows.push(line);
+          line = "";
+          for (const char of word) {
+            if (line && ctx.measureText(line + char).width > w) { rows.push(line); line = ""; }
+            line += char;
+          }
+        }
+        rows.push(line);
+      }
+      return rows;
+    }
+    let rows = wrap();
+    while (size > 6 && rows.length * size * 1.22 > h) {
+      size--;
+      rows = wrap();
+    }
+    captionLayout = {key, size, rows};
+  }
+  const {size, rows} = captionLayout;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.textAlign = s.captionAlign || "left";
+  const anchor = s.captionAlign === "center" ? x + w / 2 : s.captionAlign === "right" ? x + w : x;
+  rows.forEach((row, i) => text(row, anchor, y + size + i * size * 1.22, size, s.textColor, weight, family));
+  ctx.restore();
+  setText("captionFit", size < requested ? "Caption fitted to " + size + "px on the ad." : "Caption uses " + size + "px on the ad.");
+}
 const characters={};
-for(const entry of CHARACTER_CATALOG){const img=new Image();img.src=entry.src;characters[entry.id]=img;}
+for(const entry of CHARACTER_CATALOG){const img=loadImage(entry.src);characters[entry.id]=img;}
 const isCharacterModel=model=>model==='custom'||Object.hasOwn(characters,model);
 let characterUpload=null,backdrop=null,outerBackdrop=null,brandLogo=null;
 let characterHitArea = null;
@@ -56,7 +117,8 @@ function paintArtwork(x, y, width, height, zoom = Number(state.bgZoom)) {
   }
 }
 
-const canvasHeights = {square: 864, story: 1536, portrait: 1080};
+const canvasHeights = {square: 1080, story: 1920, portrait: 1350};
+const logicalHeight = () => canvas.height * 864 / CANVAS_WIDTH;
 const hasCharacter = () => state.layout === "popout" || state.showCharacter;
 const characterImage = () => state.model === "custom" ? characterUpload : characters[state.model];
 
@@ -72,8 +134,9 @@ function characterCenterY(rect) {
 }
 
 function syncPlacement(x = state.subjectX, y = state.subjectY) {
-  const height = canvas.height;
+  const height = logicalHeight();
   const anchorY = characterCenterY(artworkRect(height));
+  const previousX = state.subjectX, previousY = state.subjectY;
   state.subjectX = Math.round(Math.max(-432, Math.min(432, Number(x) || 0)));
   state.subjectY = Math.round(Math.max(-anchorY, Math.min(height - anchorY, Number(y) || 0)));
   $("subjectY").min = -anchorY;
@@ -83,11 +146,12 @@ function syncPlacement(x = state.subjectX, y = state.subjectY) {
   $("subjectXOut").value = Math.round((432 + state.subjectX) / 864 * 100) + "%";
   $("subjectYOut").value = Math.round((anchorY + state.subjectY) / height * 100) + "%";
   $("sizeOut").value = state.size + "%";
+  if (previousX !== state.subjectX || previousY !== state.subjectY) updateRenderRevision();
 }
 
 function paintCharacter(rect, height) {
   characterHitArea = null;
-  if (state.motion !== "none") SceneEffects.before(ctx, state, t, rect);
+  if (state.motion !== "none") SceneEffects.before(ctx, state, t, rect, paletteTheme.post);
   const image = characterImage();
   if (hasCharacter() && image?.complete && image.naturalWidth) {
     const {u, emerge, bob, angle, slideX} = SceneEffects.motion(t, state);
@@ -102,12 +166,16 @@ function paintCharacter(rect, height) {
     characterHitArea = {x, y, w: c * w + s * drawnHeight, h: s * w + c * drawnHeight};
 
     const effects = state.motion === "melt" || state.motion === "explode" || state.motion === "glitch";
-    if (effects && (subjectLayer.width !== 864 || subjectLayer.height !== height)) {
-      subjectLayer.width = 864;
-      subjectLayer.height = height;
+    if (effects && (subjectLayer.width !== canvas.width || subjectLayer.height !== canvas.height)) {
+      subjectLayer.width = canvas.width;
+      subjectLayer.height = canvas.height;
     }
     const layer = effects ? subjectLayer.getContext("2d") : ctx;
-    if (effects) layer.clearRect(0, 0, 864, height);
+    if (effects) {
+      const scale = canvas.width / 864;
+      layer.setTransform(scale, 0, 0, scale, 0, 0);
+      layer.clearRect(0, 0, 864, height);
+    }
     layer.save();
     layer.translate(x, y);
     layer.rotate(rotation);
@@ -124,9 +192,9 @@ function paintCharacter(rect, height) {
   if (state.motion !== "none") SceneEffects.after(ctx, state, t, rect);
 }
 
-function draw(){const W=canvas.width,H=canvas.height,s=W/864;ctx.setTransform(s,0,0,s,0,0);const h=H/s;
+function draw(){const s=canvas.width/864;ctx.setTransform(s,0,0,s,0,0);const h=logicalHeight();
 paintCanvas(h);
-if(state.layout==='marketing'&&typeof renderMarketingAd==='function'){
+if(state.layout==='marketing'){
   renderMarketingAd(ctx,state,t,h,brandLogo);
   paintCharacter(artworkRect(h), h);
   updatePlaybackClock();
@@ -154,7 +222,7 @@ if(state.layout==='marketing'&&typeof renderMarketingAd==='function'){
     brandX = px + 91;
   }
   text(state.brand, brandX, py + 47, 22, ink, 700, state.captionFont, pw - 156);
-  text(state.platform + " · Sponsored", brandX, py + 73, 15, ink);
+  text(state.platform, brandX, py + 73, 15, ink);
   text("•••", px + pw - 60, py + 55, 25, ink);
 
   ctx.save();
@@ -164,33 +232,68 @@ if(state.layout==='marketing'&&typeof renderMarketingAd==='function'){
   paintArtwork(x, y, w, mediaHeight);
   ctx.restore();
 
-  text("♡   ◯   ↗", px + 29, edge + 44, 30, ink);
-  text("⌑", px + pw - 51, edge + 44, 30, ink);
-  text("1,248 likes", px + 29, edge + 75, 14, ink, 700);
-  const copyY = Math.max(edge + 145, h - 300);
-  drawCaption({...state, textColor: ink}, px + 30, copyY, pw - 60, h - 191 - copyY);
+  const story = state.ratio === "story";
+  const buttonY = story ? h * .77 - 115 : h - 171;
+  const copyY = story ? edge + 30 : Math.max(edge + 30, h - 300);
+  drawCaption({...state, textColor: ink}, px + 30, copyY, pw - 60, buttonY - 20 - copyY);
   if (state.cta.trim()) {
-    rounded(px + 28, h - 171, pw - 56, 55, 8, button);
-    text(state.cta, px + 49, h - 136, 20, buttonInk, 700, state.captionFont, pw - 100);
+    rounded(px + 28, buttonY, pw - 56, 55, 8, button);
+    text(state.cta, px + 49, buttonY + 35, 20, buttonInk, 700, state.captionFont, pw - 100);
   }
-  text(state.website, px + 30, h - 88, 15, ink, 400, state.captionFont, pw - 60);
+  text(state.website, px + 30, story ? buttonY + 83 : h - 88, 15, ink, 400, state.captionFont, pw - 60);
   paintCharacter(rect, h);
   updatePlaybackClock();
 }
 
 function updatePlaybackClock() {
-  $('time').textContent=(t/PLAYBACK_RATE).toFixed(1)+' / '+(Number(state.duration)/PLAYBACK_RATE).toFixed(1)+'s';
-  $('seek').value=t/PLAYBACK_RATE;
+  setText("time", (t / PLAYBACK_RATE).toFixed(1) + " / " + (state.duration / PLAYBACK_RATE).toFixed(1) + "s");
+  const seek = $("seek"), value = (t / PLAYBACK_RATE).toFixed(2);
+  if (Number(seek.value) !== Number(value)) seek.value = value;
 }
 
+const renderFields = Object.keys(defaults).filter(key => ![
+  "socialTitle", "socialCaption", "channelCaptions", "youtubePrivacy", "pinterestBoard", "aiGenerated", "paletteName", "characterName"
+].includes(key));
+let renderRevision = 0;
+let lastVisual;
+function updateRenderRevision() {
+  const visual = [...renderFields.map(key => state[key]), orbit, tilt];
+  if (lastVisual && visual.every((value, i) => Object.is(value, lastVisual[i]))) return;
+  lastVisual = visual;
+  renderRevision++;
+  requestPreview();
+}
 
-function frame(now){if(last&&playing&&!recording&&!drag)t=(t+(now-last)/1000*PLAYBACK_RATE)%Number(state.duration);last=now;if(!recording)draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
+let previewFrame = 0;
+let previewDirty = true;
+function canPreview() { return !$("editorPage").hidden && !document.hidden && !recording; }
+function requestPreview() {
+  previewDirty = true;
+  if (!previewFrame && canPreview()) previewFrame = requestAnimationFrame(frame);
+}
+function frame(now) {
+  previewFrame = 0;
+  if (!canPreview()) { last = 0; return; }
+  if (previewDirty || (playing && !drag && (!last || now - last >= 1000 / 30 - .25))) {
+    if (last && playing && !drag) t = (t + (now - last) / 1000 * PLAYBACK_RATE) % state.duration;
+    last = now;
+    const dirty = previewDirty;
+    previewDirty = false;
+    if (dirty || state.motion !== "none" || playing === false || lastPaintedRevision !== renderRevision) {
+      draw();
+      lastPaintedRevision = renderRevision;
+    } else updatePlaybackClock();
+  }
+  if (playing && !drag) previewFrame = requestAnimationFrame(frame);
+}
+let lastPaintedRevision = -1;
+document.addEventListener("visibilitychange", () => { last = 0; requestPreview(); });
 const regularControls = ["brand", "headline", "cta", "website", "platform", "depth", "size", "duration", "ratio", "shadows", "showCharacter"];
 
 function sync() {
   document.body.dataset.adLayout = state.layout;
   $("creative-layout").value = state.layout;
-  if (typeof syncSocialCopy === "function") syncSocialCopy();
+  syncSocialCopy();
   if (renderedPalette !== state.palette) {
     renderedPalette = state.palette;
     paletteTheme = AdPalette.roles(state.palette);
@@ -203,7 +306,7 @@ function sync() {
   $("characterSection").hidden = $("character-placement").hidden = $("character-stage-note").hidden = !visible;
   $("depth-setting").hidden = state.motion === "none";
   canvas.classList.toggle("character-visible", visible);
-  if (typeof updateCharacterSelection === "function") updateCharacterSelection();
+  updateCharacterSelection();
 
   $("artwork-title").textContent = isPopout ? "Scene background" : "Campaign artwork";
   $("bgAdjust").hidden = !state.bgImage;
@@ -227,8 +330,15 @@ function sync() {
   $("durationOut").value = Number(state.duration) / PLAYBACK_RATE + "s";
   $("seek").max = Number(state.duration) / PLAYBACK_RATE;
   const height = canvasHeights[state.ratio];
-  if (canvas.height !== height) canvas.height = height;
+  if (canvas.width !== CANVAS_WIDTH || canvas.height !== height) {
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = height;
+  }
+  canvas.parentElement.style.setProperty("--scene-aspect", CANVAS_WIDTH / height);
+  $("safe-zone-control").hidden = state.ratio !== "story";
+  $("safe-zone-guide").hidden = state.ratio !== "story" || !$("safe-zone").checked;
   syncPlacement();
+  updateRenderRevision();
   for (const button of document.querySelectorAll("[data-motion]")) {
     const selected = button.dataset.motion === state.motion;
     button.classList.toggle("selected", selected);
@@ -254,17 +364,20 @@ for (const button of document.querySelectorAll("[data-motion]")) {
     state.motion = button.dataset.motion;
     t = 0;
     sync();
+    requestPreview();
   });
 }
 
 function setPlaying(value) {
   playing = value;
-  $("play").textContent = playing ? "Ⅱ" : "▶";
+  last = 0;
+  requestPreview();
+  $("play").textContent = playing ? "Pause" : "Play";
   $("play").setAttribute("aria-label", playing ? "Pause preview" : "Play preview");
 }
 
 $("play").onclick = () => { if (!recording) setPlaying(!playing); };
-$("restart").onclick = () => { if (!recording) t = 0; };
+$("restart").onclick = () => { if (!recording) { t = 0; last = 0; requestPreview(); } };
 $("seek").oninput = () => {
   if (recording) return;
   t = Number($("seek").value) * PLAYBACK_RATE;
@@ -274,7 +387,7 @@ $("seek").oninput = () => {
 canvas.onpointerdown = (event) => {
   if (!hasCharacter() || recording || !event.isPrimary || event.button !== 0 || !characterHitArea) return;
   const bounds = canvas.getBoundingClientRect();
-  const sx = canvas.width / bounds.width, sy = canvas.height / bounds.height;
+  const sx = 864 / bounds.width, sy = logicalHeight() / bounds.height;
   const x = (event.clientX - bounds.left) * sx, y = (event.clientY - bounds.top) * sy;
   const area = characterHitArea;
   if (Math.abs(x - area.x) > area.w / 2 || Math.abs(y - area.y) > area.h / 2) return;
@@ -290,12 +403,12 @@ canvas.onlostpointercapture = () => {
   drag = null;
   last = 0;
   canvas.classList.remove("character-dragging");
+  requestPreview();
 };
 function download(blob,name){let url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 $("save").onclick = () => {
-  const project = JSON.stringify({...state, orbit, tilt}, null, 2);
+  const project = JSON.stringify({...state, schemaVersion: PROJECT_SCHEMA_VERSION, duration: state.duration / PLAYBACK_RATE, orbit, tilt}, null, 2);
   download(new Blob([project], {type: "application/json"}), state.layout === "marketing" ? "campaign-project.json" : "popout-project.json");
-  try { localStorage.setItem("popout", project); } catch {}
   toast("Project downloaded as JSON.");
 };
 $("load").onclick = () => { if (!recording) $("projectFile").click(); };
@@ -304,33 +417,15 @@ $("projectFile").onchange = async (event) => {
   event.target.value = "";
   if (!file || recording) return;
   try {
-    const data = JSON.parse(await file.text());
-    const oldProduct = ["canvas", "box"].includes(data?.model);
-    const oldMotions = {zoom: "weather", portal: "weather", "page-peel": "melt", lava: "melt"};
-    if ((!isCharacterModel(data?.model) && !oldProduct) ||
-        (!MOTION_PRESETS.some(({id}) => id === data.motion) && !Object.hasOwn(oldMotions, data.motion))) throw Error();
+    const original = JSON.parse(await file.text());
+    const data = migrateAdProject(original);
+    const oldProduct = ["canvas", "box"].includes(original.model);
+    if (!isCharacterModel(data.model) || !MOTION_PRESETS.some(({id}) => id === data.motion)) throw Error("Invalid project.");
+    await FontLibrary.catalogReady;
+    if (recording) return;
     state = {...defaults};
     for (const key of Object.keys(state)) if (Object.hasOwn(data, key)) state[key] = data[key];
-    if (!AdPalette.normalize(data.palette)) {
-      state.palette = AdPalette.fromLegacy(data) || defaults.palette;
-      state.paletteName = "";
-    }
-    if (Object.hasOwn(data, "bgMode") && data.bgMode !== "image") state.bgImage = null;
-    if (Object.hasOwn(data, "outerMode") && data.outerMode !== "image") state.outerImage = null;
-    if (oldProduct) {
-      state.model = "shroom";
-      state.characterImage = null;
-      const photo = data.faceImages?.front || data.image;
-      if (!state.bgImage && typeof photo === "string" && /^data:image\//.test(photo)) {
-        state.bgImage = photo;
-      }
-    }
-    if (Object.hasOwn(oldMotions, state.motion)) state.motion = oldMotions[state.motion];
-    if (state.weatherType === "embers") {
-      state.motion = "page-burn";
-      state.burnEmbers = true;
-      state.weatherType = "snow";
-    }
+    state.duration = Number(data.duration) * PLAYBACK_RATE;
     sanitizeProject();
     orbit = Number.isFinite(Number(data.orbit)) ? Number(data.orbit) : 0;
     tilt = Math.max(-.8, Math.min(.8, Number(data.tilt) || 0));
@@ -338,16 +433,41 @@ $("projectFile").onchange = async (event) => {
     characterUpload = loadImage(state.characterImage);
     t = 0;
     sync();
+    requestPreview();
     toast(oldProduct ? "Project opened as a character ad." : "Project opened.");
-  } catch {
-    toast("Please select a valid AD Studio project JSON.");
+  } catch (error) {
+    toast(error.message === "This project version is unsupported." ? error.message : "Please select a valid AD Studio project JSON.");
   }
 };
 $('snapshot').onclick=()=>{if(!assetsReady())return toast('Wait for your images and selected font to load.');draw();canvas.toBlob(b=>download(b,state.layout==='marketing'?'campaign-ad.png':'popout-frame.png'),'image/png')};
-async function renderAnimation(onProgress=()=>{}){if(recording)throw Error('Already recording.');if(!assetsReady())throw Error('Wait for your images and selected font to load.');if(!canvas.captureStream||!window.MediaRecorder)throw Error('Video recording is unavailable in this browser.');const mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m));if(!mime)throw Error('No supported video encoder.');return new Promise((resolve,reject)=>{const previous=playing,oldTime=t,stream=canvas.captureStream(30),chunks=[];let rec,finished=false;const restore=()=>{if(finished)return;finished=true;stream.getTracks().forEach(x=>x.stop());recording=false;playing=previous;t=oldTime;$('editorPage').inert=false;$('export').disabled=false;$('export').textContent='Export video ↗';last=0};try{rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:8000000})}catch{stream.getTracks().forEach(x=>x.stop());return reject(Error('Could not start video encoder.'))}recording=true;playing=false;t=0;$('editorPage').inert=true;$('export').disabled=true;$('export').textContent='Recording…';rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onerror=()=>{restore();reject(Error('Video recording failed.'))};rec.onstop=()=>{const blob=new Blob(chunks,{type:mime.split(';')[0]});restore();blob.size?resolve(blob):reject(Error('Empty video.'))};draw();rec.start();const start=performance.now();function tick(now){if(finished)return;t=Math.min(Number(state.duration),(now-start)/1000*PLAYBACK_RATE);draw();onProgress(t/Number(state.duration));t>=Number(state.duration)?rec.stop():requestAnimationFrame(tick)}requestAnimationFrame(tick)})}
+async function renderAnimation(onProgress = () => {}, {publish = false, announce = () => {}} = {}) {
+  if (recording) throw Error("Already recording.");
+  if (!assetsReady()) throw Error("Wait for your images and selected font to load.");
+  const previous = playing, oldTime = t;
+  recording = true;
+  playing = false;
+  $("editorPage").inert = true;
+  $("export").disabled = true;
+  $("export").textContent = "Rendering…";
+  try {
+    await prepareExportSymbols().catch(() => {});
+    return await exportAdVideo(canvas, state.duration / PLAYBACK_RATE, {
+      publish, announce, progress: onProgress,
+      paint(seconds) { t = seconds * PLAYBACK_RATE; draw(); }
+    });
+  } finally {
+    recording = false;
+    playing = previous;
+    t = oldTime;
+    last = 0;
+    lastPaintedRevision = -1;
+    $("editorPage").inert = false;
+    $("export").disabled = false;
+    $("export").textContent = "Export video";
+    requestPreview();
+  }
+}
 $('export').onclick=async()=>{try{const blob=await renderAnimation();download(blob,(state.layout==='marketing'?'campaign-ad.':'popout-ad.')+(blob.type.includes('mp4')?'mp4':'webm'));toast('Video downloaded.')}catch(error){toast(error.message)}};
-
-sync();
 
 function assetsReady() {
   if (!FontLibrary.ready(state.captionFont)) return false;
@@ -356,11 +476,56 @@ function assetsReady() {
   if (hasCharacter()) images.push(characterImage());
   return images.filter(Boolean).every((image) => image.complete && image.naturalWidth > 0);
 }
-$('characterUpload').onchange=e=>{const file=e.target.files[0];if(!file)return;if(file.size>12*1024*1024)return toast('Choose an image under 12 MB.');const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{characterUpload=img;state.characterImage=reader.result;state.model='custom';state.characterName=file.name.replace(/\.[^.]+$/,'');sync();toast('Character loaded. Name it and save it to your character collection.')};img.onerror=()=>toast('This image could not be loaded.');img.src=reader.result};reader.readAsDataURL(file)};
+async function prepareImage(file) {
+  if (file.size > 12 * 1024 * 1024) throw Error("Choose an image under 12 MB.");
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    const scale = Math.min(1, 2048 / Math.max(image.naturalWidth, image.naturalHeight));
+    const resized = document.createElement("canvas");
+    resized.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    resized.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    resized.getContext("2d").drawImage(image, 0, 0, resized.width, resized.height);
+    const data = resized.toDataURL("image/webp", .9);
+    const source = loadImage(data);
+    await source.decode();
+    return {source, data};
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function bindImageUpload(id, apply) {
+  $(id).onchange = async event => {
+    const input = event.currentTarget;
+    const file = input.files[0];
+    if (!file) return;
+    const project = state;
+    try {
+      const image = await prepareImage(file);
+      if (state !== project || input.files[0] !== file || recording) return;
+      apply(image, file);
+      sync();
+    } catch (error) {
+      toast(file.size > 12 * 1024 * 1024 ? error.message : "This image could not be loaded.");
+    }
+  };
+}
+
+bindImageUpload("characterUpload", ({source, data}, file) => {
+  characterUpload = source;
+  state.characterImage = data;
+  state.model = "custom";
+  state.characterName = file.name.replace(/\.[^.]+$/, "").slice(0, 60);
+  toast("Character loaded. Name it and save it to your character collection.");
+});
 
 function loadImage(source) {
   if (!source) return null;
   const image = new Image();
+  image.addEventListener("load", () => { lastPaintedRevision = -1; requestPreview(); });
   image.src = source;
   return image;
 }
@@ -371,8 +536,9 @@ function restoreCustomAssets() {
   outerBackdrop = loadImage(state.outerImage);
   brandLogo = loadImage(state.logoImage);
 }
-function uploadAsset(id,key,setter){$(id).onchange=e=>{const file=e.target.files[0];if(!file)return;if(file.size>12*1024*1024)return toast('Choose an image under 12 MB.');const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{state[key]=reader.result;setter(img);sync();toast('Image updated.')};img.onerror=()=>toast('This image could not be loaded.');img.src=reader.result};reader.readAsDataURL(file)}}
-uploadAsset('bgUpload','bgImage',img=>backdrop=img);uploadAsset('outerUpload','outerImage',img=>outerBackdrop=img);uploadAsset('logoUpload','logoImage',img=>brandLogo=img);
+bindImageUpload("bgUpload", ({source, data}) => { backdrop = source; state.bgImage = data; });
+bindImageUpload("outerUpload", ({source, data}) => { outerBackdrop = source; state.outerImage = data; });
+bindImageUpload("logoUpload", ({source, data}) => { brandLogo = source; state.logoImage = data; });
 $('clearBg').onclick=()=>{state.bgImage=null;backdrop=null;$('bgUpload').value='';sync()};$('clearOuter').onclick=()=>{state.outerImage=null;outerBackdrop=null;$('outerUpload').value='';sync()};$('clearLogo').onclick=()=>{state.logoImage=null;brandLogo=null;$('logoUpload').value='';sync()};
 $("resetView").onclick = () => {
   orbit = tilt = state.subjectX = state.subjectY = 0;
@@ -398,6 +564,10 @@ function sanitizeProject() {
   for (const key of ["showCharacter", "aiGenerated", "shadows", "burnSmoke", "burnEmbers"]) {
     if (typeof state[key] !== "boolean") state[key] = defaults[key];
   }
+  state.channelCaptions = state.channelCaptions && typeof state.channelCaptions === "object"
+    ? Object.fromEntries(Object.entries(state.channelCaptions).filter(([key, value]) =>
+      CAPTION_PLATFORMS.includes(key) && typeof value === "string").map(([key, value]) => [key, value.slice(0, 25000)]))
+    : {};
   state.palette = AdPalette.normalize(state.palette) || defaults.palette;
   state.paletteName = typeof state.paletteName === "string" ? state.paletteName.trim().slice(0, 48) : "";
   const options = {
@@ -419,3 +589,41 @@ function sanitizeProject() {
 }
 
 $('resetEffect').onclick=()=>{for(const id of ['weatherType','weatherLayer','weatherDensity','weatherSpeed','weatherWind','burnOrigin','burnIntensity','burnSmoke','burnEmbers','emberAmount'])state[id]=defaults[id];t=0;sync();toast('Effect settings reset.')};
+
+$("safe-zone").onchange = () => { $("safe-zone-guide").hidden = !$("safe-zone").checked; };
+function restartPreview() {
+  t = 0;
+  last = 0;
+  requestPreview();
+}
+
+function selectGalleryCharacter(entry) {
+  orbit = tilt = 0;
+  state.characterName = entry.name;
+  state.model = entry.custom ? "custom" : entry.id;
+  state.characterImage = entry.custom ? entry.src : null;
+  characterUpload = loadImage(state.characterImage);
+  restartPreview();
+  sync();
+}
+
+let exportSymbolsReady = false;
+async function prepareExportSymbols() {
+  if (exportSymbolsReady) return;
+  await document.fonts.load('14px "Noto Emoji"', "🍄");
+  if (!document.fonts.check('14px "Noto Emoji"', "🍄")) return;
+  exportSymbolsReady = true;
+  captionLayout = null;
+  requestPreview();
+}
+
+initCharacterGallery();
+initEmojiPicker();
+initMarketing();
+initSocialPublishing();
+prepareExportSymbols().catch(() => {});
+sync();
+
+export {$, toast, sync, isCharacterModel, selectGalleryCharacter, BUNDLED_ARTWORK, BUNDLED_LOGO,
+  artworkRect, paletteTheme, rounded, text, coverImage, paintArtwork, drawCaption, restoreCustomAssets, restartPreview,
+  requestPreview, prepareExportSymbols, renderAnimation, renderRevision};

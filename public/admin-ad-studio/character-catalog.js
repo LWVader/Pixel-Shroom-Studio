@@ -1,5 +1,5 @@
 // Add future built-in characters here; the searchable gallery updates automatically.
-const CHARACTER_CATALOG=[
+export const CHARACTER_CATALOG=[
 {id:'sir-shroomalot',name:'Sir Shroomalot',category:'Studio',src:'assets/sir-shroomalot.webp'},
 {id:'shroom',name:'Shroom Mascot',category:'Studio',src:'assets/mushroom.png'},
 {id:'robot',name:'Studio Bot',category:'Studio',src:'assets/robot.png'},

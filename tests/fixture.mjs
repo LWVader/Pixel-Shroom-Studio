@@ -6,7 +6,7 @@ export const testPassword = "synthetic-campaign-admin-password-for-tests";
 export const testBuyer = "campaign-buyer@example.test";
 const fakeStripeKey = "sk_test_fixture";
 const contentTypes = {
-  html: "text/html", css: "text/css", js: "text/javascript", json: "application/json",
+  html: "text/html", css: "text/css", js: "text/javascript", mjs: "text/javascript", woff2: "font/woff2", json: "application/json",
   png: "image/png", webp: "image/webp", svg: "image/svg+xml", txt: "text/plain"
 };
 
@@ -59,12 +59,14 @@ export async function createFixture() {
   for (const file of migrations.filter((name) => name.endsWith(".sql")).sort()) {
     db.exec(await readFile(new URL("../migrations/campaign/" + file, import.meta.url), "utf8"));
   }
+  db.exec(await readFile(new URL("../migrations/ad-studio.sql", import.meta.url), "utf8"));
   const requests = [];
   const sessions = new Map();
   const checkoutKeys = new Map();
   const env = {
     ASSETS: {fetch: asset},
     CAMPAIGN_DB: sqliteBinding(db),
+    AD_STUDIO_DB: sqliteBinding(db),
     ADMIN_PASSWORD: testPassword,
     STRIPE_SECRET_KEY: fakeStripeKey,
     CAMPAIGN_ATTENTION_ENABLED: "true",

@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=22.13.0"},
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "test": "npm run test:api && npm run test:e2e",
     "test:api": "node --test tests/worker.test.mjs",
@@ -13,9 +15,13 @@
     "db:info": "npm run wrangler -- d1 info pixel-shroom-campaigns",
     "db:create": "npm run wrangler -- d1 create pixel-shroom-campaigns --update-config=false",
     "db:migrate": "npm run wrangler -- d1 migrations apply CAMPAIGN_DB --remote",
-    "deploy": "npm run db:migrate && npm run wrangler -- deploy"
+    "deploy": "npm run db:migrate && npm run wrangler -- deploy",
+    "build:ad-studio": "node tools/build-ad-studio.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0"
+    "@fontsource/noto-emoji": "^5.3.2",
+    "@playwright/test": "1.63.0",
+    "esbuild": "^0.28.2",
+    "mp4-muxer": "^5.2.2"
   }
 }

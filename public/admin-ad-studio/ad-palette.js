@@ -1,6 +1,6 @@
 "use strict";
 
-const AdPalette = (() => {
+export const AdPalette = (() => {
   const presets = Object.freeze({
     "studio-neon": {name: "Studio Neon", colors: ["#100E15", "#21162F", "#8C4DE8", "#D9FF55", "#F8F4FF"]},
     "warm-print": {name: "Warm Print", colors: ["#261617", "#542A27", "#B64D34", "#FEB04A", "#FFF3DC"]},

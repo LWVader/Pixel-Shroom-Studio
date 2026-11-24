@@ -135,3 +135,73 @@ test("portfolio drafts stay private and published campaigns can be edited or wit
   assert.equal((await site.call(admin, {body: {...release, version: 2, published: false}, headers})).status, 200);
   assert.equal((await site.call(`${published}?id=${id}`)).status, 404);
 });
+
+test("AD publishing requires admin authentication and same-origin writes", async t => {
+  const site = await setup(t);
+  const base = "/api/ad-studio/social/";
+  for (const path of ["config", "history", "status"]) assert.equal((await site.call(base + path)).status, 401);
+  const loginResponse = await login(site);
+  const headers = {Cookie: loginResponse.headers.get("Set-Cookie").split(";")[0]};
+  for (const path of ["connect", "publish", "history", "upload-ticket"]) {
+    const response = await site.call(base + path, {headers, body: {}, requestOrigin: "https://elsewhere.example.test"});
+    assert.equal(response.status, 403);
+  }
+  assert.equal((await site.call(base + "upload-ticket", {headers})).status, 405);
+  assert.deepEqual(await (await site.call(base + "history", {headers})).json(), {submissions: []});
+});
+
+test("AD publishing signs uploads and records account history with caption overrides", async t => {
+  const site = await setup(t);
+  const auth = await login(site);
+  const cookie = auth.headers.get("Set-Cookie").split(";")[0];
+  const base = origin + "/api/ad-studio/social/";
+  site.env.BUFFER_CREDENTIAL_ENCRYPTION_KEY = "f0".repeat(32);
+  site.env.CLOUDINARY_CLOUD_NAME = "test-cloud";
+  site.env.CLOUDINARY_API_KEY = "1234";
+  site.env.CLOUDINARY_API_SECRET = "synthetic-signing-secret";
+  let sent;
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "https://api.buffer.com");
+    const {query, variables} = JSON.parse(options.body);
+    if (query.includes("organizations")) return Response.json({data: {account: {organizations: [{id: "org", name: "Mock"}]}}});
+    if (query.includes("channels(")) return Response.json({data: {channels: [{id: "bsky", service: "bluesky"}]}});
+    assert.match(query, /createPost/);
+    sent = variables.input;
+    return Response.json({data: {createPost: {post: {id: "buffer-post", status: "sent"}}}});
+  };
+  const post = (path, body, headers = {}) => site.request(new Request(base + path, {
+    method: "POST", headers: {Origin: origin, Cookie: cookie, ...headers}, body
+  }));
+  const get = path => site.request(new Request(base + path, {headers: {Cookie: cookie}}));
+  assert.equal((await post("connect", JSON.stringify({bufferKey: "buffer-fixture-key"}), {"Content-Type": "application/json"})).status, 200);
+  const ticket = await (await post("upload-ticket")).json();
+  assert.equal(ticket.endpoint, "https://api.cloudinary.com/v1_1/test-cloud/video/upload");
+  assert.match(ticket.fields.public_id, /^pss-ad-/);
+  assert.equal(ticket.fields.overwrite, "false");
+  assert.equal(ticket.fields.api_key, "1234");
+  const payload = `overwrite=false&public_id=${ticket.fields.public_id}&timestamp=${ticket.fields.timestamp}synthetic-signing-secret`;
+  const expected = Buffer.from(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(payload))).toString("hex");
+  assert.equal(ticket.fields.signature, expected);
+  assert.doesNotMatch(JSON.stringify(ticket), /synthetic-signing-secret/);
+
+  const id = crypto.randomUUID();
+  const form = new FormData();
+  form.set("targets", JSON.stringify([{accountId: "bsky", platform: "bluesky"}]));
+  form.set("title", "Round 2");
+  form.set("caption", "Shared text");
+  form.set("mediaUrl", "https://media.example.test/ad.mp4");
+  form.set("captions", JSON.stringify({bluesky: "a".repeat(301)}));
+  const headers = {"Idempotency-Key": id};
+  assert.equal((await post("publish", form, headers)).status, 400);
+  assert.equal(sent, undefined);
+  form.set("captions", JSON.stringify({bluesky: "Channel-specific text"}));
+  assert.equal((await post("publish", form, headers)).status, 202);
+  assert.equal(sent.text, "Channel-specific text");
+  const {submissions} = await (await get("history")).json();
+  assert.equal(submissions[0].id, id);
+  assert.equal(submissions[0].title, "Round 2");
+  assert.equal((await post("history?id=" + id)).status, 200);
+  assert.deepEqual(await (await get("history")).json(), {submissions: []});
+  assert.equal((await post("publish", form, headers)).status, 200);
+  assert.deepEqual(await (await get("history")).json(), {submissions: []});
+});

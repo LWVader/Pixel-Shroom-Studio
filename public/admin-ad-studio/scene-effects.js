@@ -1,5 +1,5 @@
 /* Deterministic effects: the same timeline position renders the same export frame. */
-const MOTION_PRESETS=[
+export const MOTION_PRESETS=[
 {id:"none",name:"None",description:"Keep the artwork and character still."},
 {id:'burst',name:'Breakthrough',icon:'↗',description:'Move toward the viewer and cross the post border.'},
 {id:'bounce',name:'Bounce',icon:'↕',description:'Bounce out of the post with a springy landing.'},
@@ -12,7 +12,7 @@ const MOTION_PRESETS=[
 {id:'melt',name:'Melt & Restore',icon:'⤓',description:'The scene and subject soften into long image-colored drips, then return to shape.'},
 {id:'glitch',name:'Glitch & Restore',icon:'≋',description:'Split the subject into flickering strips, then restore the clean image.'}
 ];
-const SceneEffects=(()=>{
+export const SceneEffects=(()=>{
 const clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>{x=clamp(x);return x*x*(3-2*x)},hash=n=>{const a=Math.sin(n*127.1+311.7)*43758.5453;return a-Math.floor(a)},TAU=Math.PI*2;
 function envelope(u){return ease((u-.08)/.24)*(1-ease((u-.80)/.20))}
 function motion(time,state){const u=clamp(time/Number(state.duration)),base=envelope(u);let emerge=base,bob=0,angle=0,slideX=0;
@@ -39,10 +39,29 @@ if(state.burnEmbers)for(let i=0;i<Number(state.emberAmount);i++){const age=(u*3+
 let meltLayer=null,meltSubjectLayer=null;
 // Sample the real artwork: no colored overlay or molten-rock texture.
 function meltProgress(u){return ease((u-.06)/.38)*(1-ease((u-.66)/.28))}
-function meltImage(ctx,image,x,y,w,h,amount,maxDrop){const step=6;ctx.save();ctx.imageSmoothingEnabled=true;for(let col=0;col<w;col+=step){const cw=Math.min(step,w-col),nx=col/w,drip=(.2+.8*Math.pow(.5+.5*Math.sin(nx*TAU*5+Math.sin(nx*TAU*2)*1.8),2)),drop=amount*maxDrop*drip;
+function meltImage(ctx,image,x,y,w,h,amount,maxDrop,scale=1){const step=6;ctx.save();ctx.imageSmoothingEnabled=true;for(let col=0;col<w;col+=step){const cw=Math.min(step,w-col),nx=col/w,drip=(.2+.8*Math.pow(.5+.5*Math.sin(nx*TAU*5+Math.sin(nx*TAU*2)*1.8),2)),drop=amount*maxDrop*drip;
 // Soften the whole image, then pull its colors into deep uneven liquid ribbons.
-for(let row=0;row<16;row++){const a=row/16,b=(row+1)/16,sy=a*h,sh=(b-a)*h,dy=y+sy*(1-amount*.34)+drop*Math.pow(a,2),dh=sh*(1-amount*.34)+drop*(Math.pow(b,2)-Math.pow(a,2));ctx.drawImage(image,col,sy,cw,sh,x+col,dy,cw+.35,dh+.5)}}ctx.restore()}
-function melt(ctx,state,time,rect,u){const amount=meltProgress(u,state);if(amount<.001)return;const{x,y,w,h}=rect;if(!meltLayer)meltLayer=document.createElement('canvas');if(meltLayer.width!==w||meltLayer.height!==Math.ceil(h)){meltLayer.width=w;meltLayer.height=Math.ceil(h)}const source=meltLayer.getContext('2d');source.clearRect(0,0,w,h);source.drawImage(ctx.canvas,x,y,w,h,0,0,w,h);ctx.save();ctx.fillStyle=state.cardColor;ctx.fillRect(x,y,w,h);meltImage(ctx,meltLayer,x,y,w,h,amount,h*.34+150);ctx.restore()}
+for(let row=0;row<16;row++){const a=row/16,b=(row+1)/16,sy=a*h,sh=(b-a)*h,dy=y+sy*(1-amount*.34)+drop*Math.pow(a,2),dh=sh*(1-amount*.34)+drop*(Math.pow(b,2)-Math.pow(a,2));ctx.drawImage(image,col*scale,sy*scale,cw*scale,sh*scale,x+col,dy,cw+.35,dh+.5)}}ctx.restore()}
+function melt(ctx, rect, u, postColor) {
+  const amount = meltProgress(u);
+  if (amount < .001) return;
+  const {x, y, w, h} = rect;
+  const scale = ctx.getTransform().a;
+  const width = Math.ceil(w * scale), height = Math.ceil(h * scale);
+  if (!meltLayer) meltLayer = document.createElement("canvas");
+  if (meltLayer.width !== width || meltLayer.height !== height) {
+    meltLayer.width = width;
+    meltLayer.height = height;
+  }
+  const source = meltLayer.getContext("2d");
+  source.clearRect(0, 0, width, height);
+  source.drawImage(ctx.canvas, x * scale, y * scale, w * scale, h * scale, 0, 0, w * scale, h * scale);
+  ctx.save();
+  ctx.fillStyle = postColor;
+  ctx.fillRect(x, y, w, h);
+  meltImage(ctx, meltLayer, x, y, w, h, amount, h * .34 + 150, scale);
+  ctx.restore();
+}
 function weather(ctx,state,time,rect,u,e){const{x,y,w,h}=rect,speed=Number(state.weatherSpeed)/100,wind=Number(state.weatherWind),type=state.weatherType,count=Math.round(Number(state.weatherDensity)*(type==='storm'?1.5:1));ctx.save();ctx.beginPath();ctx.rect(x-7,y,w+14,h+100);ctx.clip();ctx.globalAlpha=e;
 if(type==='storm'){const flash=Math.max(0,1-Math.abs(u-.34)*90)+Math.max(0,1-Math.abs(u-.63)*90);if(flash){ctx.fillStyle=`rgba(230,245,255,${flash*.3})`;ctx.fillRect(x,y,w,h+100);ctx.strokeStyle='#f1fbff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+w*.74,y);ctx.lineTo(x+w*.64,y+90);ctx.lineTo(x+w*.7,y+100);ctx.lineTo(x+w*.53,y+200);ctx.stroke()}}
 for(let i=0;i<count;i++){const z=.3+hash(i+1)*.7,age=(u*speed*(type==='rain'||type==='storm'?(type==='storm'?8:6):2.2)+hash(i+61))%1,xx=x+((hash(i+131)*w+wind*age*2+Math.sin(time*.8+i)*12+w*3)%w),yy=type==='embers'?y+(1-age)*(h+100):y+age*(h+100),size=(3+hash(i+44)*7)*z;ctx.save();ctx.translate(xx,yy);ctx.globalAlpha=e*(.4+z*.6);
@@ -52,11 +71,11 @@ else if(type==='petals'){ctx.rotate(time+hash(i)*TAU);const g=ctx.createRadialGr
 else if(type==='confetti'){ctx.rotate(time*2+hash(i)*TAU);ctx.fillStyle=['#ff856e','#ffe184','#8fdbb2','#b3a0ff','#8ddcf3'][i%5];ctx.fillRect(-size*.35,-size*.65,size*.7,size*1.3)}
 else{ctx.fillStyle=i%3?'#ff9b35':'#ffe695';ctx.shadowColor='#ff891c';ctx.shadowBlur=8;ctx.beginPath();ctx.arc(0,0,size*.28,0,TAU);ctx.fill()}ctx.restore()}ctx.restore()}
 
-function before(ctx,state,time,rect){const u=clamp(time/Number(state.duration)),e=envelope(u);if(state.motion==='page-burn'&&u>.08&&u<1)burn(ctx,state,time,rect,u,e);if(state.motion==='melt')melt(ctx,state,time,rect,u);if(state.motion==='weather'&&state.weatherLayer!=='front')weather(ctx,state,time,rect,u,e)}
+function before(ctx,state,time,rect,postColor){const u=clamp(time/Number(state.duration)),e=envelope(u);if(state.motion==='page-burn'&&u>.08&&u<1)burn(ctx,state,time,rect,u,e);if(state.motion==='melt')melt(ctx,rect,u,postColor);if(state.motion==='weather'&&state.weatherLayer!=='front')weather(ctx,state,time,rect,u,e)}
 function after(ctx,state,time,rect){if(state.motion==='weather'&&state.weatherLayer!=='behind'){const u=clamp(time/Number(state.duration));weather(ctx,state,time+1.2,rect,(u+.41)%1,envelope(u)*(state.weatherLayer==='both'?.6:1))}}
-function subject(ctx,layer,state,time,bounds){const u=clamp(time/Number(state.duration)),e=envelope(u);ctx.save();
-if(state.motion==='melt'){const amount=meltProgress(u,state);if(amount>.001){const top=Math.max(0,bounds.cy-bounds.size*.7),bottom=Math.min(layer.height,bounds.cy+bounds.size*.7),height=bottom-top;ctx.beginPath();ctx.rect(0,0,layer.width,layer.height);ctx.clip();if(!meltSubjectLayer)meltSubjectLayer=document.createElement('canvas');const crop=meltSubjectLayer;if(crop.width!==layer.width||crop.height!==Math.ceil(height)){crop.width=layer.width;crop.height=Math.ceil(height)}crop.getContext('2d').clearRect(0,0,crop.width,crop.height);crop.getContext('2d').drawImage(layer,0,top,layer.width,height,0,0,layer.width,height);meltImage(ctx,crop,0,top,layer.width,height,amount,Math.min(330,bounds.size*.65));ctx.restore();return}}
-if(state.motion==='explode'){const blast=u<.52?ease((u-.27)/.25):1-ease((u-.52)/.27);if(blast>.001){const size=Math.max(bounds.size*1.12,(bounds.width||0)*1.1),objectHeight=Math.max(bounds.size*1.3,(bounds.height||0)*1.15),x=Math.max(0,bounds.cx-size/2),y=Math.max(0,bounds.cy-objectHeight/2),w=Math.min(size,layer.width-x),h=Math.min(objectHeight,layer.height-y),cols=10,rows=12,tw=w/cols,th=h/rows;for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const id=r*cols+c,sx=x+c*tw,sy=y+r*th,cx=sx+tw/2,cy=sy+th/2,dx=(c-(cols-1)/2)*(25+hash(id)*24),dy=(r-(rows-1)/2)*(18+hash(id+90)*24);ctx.save();ctx.translate(cx+dx*blast,cy+dy*blast+Math.sin(blast*Math.PI)*55);ctx.rotate((hash(id+70)-.5)*blast*2.7);ctx.globalAlpha=1-blast*.13;ctx.drawImage(layer,sx,sy,tw,th,-tw/2,-th/2,tw,th);ctx.restore()}ctx.restore();return}}
-if(state.motion==='glitch'){const intensity=(1-ease((u-.7)/.14))*e*.8,frame=Math.floor(u*45);if(intensity>.03){const bands=24,height=layer.height/bands;for(let i=0;i<bands;i++){const off=(hash(i+frame*43)-.5)*110*intensity;ctx.drawImage(layer,0,i*height,layer.width,height,off,i*height,layer.width,height);if(i%4===0&&i*height>bounds.cy-bounds.size*.6&&i*height<bounds.cy+bounds.size*.6){ctx.globalAlpha=.3*intensity;ctx.fillStyle=i%8?'#ff64c6':'#74ffe9';ctx.fillRect(bounds.cx-bounds.size*.4+off,i*height,bounds.size*.8,2);ctx.globalAlpha=1}}ctx.restore();return}}
-ctx.drawImage(layer,0,0);ctx.restore()}
+function subject(ctx,layer,state,time,bounds){const u=clamp(time/Number(state.duration)),e=envelope(u),scale=ctx.getTransform().a,layerWidth=layer.width/scale,layerHeight=layer.height/scale;ctx.save();
+if(state.motion==='melt'){const amount=meltProgress(u);if(amount>.001){const top=Math.max(0,bounds.cy-bounds.size*.7),bottom=Math.min(layerHeight,bounds.cy+bounds.size*.7),height=bottom-top;ctx.beginPath();ctx.rect(0,0,layerWidth,layerHeight);ctx.clip();if(!meltSubjectLayer)meltSubjectLayer=document.createElement('canvas');const crop=meltSubjectLayer;if(crop.width!==layer.width||crop.height!==Math.ceil(height*scale)){crop.width=layer.width;crop.height=Math.ceil(height*scale)}crop.getContext('2d').clearRect(0,0,crop.width,crop.height);crop.getContext('2d').drawImage(layer,0,top*scale,layer.width,height*scale,0,0,layer.width,height*scale);meltImage(ctx,crop,0,top,layerWidth,height,amount,Math.min(330,bounds.size*.65),scale);ctx.restore();return}}
+if(state.motion==='explode'){const blast=u<.52?ease((u-.27)/.25):1-ease((u-.52)/.27);if(blast>.001){const size=Math.max(bounds.size*1.12,(bounds.width||0)*1.1),objectHeight=Math.max(bounds.size*1.3,(bounds.height||0)*1.15),x=Math.max(0,bounds.cx-size/2),y=Math.max(0,bounds.cy-objectHeight/2),w=Math.min(size,layerWidth-x),h=Math.min(objectHeight,layerHeight-y),cols=10,rows=12,tw=w/cols,th=h/rows;for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const id=r*cols+c,sx=x+c*tw,sy=y+r*th,cx=sx+tw/2,cy=sy+th/2,dx=(c-(cols-1)/2)*(25+hash(id)*24),dy=(r-(rows-1)/2)*(18+hash(id+90)*24);ctx.save();ctx.translate(cx+dx*blast,cy+dy*blast+Math.sin(blast*Math.PI)*55);ctx.rotate((hash(id+70)-.5)*blast*2.7);ctx.globalAlpha=1-blast*.13;ctx.drawImage(layer,sx*scale,sy*scale,tw*scale,th*scale,-tw/2,-th/2,tw,th);ctx.restore()}ctx.restore();return}}
+if(state.motion==='glitch'){const intensity=(1-ease((u-.7)/.14))*e*.8,frame=Math.floor(u*45);if(intensity>.03){const bands=24,height=layerHeight/bands;for(let i=0;i<bands;i++){const off=(hash(i+frame*43)-.5)*110*intensity;ctx.drawImage(layer,0,i*height*scale,layer.width,height*scale,off,i*height,layerWidth,height);if(i%4===0&&i*height>bounds.cy-bounds.size*.6&&i*height<bounds.cy+bounds.size*.6){ctx.globalAlpha=.3*intensity;ctx.fillStyle=i%8?'#ff64c6':'#74ffe9';ctx.fillRect(bounds.cx-bounds.size*.4+off,i*height,bounds.size*.8,2);ctx.globalAlpha=1}}ctx.restore();return}}
+ctx.drawImage(layer,0,0,layerWidth,layerHeight);ctx.restore()}
 return{motion,before,subject,after,fireReady:()=>true};})();

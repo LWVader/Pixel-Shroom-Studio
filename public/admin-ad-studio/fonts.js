@@ -1,6 +1,106 @@
-/* Complete Google Fonts family catalog; download only the selected font. */
-const FontLibrary=(()=>{const system=['Arial','Comic Sans MS','Verdana','Georgia','Times New Roman','Courier New','Trebuchet MS','Tahoma'],known=new Set(system),loaded=new Set(system),pending=new Map();let catalog=[];
-function options(){const select=document.getElementById('captionFont'),query=document.getElementById('fontSearch').value.toLowerCase(),current=typeof state==='undefined'?'Arial':state.captionFont;select.replaceChildren();const list=[...system.map(family=>({family,category:'System'})),...catalog].filter(f=>f.family.toLowerCase().includes(query)||f.family===current);for(const item of list){const o=document.createElement('option');o.value=item.family;o.textContent=item.family+' · '+item.category;select.append(o)}select.value=current;document.getElementById('fontCount').textContent=list.length.toLocaleString()+' matching fonts · '+catalog.length.toLocaleString()+' Google families + 8 system fonts'}
-async function load(family){if(loaded.has(family))return true;if(pending.has(family))return pending.get(family);if(!known.has(family))return false;const task=new Promise(resolve=>{const link=document.createElement('link');link.rel='stylesheet';link.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(family)+'&display=swap';let done=false;const finish=ok=>{if(done)return;done=true;clearTimeout(timer);if(ok)loaded.add(family);else pending.delete(family);resolve(ok)};const timer=setTimeout(()=>finish(false),20000);link.onerror=()=>finish(false);link.onload=async()=>{try{const faces=await document.fonts.load('400 28px "'+family+'"');finish(faces.length>0&&document.fonts.check('400 28px "'+family+'"'))}catch{finish(false)}};document.head.append(link)});pending.set(family,task);return task}
-function sync(s,palette){const family=s.captionFont||'Arial';document.getElementById('captionFont').value=family;document.getElementById('chosenFontLabel').textContent=family;const preview=document.getElementById('bottomCopyPreview');preview.style.fontFamily='"'+family+'", sans-serif';preview.style.color=palette.ink;preview.style.background=palette.post;document.getElementById('captionCopyPreview').textContent=s.headline;document.getElementById('captionCopyPreview').style.fontWeight=s.captionWeight;document.getElementById('captionCopyPreview').style.textAlign=s.captionAlign;const button=document.getElementById('buttonCopyPreview');button.textContent=s.cta;button.style.color=palette.buttonInk;button.style.background=palette.button;document.getElementById('websiteCopyPreview').textContent=s.website;document.getElementById('headline').style.fontFamily=preview.style.fontFamily;document.getElementById('fontStatus').textContent=loaded.has(family)?'Font ready for preview and export.':'Loading '+family+'…';load(family).then(ok=>{if(typeof state!=='undefined'&&state.captionFont===family)document.getElementById('fontStatus').textContent=ok?'Font ready for preview and export.':'Font could not load. Choose another font or a system font before export.'})}
-document.getElementById('captionFont').addEventListener('change',()=>document.getElementById('fontPicker').open=false);document.getElementById('fontSearch').oninput=options;fetch('font-catalog.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(data=>{catalog=data;for(const f of data)known.add(f.family);options()}).catch(()=>{options();document.getElementById('fontStatus').textContent='Font catalog unavailable. System fonts still work.'});return{sync,ready:f=>loaded.has(f),valid:f=>known.has(f),load};})();
+import {state, requestPreview} from "./app.js";
+
+export const FontLibrary = (() => {
+  const system = ["Arial", "Comic Sans MS", "Verdana", "Georgia", "Times New Roman", "Courier New", "Trebuchet MS", "Tahoma"];
+  const known = new Set(system);
+  const loaded = new Map(system.map(family => [family, "system"]));
+  const pending = new Map();
+  let catalog = [];
+  let generation = 0;
+  const get = id => document.getElementById(id);
+
+  function options() {
+    const select = get("captionFont");
+    const query = get("fontSearch").value.toLowerCase();
+    const current = typeof state === "undefined" ? "Arial" : state.captionFont;
+    const list = [...system.map(family => ({family, category: "System"})), ...catalog]
+      .filter(({family}) => family.toLowerCase().includes(query) || family === current);
+    select.replaceChildren(...list.map(({family, category}) => new Option(family + " · " + category, family)));
+    select.value = current;
+    get("fontCount").textContent = list.length.toLocaleString() + " matching fonts";
+  }
+
+  async function stylesheet(family, weights) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=" + encodeURIComponent(family) + ":wght@" + weights.join(";") + "&display=swap";
+    try {
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(Error()), 8000);
+        link.onload = () => { clearTimeout(timer); resolve(); };
+        link.onerror = () => { clearTimeout(timer); reject(Error()); };
+        document.head.append(link);
+      });
+      const faces = await Promise.all(weights.map(weight => document.fonts.load(weight + ' 28px "' + family + '"')));
+      if (faces.some(group => !group.length)) throw Error();
+      return true;
+    } catch {
+      link.remove();
+      return false;
+    }
+  }
+
+  async function load(family) {
+    if (loaded.has(family)) return loaded.get(family);
+    if (pending.has(family)) return pending.get(family);
+    if (!known.has(family)) return "";
+    const task = (async () => {
+      const result = await stylesheet(family, [400, 700]) ? "both" : await stylesheet(family, [400]) ? "regular" : "";
+      if (result) {
+        loaded.set(family, result);
+        generation++;
+      }
+      pending.delete(family);
+      return result;
+    })();
+    pending.set(family, task);
+    return task;
+  }
+
+  function sync(s, palette) {
+    const family = s.captionFont || "Arial";
+    get("captionFont").value = family;
+    get("chosenFontLabel").textContent = family;
+    const preview = get("bottomCopyPreview");
+    preview.style.fontFamily = '"' + family + '", sans-serif';
+    preview.style.color = palette.ink;
+    preview.style.background = palette.post;
+    get("captionCopyPreview").textContent = s.headline;
+    get("captionCopyPreview").style.fontWeight = weight(family, s.captionWeight);
+    get("captionCopyPreview").style.textAlign = s.captionAlign;
+    const button = get("buttonCopyPreview");
+    button.textContent = s.cta;
+    button.style.color = palette.buttonInk;
+    button.style.background = palette.button;
+    get("websiteCopyPreview").textContent = s.website;
+    get("headline").style.fontFamily = preview.style.fontFamily;
+    get("fontStatus").textContent = loaded.has(family) ? "Font ready for preview and export." : "Loading " + family + "…";
+    const wasLoaded = loaded.has(family);
+    load(family).then(result => {
+      if (state.captionFont !== family) return;
+      get("fontStatus").textContent = result === "regular" ? "This family uses regular weight in the ad." :
+        result ? "Font ready for preview and export." : "Font could not load. Choose a system font before export.";
+      if (!wasLoaded && result) {
+        get("captionCopyPreview").style.fontWeight = weight(family, s.captionWeight);
+        requestPreview();
+      }
+    });
+  }
+
+  const weight = (family, value) => loaded.get(family) === "regular" ? "400" : value;
+  get("captionFont").addEventListener("change", () => { get("fontPicker").open = false; });
+  get("fontSearch").oninput = options;
+  const catalogReady = fetch("font-catalog.json").then(response => {
+    if (!response.ok) throw Error();
+    return response.json();
+  }).then(data => {
+    catalog = data;
+    for (const {family} of data) known.add(family);
+    options();
+  }).catch(() => {
+    options();
+    get("fontStatus").textContent = "Font catalog unavailable. System fonts still work.";
+  });
+  return {sync, load, weight, catalogReady, ready: family => loaded.has(family), valid: family => known.has(family),
+    get generation() { return generation; }};
+})();

@@ -1,6 +1,10 @@
+import {$, state, BUNDLED_ARTWORK, BUNDLED_LOGO, artworkRect, paletteTheme, rounded, text, coverImage,
+  paintArtwork, drawCaption, restoreCustomAssets, restartPreview, recording, renderRevision, sync} from "./app.js";
+import {AdPalette} from "./ad-palette.js";
+
 'use strict';
 
-function renderMarketingAd(ctx, state, time, height, logo) {
+export function renderMarketingAd(ctx, state, time, height, logo) {
   const {x: margin, w: width, y: mediaTop, h: mediaHeight, edge: mediaBottom} = artworkRect(height);
   const {ink, post, outline, button, buttonInk} = paletteTheme;
 
@@ -27,12 +31,16 @@ function renderMarketingAd(ctx, state, time, height, logo) {
   paintArtwork(margin, mediaTop, width, mediaHeight, zoom);
   ctx.restore();
 
-  drawCaption({...state, textColor: ink}, margin, mediaBottom + 30, width, height - mediaBottom - 207);
+  const story = state.ratio === "story";
+  const copyX = story ? 88 : margin;
+  const copyWidth = 864 - 2 * copyX;
+  const buttonY = story ? height * .77 - 115 : height - 148;
+  drawCaption({...state, textColor: ink}, copyX, mediaBottom + 30, copyWidth, buttonY - mediaBottom - 48);
   if (state.cta.trim()) {
-    rounded(margin, height - 148, width, 62, 11, button);
-    text(state.cta, margin + 24, height - 108, 23, buttonInk, 700, state.captionFont, width - 48);
+    rounded(copyX, buttonY, copyWidth, 62, 11, button);
+    text(state.cta, copyX + 24, buttonY + 40, 23, buttonInk, 700, state.captionFont, copyWidth - 48);
   }
-  text(state.website, margin, height - 53, 18, ink, 400, state.captionFont, width);
+  text(state.website, copyX, story ? buttonY + 91 : height - 53, 18, ink, 400, state.captionFont, copyWidth);
 }
 
 const studioDomain = "pixelshroomstudio.com";
@@ -65,7 +73,7 @@ function applyMarketingAd(kind, campaign, artwork) {
   state.bgImage = artwork;
   state.logoImage ||= BUNDLED_LOGO;
   restoreCustomAssets();
-  t = 0;
+  restartPreview();
   sync();
 }
 
@@ -81,6 +89,7 @@ async function campaignArtwork(campaign) {
   });
 }
 
+export function initMarketing() {
 const creative = $("creative-layout");
 const campaignPicker = $("marketing-campaign");
 const campaignMore = $("marketing-more");
@@ -113,7 +122,7 @@ async function loadCampaigns() {
   finally { campaignMore.disabled = false; }
 }
 
-async function loadMarketingPreset() {
+async function loadMarketingPreset(initialRevision) {
   if (recording) return;
   const kind = preset.value;
   const campaign = kind === "spotlight" ? publishedCampaigns.get(campaignPicker.value) : null;
@@ -124,7 +133,8 @@ async function loadMarketingPreset() {
   presetButton.disabled = true;
   try {
     const artwork = campaign ? await campaignArtwork(campaign) : BUNDLED_ARTWORK;
-    if (recording || creative.value !== "marketing" || preset.value !== kind) return;
+    if (recording || creative.value !== "marketing" || preset.value !== kind ||
+        (typeof initialRevision === "number" && initialRevision !== renderRevision)) return;
     applyMarketingAd(kind, campaign, artwork);
     adStatus.textContent = "Template loaded. Edit the copy, then export or publish.";
   } catch (error) {
@@ -156,18 +166,21 @@ applyMarketingAd("offer", null, BUNDLED_ARTWORK);
 void loadCampaigns();
 const requestedCampaign = new URL(location.href).searchParams.get("campaign");
 if (/^[a-f0-9-]{36}$/.test(requestedCampaign || "")) {
+  const initialRevision = renderRevision;
   void (async () => {
     try {
       const response = await fetch(`/api/portfolio?id=${encodeURIComponent(requestedCampaign)}`);
       if (!response.ok) throw new Error("This campaign is no longer published.");
       const item = await response.json();
+      if (renderRevision !== initialRevision) return;
       addCampaign(item);
       campaignPicker.value = item.id;
       preset.value = "spotlight";
       syncSpotlightSettings();
-      await loadMarketingPreset();
+      await loadMarketingPreset(initialRevision);
     } catch (error) {
       adStatus.textContent = error.message;
     }
   })();
+}
 }

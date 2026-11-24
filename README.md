@@ -69,7 +69,7 @@ These files contain buyer data. Keep them outside the public assets folder and s
 
 Click the small mushroom logo in the homepage footer to sign in to Campaign Admin. **Open AD Studio** opens the restored editor, assets, and video export tools under the same administrator sign-in.
 
-For social publishing, reuse the previous Worker’s `AD_STUDIO_DB` binding and `BUFFER_CREDENTIAL_ENCRYPTION_KEY` secret where available. If your saved connection uses an old Supabase administrator UUID, set `AD_STUDIO_LEGACY_USER_ID` to that UUID. Otherwise reconnect Buffer under the new administrator identity. For a fresh setup, create the AD Studio D1 database, add the binding, and apply `migrations/ad-studio.sql` to that database. Store a randomly generated 32-byte key encoded as 64 hex characters in the Worker secret `BUFFER_CREDENTIAL_ENCRYPTION_KEY`. Connect Buffer and, if needed, Cloudinary from AD Studio.
+For social publishing, reuse the previous Worker’s `AD_STUDIO_DB` binding and `BUFFER_CREDENTIAL_ENCRYPTION_KEY` secret where available. If your saved connection uses an old Supabase administrator UUID, set `AD_STUDIO_LEGACY_USER_ID` to that UUID. Otherwise reconnect Buffer under the new administrator identity. For a fresh setup, create the AD Studio D1 database, add the binding, and apply `migrations/ad-studio.sql` to that database. Store a randomly generated 32-byte key encoded as 64 hex characters in the Worker secret `BUFFER_CREDENTIAL_ENCRYPTION_KEY`. Connect Buffer from AD Studio. To enable direct video uploads, set the Worker variable `CLOUDINARY_CLOUD_NAME` and the Worker secrets `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET`. Existing saved Cloudinary connections still work. You can also publish using a public HTTPS MP4 or MOV file URL.
 
 ### Track and publish campaigns
 
@@ -79,9 +79,20 @@ Use **New campaign** in Campaign publisher to add artwork and a case study. **Sa
 
 ### Create ads for the site
 
-Choose **Create ad** on a published campaign to load its artwork, tagline and link into AD Studio. Use **Attention Pack promotion** or **Studio portfolio promotion** when you want a general studio ad. Choose a square, portrait, or story format, edit the copy, and download a PNG or export the video. The **Publish to social** tab uses the existing Buffer connection. Choose **Pop-out editor** to work with the original character and product layouts.
+Choose **Create ad** on a published campaign to load its artwork, tagline and link into AD Studio. Use **Attention Pack promotion** or **Studio portfolio promotion** when you want a general studio ad. Choose a square, portrait, or story format, edit the copy, and download a PNG or export the video. The **Publish to social** tab uses the existing Buffer connection. Choose **Pop-out editor** for character layouts. PNGs and videos use a 1080 px canvas width. The story safe-zone guide is visible in the preview only. The editor prefers frame-by-frame MP4 export and uses browser recording when needed. Buffer publishing requires MP4/MOV and supports per-platform captions.
 
 If you're upgrading an existing deployment, apply the pending campaign migrations through `0004_portfolio_industries.sql` before deploying this version. The industry migration preserves existing campaigns. `npm.cmd run deploy` applies the migrations and deploys the Worker. If Git builds still deploy with `npx wrangler deploy`, run `npm.cmd run db:migrate` first.
+
+### Applying the AD Studio Round 2 update
+
+Copy the update archive over your project using the paths inside the ZIP. Remove these obsolete files from your project if present:
+
+- `public/admin-ad-studio/products.js`
+- `public/admin-ad-studio/product-cutouts.js`
+- `public/admin-ad-studio/assets/frame-*.png`
+- `public/admin-ad-studio/assets/cube-*.png`
+
+The archive includes prebuilt AD Studio assets. After changing AD Studio source files, run `npm ci` and `npm run build:ad-studio` before deploying. Publish the updated Worker and static assets together. This update uses the existing publishing tables.
 
 ## Email a finished ZIP
 

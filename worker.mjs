@@ -251,14 +251,17 @@ async function portfolioRoute(request, env, url, admin) {
   }
 }
 
-const socialMethods = new Map([["config", "GET"], ["status", "GET"], ["connect", "POST"], ["publish", "POST"]]);
+const socialMethods = new Map([
+  ["config", ["GET"]], ["status", ["GET"]], ["connect", ["POST"]], ["publish", ["POST"]],
+  ["history", ["GET", "POST"]], ["upload-ticket", ["POST"]]
+]);
 
 async function socialRoute(request, env, url, user) {
   const action = url.pathname.slice("/api/ad-studio/social/".length);
-  const method = socialMethods.get(action);
-  if (!method) return apiError("Unknown publishing action.", 404);
-  if (request.method !== method) return methodNotAllowed(method);
-  if (method === "POST" && request.headers.get("Origin") !== url.origin) {
+  const methods = socialMethods.get(action);
+  if (!methods) return apiError("Unknown publishing action.", 404);
+  if (!methods.includes(request.method)) return methodNotAllowed(methods.join(", "));
+  if (request.method === "POST" && request.headers.get("Origin") !== url.origin) {
     return apiError("Same-origin requests required.", 403);
   }
   if (!env.AD_STUDIO_DB) return apiError("Connect the AD Studio database to enable social publishing.", 503);
@@ -278,6 +281,7 @@ function adminResponse(response, isEditor) {
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
       "media-src 'self' blob: data:",
+      "connect-src 'self' https://api.cloudinary.com",
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",

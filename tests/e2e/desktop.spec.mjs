@@ -124,3 +124,45 @@ test("publishes a campaign and starts a marketing ad from its artwork", async ({
   await expect(page.locator("#characterSection")).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
+
+test("AD Studio export and publishing validation share the editor state", async ({page}) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/admin.html");
+  await page.getByLabel("Administrator password").fill(testPassword);
+  await page.getByRole("button", {name: "Sign in", exact: true}).click();
+  await page.getByRole("link", {name: "Open AD Studio"}).click();
+  await page.getByLabel("Aspect ratio").selectOption("story");
+  await page.getByLabel("Show 9:16 safe zone").check();
+  await expect(page.locator("#safe-zone-guide")).toBeVisible();
+  const image = page.getByRole("img", {name: "Animated advertisement preview"});
+  await expect(image).toHaveAttribute("width", "1080");
+  await expect(image).toHaveAttribute("height", "1920");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", {name: "Download PNG frame"}).click()
+  ]);
+  const {readFile} = await import("node:fs/promises");
+  const png = await readFile(await download.path());
+  expect(png.readUInt32BE(16)).toBe(1080);
+  expect(png.readUInt32BE(20)).toBe(1920);
+
+  await page.route("**/api/ad-studio/social/config", route => route.fulfill({
+    json: {configured: true, platforms: [{id: "bluesky", accountId: "fixture", name: "Bluesky", label: "Studio", connected: true}]}
+  }));
+  await page.getByRole("button", {name: "Publish to social"}).click();
+  await page.getByRole("checkbox", {name: /Bluesky/}).check();
+  await page.locator("#captionOverridesSection > summary").click();
+  const url = page.locator("#publicMediaUrl");
+  await url.fill("http://example.test/ad.mp4");
+  await expect(url).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#sendSocial")).toBeDisabled();
+  await url.fill("https://example.test/ad.mp4");
+  await expect(page.locator("#sendSocial")).toBeEnabled();
+  await page.getByLabel("Bluesky caption").fill("a".repeat(301));
+  await expect(page.locator("#channelLengthWarning")).toContainText("Bluesky");
+  await expect(page.locator("#sendSocial")).toBeDisabled();
+  await page.getByLabel("Bluesky caption").fill("A short caption");
+  await expect(page.locator("#sendSocial")).toBeEnabled();
+  expect(errors).toEqual([]);
+});
