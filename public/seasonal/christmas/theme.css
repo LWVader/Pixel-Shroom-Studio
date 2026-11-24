@@ -1,0 +1,385 @@
+.pss-christmas {
+  --xmas-cream: #fff5dc;
+  --xmas-gold: #ffcf78;
+  --xmas-muted: #e9dfcf;
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  padding-block: clamp(6.4rem, 9vw, 9rem) 1.25rem;
+  color: var(--xmas-cream);
+  border-block: 0;
+  background:
+    radial-gradient(ellipse at 26% 48%, #1a483c 0%, transparent 63%),
+    radial-gradient(ellipse at 91% 25%, #3c202b 0%, transparent 53%),
+    #112b26;
+}
+
+.pss-christmas::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: .32;
+  background-image: radial-gradient(circle, #ffefbd 1px, transparent 1.6px), radial-gradient(circle, #ffefbd 1px, transparent 1.5px);
+  background-size: 113px 83px, 161px 127px;
+  background-position: 18px 24px, 73px 45px;
+  mask-image: linear-gradient(#0009, #000, #0003);
+}
+
+.pss-christmas::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 6px;
+  background: repeating-linear-gradient(-54deg, #d74553 0 11px, #ffebcb 11px 20px, #285847 20px 31px, #ffebcb 31px 39px);
+}
+
+.pss-christmas .offer {
+  column-gap: clamp(2rem, 5vw, 5rem);
+  row-gap: 0;
+}
+
+.pss-christmas .offer-copy .eyebrow {
+  color: var(--xmas-gold);
+}
+
+.pss-christmas .offer-copy .eyebrow::before {
+  content: "";
+  width: .67rem;
+  height: .67rem;
+  flex: none;
+  background: var(--xmas-gold);
+  clip-path: polygon(50% 0, 63% 37%, 100% 50%, 63% 63%, 50% 100%, 37% 63%, 0 50%, 37% 37%);
+}
+
+.pss-christmas .offer-copy h2 {
+  margin-top: .8rem;
+  text-shadow: 0 3px 0 #0e261c;
+}
+
+.pss-christmas .offer-copy > p:last-child,
+.pss-christmas .price span,
+.pss-christmas .status {
+  color: var(--xmas-muted);
+}
+
+.pss-christmas .price-card {
+  position: relative;
+  border-color: #dc7981;
+  background:
+    linear-gradient(95deg, transparent 87%, #ffd78b35 87% 91%, #f3aa6559 91% 92%, transparent 92%),
+    repeating-linear-gradient(135deg, transparent 0 19px, #fff1de0a 19px 20px, transparent 20px 24px),
+    linear-gradient(145deg, #722e41, #3a1b2d);
+  box-shadow: 0 20px 48px #080e1155, inset 0 0 0 4px #1f11192e;
+}
+
+.pss-christmas .price b,
+.pss-christmas .checks li::before {
+  color: var(--xmas-gold);
+}
+
+.pss-christmas .checks {
+  color: var(--xmas-cream);
+}
+
+.pss-christmas [data-checkout] {
+  border-color: var(--xmas-gold);
+  background: var(--xmas-gold);
+  color: #331d15;
+}
+
+.pss-christmas [data-checkout]:hover:not(:disabled) { background: #ffe2a7; }
+.pss-christmas :focus-visible { outline-color: var(--xmas-cream); }
+
+/* Four hanging cords with staggered bulbs. */
+.pss-christmas .pss-xmas-garland {
+  position: absolute;
+  inset: -39px -3% auto;
+  display: flex;
+  pointer-events: none;
+}
+
+.pss-christmas .pss-xmas-cord {
+  position: relative;
+  display: flex;
+  flex: 1 0 25%;
+  justify-content: space-evenly;
+  height: 95px;
+  border-bottom: 3px solid #719886;
+  border-radius: 0 0 50% 50%;
+  box-shadow: 0 2px 1px #080e0f95;
+}
+
+.pss-christmas .pss-xmas-cord i {
+  --xmas-bulb: #ffa863;
+  position: relative;
+  align-self: end;
+  width: 10px;
+  height: 16px;
+  border-radius: 48% 48% 55% 55%;
+  background: radial-gradient(ellipse at 38% 35%, #fff9db 0%, var(--xmas-bulb) 60%);
+  box-shadow: 0 2px 12px 2px var(--xmas-bulb);
+  transform-origin: center -4px;
+  margin-bottom: calc(-19px + var(--xmas-raise, 0px));
+  animation: pss-xmas-bulb 4.8s ease-in-out infinite alternate;
+}
+
+.pss-christmas .pss-xmas-cord i::before {
+  position: absolute;
+  content: "";
+  background: #8aa590;
+  border-radius: 2px 2px 0 0;
+  inset: -4px 1px auto;
+  height: 5px;
+}
+
+.pss-christmas .pss-xmas-cord i:nth-child(1),
+.pss-christmas .pss-xmas-cord i:nth-child(7) { --xmas-raise: 18px; }
+.pss-christmas .pss-xmas-cord i:nth-child(2),
+.pss-christmas .pss-xmas-cord i:nth-child(6) { --xmas-raise: 6px; }
+.pss-christmas .pss-xmas-cord i:nth-child(3n + 1) { --xmas-bulb: #ff7884; animation-delay: -1.1s; }
+.pss-christmas .pss-xmas-cord i:nth-child(3n + 2) { --xmas-bulb: #6af4bb; animation-delay: -3.6s; }
+.pss-christmas .pss-xmas-cord:nth-child(even) i:nth-child(3n) { --xmas-bulb: #9ad7ff; animation-delay: -2.5s; }
+
+/* Satin gift bow with independently moving loops and tails. */
+.pss-christmas .pss-xmas-bow {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  top: -22px;
+  right: 6%;
+  width: 98px;
+  height: 66px;
+  transform: rotate(14deg);
+  filter: drop-shadow(0 5px 4px #37142090);
+  animation: pss-xmas-bow 5.8s ease-in-out infinite;
+}
+
+.pss-christmas .pss-xmas-garland-bow {
+  top: 0;
+  right: calc(50% - 49px);
+  scale: .74;
+  filter: hue-rotate(38deg) saturate(.9) drop-shadow(0 5px 4px #221b0e90);
+  animation-delay: -2.6s;
+}
+
+.pss-christmas .pss-xmas-bow i {
+  position: absolute;
+  top: 5px;
+  width: 46px;
+  height: 29px;
+  border: 2px solid #ffad9d;
+  background: radial-gradient(ellipse at 58% 69%, #89233b 16%, #cc4052 44%, #ff7c7f 75%, #e5495d 100%);
+}
+
+.pss-christmas .pss-xmas-bow i:first-child {
+  left: 2px;
+  border-radius: 52% 77% 13% 46%;
+  transform: rotate(12deg);
+}
+
+.pss-christmas .pss-xmas-bow i:nth-child(2) {
+  right: 2px;
+  border-radius: 77% 52% 46% 13%;
+  transform: rotate(-12deg);
+}
+
+.pss-christmas .pss-xmas-bow b {
+  display: block;
+  position: absolute;
+  inset: 19px auto auto 39px;
+  width: 20px;
+  height: 19px;
+  border-radius: 35%;
+  background: linear-gradient(130deg, #ffae9e, #ef586a 44%, #a62f48);
+}
+
+.pss-christmas .pss-xmas-bow::before,
+.pss-christmas .pss-xmas-bow::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 46px;
+  top: 24px;
+  background: linear-gradient(100deg, #a93148, #ff818a 63%, #b7364d);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+  transform-origin: top center;
+}
+
+.pss-christmas .pss-xmas-bow::before { left: 39px; rotate: 28deg; }
+.pss-christmas .pss-xmas-bow::after { right: 40px; rotate: -30deg; animation: pss-xmas-tail 3.6s ease-in-out infinite; }
+
+/* A tiny snowman who keeps tossing the same ornament. */
+.pss-christmas .pss-xmas-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  min-height: 60px;
+  margin-top: .65rem;
+}
+
+.pss-christmas .pss-xmas-motion {
+  padding: .6rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--xmas-muted);
+  font-size: .78rem;
+  text-underline-offset: .2em;
+  text-decoration: underline;
+}
+
+.pss-christmas .pss-xmas-snowman {
+  display: block;
+  position: relative;
+  width: 65px;
+  height: 68px;
+  margin-inline-start: auto;
+  pointer-events: none;
+  transform-origin: center bottom;
+  animation: pss-xmas-snowman 4.2s ease-in-out infinite;
+}
+
+.pss-christmas .pss-xmas-snowman i { position: absolute; display: block; }
+
+.pss-christmas .pss-xmas-snow-body,
+.pss-christmas .pss-xmas-snow-face {
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fff7df 40%, #bbd7cd 83%);
+}
+
+.pss-christmas .pss-xmas-snow-body { inset: auto auto 0 7px; width: 46px; height: 35px; }
+.pss-christmas .pss-xmas-snow-body::before {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  inset: 14px auto auto 24px;
+  border-radius: 50%;
+  background: #244537;
+  box-shadow: -1px 8px #244537;
+}
+
+.pss-christmas .pss-xmas-snow-face { inset: 13px auto auto 12px; width: 35px; height: 29px; rotate: -8deg; }
+.pss-christmas .pss-xmas-snow-face::before {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 5px;
+  inset: 8px auto auto 9px;
+  border-radius: 50%;
+  background: #244537;
+  box-shadow: 12px -1px #244537;
+  animation: pss-xmas-blink 4.2s linear infinite;
+}
+.pss-christmas .pss-xmas-snow-face::after {
+  content: "";
+  position: absolute;
+  inset: 12px 4px auto auto;
+  width: 13px;
+  height: 7px;
+  background: #f98c54;
+  clip-path: polygon(0 0, 100% 38%, 0 100%);
+}
+
+.pss-christmas .pss-xmas-hat {
+  inset: 4px auto auto 15px;
+  width: 26px;
+  height: 15px;
+  border-radius: 3px 3px 0 0;
+  border-bottom: 4px solid #ef6973;
+  background: #222326;
+  rotate: -14deg;
+}
+.pss-christmas .pss-xmas-hat::after {
+  content: "";
+  position: absolute;
+  inset: auto -6px -6px;
+  height: 4px;
+  border-radius: 4px;
+  background: #222326;
+}
+
+.pss-christmas .pss-xmas-scarf {
+  inset: 37px auto auto 13px;
+  width: 34px;
+  height: 7px;
+  rotate: -4deg;
+  border-radius: 4px;
+  background: #e16269;
+}
+.pss-christmas .pss-xmas-scarf::after {
+  content: "";
+  position: absolute;
+  inset: 3px 2px auto auto;
+  width: 8px;
+  height: 15px;
+  border-radius: 0 0 2px 2px;
+  background: repeating-linear-gradient(#e16269 0 5px, #ffad91 5px 7px);
+  transform-origin: top center;
+  animation: pss-xmas-tail 3.6s ease-in-out infinite reverse;
+}
+
+.pss-christmas .pss-xmas-bauble {
+  inset: auto 0 16px auto;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 25%, #fff2a6, #ffb14a 37%, #cf522b 91%);
+  box-shadow: 0 0 8px #f5c36280;
+  animation: pss-xmas-toss 4.2s ease-in-out infinite;
+}
+.pss-christmas .pss-xmas-bauble::after {
+  content: "";
+  position: absolute;
+  inset: -3px 4px auto;
+  height: 4px;
+  border-radius: 1px;
+  background: #f2d98e;
+}
+
+@keyframes pss-xmas-bulb {
+  from { opacity: .69; transform: rotate(-9deg); }
+  to { opacity: 1; transform: rotate(9deg); }
+}
+@keyframes pss-xmas-bow {
+  0%, 67%, 100% { transform: rotate(14deg); }
+  76% { transform: rotate(5deg) scale(1.07); }
+  86% { transform: rotate(20deg); }
+}
+@keyframes pss-xmas-tail {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(12deg); }
+}
+@keyframes pss-xmas-snowman {
+  0%, 100% { transform: rotate(-3deg); }
+  44%, 58% { transform: rotate(7deg) translateY(-3px); }
+  77% { transform: rotate(-10deg) scaleY(.94); }
+}
+@keyframes pss-xmas-blink {
+  0%, 77%, 83%, 100% { transform: scaleY(1); }
+  80% { transform: scaleY(.15); }
+}
+@keyframes pss-xmas-toss {
+  0%, 23%, 100% { transform: none; }
+  47% { transform: translate(-5px, -59px) rotate(130deg); }
+  73% { transform: translate(-14px, -2px) rotate(330deg); }
+}
+
+.pss-christmas.pss-xmas-paused :is(.pss-xmas-cord i, .pss-xmas-bow, .pss-xmas-snowman, .pss-xmas-bauble),
+.pss-christmas.pss-xmas-paused .pss-xmas-snow-face::before,
+.pss-christmas.pss-xmas-paused :is(.pss-xmas-bow, .pss-xmas-scarf)::after { animation-play-state: paused; }
+
+@media (max-width: 700px) {
+  .pss-christmas .pss-xmas-garland { inset-inline: -6%; }
+  .pss-christmas .pss-xmas-cord { flex-basis: 50%; }
+  .pss-christmas .pss-xmas-cord:nth-child(n + 3) { display: none; }
+  .pss-christmas .offer { grid-template-columns: minmax(0, 1fr); }
+  .pss-christmas .price-card { margin-top: 3.1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pss-christmas :is(.pss-xmas-cord i, .pss-xmas-bow, .pss-xmas-snowman, .pss-xmas-bauble),
+  .pss-christmas .pss-xmas-snow-face::before,
+  .pss-christmas :is(.pss-xmas-bow, .pss-xmas-scarf)::after { animation: none; }
+}
