@@ -75,10 +75,10 @@ nav a:hover, .site-footer a:hover { color: var(--accent); }
 .filters button { border: 1px solid var(--line); border-radius: 5rem; padding: .42rem .87rem; color: var(--muted); background: transparent; font-size: .78rem; font-weight: 700; }
 .filters button:hover { border-color: var(--accent); }
 .filters button[aria-pressed=true] { color: #17190c; background: var(--accent); border-color: var(--accent); }
-.work-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem; }
+.work-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); align-items: start; gap: 1rem; }
 .work-card { border: 1px solid var(--line); border-radius: .65rem; overflow: hidden; padding: 0; color: var(--text); background: var(--surface); text-align: left; }
 .work-card:hover { border-color: var(--accent); }
-.work-card img { width: 100%; height: auto; aspect-ratio: 3/2; object-fit: cover; }
+.work-card img { width: 100%; height: auto; }
 .card-info { padding: .95rem; display: flex; justify-content: space-between; align-items: center; gap: .7rem; }
 .card-info small, .card-info strong { display: block; }
 .card-info small { color: #d2acd9; font-size: .65rem; font-weight: 750; letter-spacing: .11em; margin-bottom: .15rem; }
@@ -112,8 +112,7 @@ dialog { width: min(50rem, calc(100% - 1.5rem)); max-height: calc(100% - 1.5rem)
 dialog::backdrop { background: #09060de0; }
 .dialog-inner { position: relative; }
 .close { position: absolute; top: .75rem; right: .75rem; background: #171020; border: 1px solid #91819c; color: white; border-radius: 50%; width: 44px; height: 44px; font-size: 1.45rem; }
-.case-image { width: 100%; height: auto; aspect-ratio: 3/1.5; object-fit: cover; }
-.case-image.uploaded-art { aspect-ratio: auto; max-height: min(68vh, 40rem); }
+.case-image { width: auto; height: auto; max-height: min(68vh, 40rem); margin-inline: auto; }
 .campaign-share-link { display: inline-block; margin-top: 1rem; }
 .case-copy { padding: clamp(1rem, 3vw, 2rem); }
 .case-layout { display: grid; grid-template-columns: 1.2fr .8fr; gap: 1.25rem; margin-top: .85rem; }
@@ -128,8 +127,7 @@ dialog::backdrop { background: #09060de0; }
 .campaign-page { max-width: 65rem; }
 .campaign-page h1 { font: 900 clamp(2.55rem, 7vw, 4.8rem)/1 var(--display); letter-spacing: -.065em; overflow-wrap: anywhere; margin-top: .55rem; }
 .campaign-tagline { color: var(--muted); margin: .8rem 0 1.5rem; }
-.campaign-art { border: 1px solid var(--line); border-radius: .65rem; overflow: hidden; background: #100c16; }
-.campaign-art img { width: 100%; height: auto; max-height: min(76vh, 42rem); object-fit: cover; }
+.campaign-art img { width: auto; height: auto; max-height: min(76vh, 42rem); margin-inline: auto; border-radius: .65rem; }
 .campaign-details { margin: 1.5rem 0; }
 .campaign-details h2 { font: 800 1.15rem/1.25 var(--body); letter-spacing: normal; margin: 0 0 .35rem; }
 .campaign-details p { color: var(--muted); }
