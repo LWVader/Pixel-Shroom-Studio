@@ -130,7 +130,7 @@ test("portfolio drafts stay private and published campaigns can be edited or wit
   assert.equal((await site.call(cleanAsset)).status, 401);
   const image = Buffer.from(await (await site.call(cleanAsset, {headers})).arrayBuffer()).toString("base64");
   const body = {id, version: 0, published: false, image, preview,
-    name: "Roast launch", sector: "food", tagline: "A new roast", brief: "Introduce a roast",
+    name: 'Roast & "Co"', sector: "food", tagline: 'A new roast <with> "character"', brief: "Introduce a roast",
     value: "The image makes the product recognizable", alt: "A giant coffee bean", palette: "#D9FF55"};
   assert.equal((await site.call(admin, {body})).status, 401);
   assert.equal((await site.call(admin, {headers, body: {...body, preview: image}})).status, 400);
@@ -140,6 +140,9 @@ test("portfolio drafts stay private and published campaigns can be edited or wit
   assert.equal((await original.json()).version, 1);
   assert.equal((await site.call(`${published}?id=${id}`)).status, 404);
   assert.equal((await site.call(`${published}/${id}/image`)).status, 404);
+  const sharePath = `/campaigns/${id}`;
+  assert.equal((await site.call(sharePath)).status, 404);
+  assert.equal((await site.call(`${sharePath}/artwork.webp`)).status, 404);
   assert.equal((await site.call(`${admin}/${id}/image`, {headers})).status, 200);
 
   const release = {...body, version: 1, image: null, preview: null, published: true};
@@ -148,7 +151,25 @@ test("portfolio drafts stay private and published campaigns can be edited or wit
   assert.equal((await live.json()).version, 2);
   const publicData = await (await site.call(published)).json();
   assert.equal(publicData.campaigns[0].id, id);
+  assert.equal(publicData.campaigns[0].sharePath, sharePath);
   assert.equal(publicData.campaigns[0].image_webp, undefined);
+  const shared = await site.call(`${sharePath}?utm_source=sample`);
+  assert.equal(shared.status, 200);
+  const html = await shared.text();
+  assert.ok(html.includes('<meta property="og:title" content="Roast &amp; &quot;Co&quot; | Pixel Shroom Studio">'));
+  assert.ok(html.includes('<meta property="og:description" content="A new roast &lt;with&gt; &quot;character&quot;">'));
+  assert.ok(html.includes(`<meta property="og:url" content="${origin}${sharePath}">`));
+  assert.ok(html.includes(`<meta property="og:image" content="${origin}${sharePath}/artwork.webp?v=2">`));
+  assert.ok(html.includes(`<meta name="twitter:image" content="${origin}${sharePath}/artwork.webp?v=2">`));
+  const legacy = await site.call(`/?campaign=${id}&utm_source=sample`);
+  assert.equal(legacy.status, 302);
+  assert.equal(legacy.headers.get("Location"), `${sharePath}?utm_source=sample`);
+  const shareArt = await site.call(`${sharePath}/artwork.webp?v=2`);
+  assert.equal(shareArt.headers.get("Content-Type"), "image/webp");
+  assert.equal(Buffer.from(await shareArt.arrayBuffer()).toString("base64"), preview);
+  const head = await site.call(`${sharePath}/artwork.webp?v=2`, {method: "HEAD"});
+  assert.equal(Number(head.headers.get("Content-Length")), Buffer.from(preview, "base64").length);
+  assert.equal(await head.text(), "");
   const publicImage = await site.call(`${published}/${id}/image`);
   assert.equal(publicImage.headers.get("Content-Type"), "image/webp");
   assert.equal(Buffer.from(await publicImage.arrayBuffer()).toString("base64"), preview);
@@ -158,6 +179,8 @@ test("portfolio drafts stay private and published campaigns can be edited or wit
   assert.equal((await site.call(admin, {body: release, headers})).status, 409);
   assert.equal((await site.call(admin, {body: {...release, version: 2, published: false}, headers})).status, 200);
   assert.equal((await site.call(`${published}?id=${id}`)).status, 404);
+  assert.equal((await site.call(sharePath)).status, 404);
+  assert.equal((await site.call(`${sharePath}/artwork.webp?v=2`)).status, 404);
 });
 
 test("previously published art stays private until a protected preview is generated", async t => {

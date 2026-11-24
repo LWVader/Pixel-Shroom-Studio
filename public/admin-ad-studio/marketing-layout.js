@@ -27,7 +27,8 @@ export function renderMarketingAd(ctx, state, time, height, logo) {
   ctx.roundRect(margin, mediaTop, width, mediaHeight, 18);
   ctx.clip();
   const progress = time / Math.max(1, Number(state.duration));
-  const zoom = Number(state.bgZoom) + (state.motion === "none" ? 0 : (1 - Math.cos(progress * Math.PI * 2)) * 2.5);
+  const animateZoom = state.motion !== "none" && state.bgFit === "cover";
+  const zoom = Number(state.bgZoom) + (animateZoom ? (1 - Math.cos(progress * Math.PI * 2)) * 2.5 : 0);
   paintArtwork(margin, mediaTop, width, mediaHeight, zoom);
   ctx.restore();
 
@@ -54,7 +55,7 @@ function applyMarketingAd(kind, campaign, artwork) {
   state.cta = kind === "offer" ? "Get the $199 Attention Pack" : "Explore the campaign work";
   state.website = studioDomain;
   state.socialTitle = campaign?.name || "Pixel Shroom Studio";
-  const destination = campaign ? `https://www.${studioDomain}/?campaign=${campaign.id}#work` :
+  const destination = campaign ? `https://www.${studioDomain}${campaign.sharePath || `/campaigns/${campaign.id}`}` :
     `https://www.${studioDomain}/#${kind === "offer" ? "pack" : "work"}`;
   const body = kind === "spotlight" && campaign ? `${campaign.name} · ${campaign.tagline}` :
     kind === "portfolio" ? "Surreal campaigns for independent brands with a strange streak." :
@@ -67,6 +68,7 @@ function applyMarketingAd(kind, campaign, artwork) {
     state.palette = campaignPalette;
     state.paletteName = "";
   }
+  state.bgFit = campaign ? "contain" : "cover";
   state.bgZoom = 100;
   state.bgX = state.bgY = 50;
   state.bgDim = state.bgBlur = 0;

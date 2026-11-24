@@ -1,4 +1,5 @@
-import {portfolioImage, portfolioItem, portfolioList, protectPortfolioPreview, savePortfolio} from "./lib/portfolio.mjs";
+import {campaignIdPattern, portfolioImage, portfolioItem, portfolioList, protectPortfolioPreview, savePortfolio} from "./lib/portfolio.mjs";
+import {campaignPage} from "./lib/campaign-page.mjs";
 import {authenticatedAdmin} from "./lib/admin-access.mjs";
 import {clearPasswordSession, passwordAdmin, passwordConfigured, signInWithPassword} from "./lib/admin-session.mjs";
 import {handleSocial} from "./lib/ad-studio-social.mjs";
@@ -256,6 +257,40 @@ async function portfolioRoute(request, env, url, admin) {
   }
 }
 
+async function campaignShareRoute(request, env, url) {
+  const [, , id, file, ...extra] = url.pathname.split("/");
+  const isImage = file === "artwork.webp";
+  if (!campaignIdPattern.test(id) || extra.length || (file !== undefined && !isImage)) {
+    return campaignNotFound(request, env, url);
+  }
+  if (!env.CAMPAIGN_DB) return apiError("Portfolio storage is unavailable.", 503);
+  const head = request.method === "HEAD";
+  try {
+    if (isImage) {
+      const image = await portfolioImage(env.CAMPAIGN_DB, id, false);
+      if (image) return new Response(head ? null : image, {
+        headers: {...apiHeaders, "Content-Type": "image/webp", "Content-Length": String(image.byteLength)}
+      });
+    } else {
+      const campaign = await portfolioItem(env.CAMPAIGN_DB, id);
+      if (campaign) return new Response(head ? null : campaignPage(campaign, url.origin), {
+        headers: {...apiHeaders, "Content-Type": "text/html; charset=utf-8",
+          "Content-Security-Policy": "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'"}
+      });
+    }
+  } catch (error) {
+    return routeFailure(error, "Could not load the campaign. Please try again.");
+  }
+  return campaignNotFound(request, env, url);
+}
+
+async function campaignNotFound(request, env, url) {
+  const page = await env.ASSETS.fetch(new Request(new URL("/404.html", url), {method: request.method}));
+  const headers = new Headers(page.headers);
+  headers.set("Cache-Control", "no-store");
+  return new Response(page.body, {status: 404, headers});
+}
+
 const socialMethods = new Map([
   ["config", ["GET"]], ["status", ["GET"]], ["connect", ["POST"]], ["publish", ["POST"]],
   ["history", ["GET", "POST"]], ["upload-ticket", ["POST"]]
@@ -339,6 +374,12 @@ export default {
     }
 
     if (!["GET", "HEAD"].includes(request.method)) return methodNotAllowed("GET, HEAD");
+    if (url.pathname.startsWith("/campaigns/")) return campaignShareRoute(request, env, url);
+    const linkedCampaign = url.searchParams.get("campaign");
+    if ((url.pathname === "/" || url.pathname === "/index.html") && campaignIdPattern.test(linkedCampaign ?? "")) {
+      url.searchParams.delete("campaign");
+      return new Response(null, {status: 302, headers: {...apiHeaders, Location: `/campaigns/${linkedCampaign}${url.search}`}});
+    }
     const target = retargeted.get(url.pathname);
     if (target) return Response.redirect(new URL(target, url.origin), 302);
     const preview = exampleArtworkPath(url.pathname);

@@ -13,7 +13,7 @@ import {initEmojiPicker} from "./emoji-picker.js";
 'use strict';
 const $=id=>document.getElementById(id), canvas=$('scene');let ctx=canvas.getContext('2d');const subjectLayer=document.createElement('canvas');
 const CANVAS_WIDTH = 1080;
-export let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',channelCaptions:{},aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',platform:'Instagram',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
+export let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',channelCaptions:{},aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',platform:'Instagram',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgFit:'cover',bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
 const PLAYBACK_RATE = .5;
 const BUNDLED_ARTWORK = "/admin-ad-studio/assets/campaign-art/orbit-roast.webp";
 const OLD_BUNDLED_ARTWORK = "/assets/campaigns/orbit-roast.webp";
@@ -89,10 +89,17 @@ let characterUpload=null,backdrop=null,outerBackdrop=null,brandLogo=null;
 let characterHitArea = null;
 const extraControls = [
   "captionFont", "captionFontSize", "captionWeight", "captionAlign",
-  "bgZoom", "bgX", "bgY", "bgDim", "bgBlur", "weatherType", "weatherLayer",
+  "bgFit", "bgZoom", "bgX", "bgY", "bgDim", "bgBlur", "weatherType", "weatherLayer",
   "weatherDensity", "weatherSpeed", "weatherWind", "burnOrigin", "burnIntensity", "burnSmoke", "burnEmbers", "emberAmount"
 ];
-function coverImage(img,x,y,w,h,zoom=100,fx=50,fy=50){const k=Math.max(w/img.naturalWidth,h/img.naturalHeight)*zoom/100,dw=img.naturalWidth*k,dh=img.naturalHeight*k;ctx.drawImage(img,x+(w-dw)*fx/100,y+(h-dh)*fy/100,dw,dh)}
+function coverImage(image, x, y, width, height, zoom = 100, horizontal = 50, vertical = 50, fit = "cover") {
+  const scaleToFit = fit === "contain" ? Math.min : Math.max;
+  const scale = scaleToFit(width / image.naturalWidth, height / image.naturalHeight) * zoom / 100;
+  const drawnWidth = image.naturalWidth * scale;
+  const drawnHeight = image.naturalHeight * scale;
+  ctx.drawImage(image, x + (width - drawnWidth) * horizontal / 100,
+    y + (height - drawnHeight) * vertical / 100, drawnWidth, drawnHeight);
+}
 
 function paintCanvas(height) {
   ctx.fillStyle = paletteTheme.canvas;
@@ -111,7 +118,7 @@ function paintArtwork(x, y, width, height, zoom = Number(state.bgZoom)) {
   if (backdrop?.complete && backdrop.naturalWidth) {
     ctx.save();
     ctx.filter = `blur(${state.bgBlur}px)`;
-    coverImage(backdrop, x, y, width, height, zoom, Number(state.bgX), Number(state.bgY));
+    coverImage(backdrop, x, y, width, height, zoom, Number(state.bgX), Number(state.bgY), state.bgFit);
     ctx.restore();
     ctx.fillStyle = `rgba(0,0,0,${Number(state.bgDim) / 100})`;
     ctx.fillRect(x, y, width, height);
@@ -572,7 +579,7 @@ function sanitizeProject() {
   state.palette = AdPalette.normalize(state.palette) || defaults.palette;
   state.paletteName = typeof state.paletteName === "string" ? state.paletteName.trim().slice(0, 48) : "";
   const options = {
-    layout: ["marketing", "popout"], ratio: Object.keys(canvasHeights),
+    layout: ["marketing", "popout"], bgFit: ["cover", "contain"], ratio: Object.keys(canvasHeights),
     platform: ["Instagram", "Facebook", "TikTok"], captionAlign: ["left", "center", "right"], captionWeight: ["400", "700"],
     youtubePrivacy: ["public", "unlisted", "private"], weatherType: ["snow", "rain", "storm", "petals", "confetti"],
     weatherLayer: ["behind", "front", "both"], burnOrigin: ["bottom", "center"]

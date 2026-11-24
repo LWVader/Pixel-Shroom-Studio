@@ -99,7 +99,16 @@ test("publishes a campaign and starts a marketing ad from its artwork", async ({
   await page.getByLabel("Campaign brief").fill("Launch a new coffee subscription app.");
   await page.getByLabel("Why this creative works").fill("A giant coffee bean makes the app's purpose clear.");
   await page.getByLabel("Artwork description").fill("A giant coffee bean floating above a city.");
-  await page.locator('input[name="image"]').setInputFiles("public/admin-ad-studio/assets/campaign-art/orbit-roast.webp");
+  const imageData = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 360;
+    canvas.height = 640;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "purple";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await page.locator('input[name="image"]').setInputFiles({name: "portrait.png", mimeType: "image/png", buffer: Buffer.from(imageData, "base64")});
   await page.getByRole("button", {name: "Save as draft"}).click();
   await expect(page.getByText("Campaign saved as a draft.")).toBeVisible();
   expect((await (await request.get("/api/portfolio")).json()).campaigns).toHaveLength(0);
@@ -110,15 +119,24 @@ test("publishes a campaign and starts a marketing ad from its artwork", async ({
   const view = await entry.getByRole("link", {name: "View live"}).getAttribute("href");
   const create = await entry.getByRole("link", {name: "Create ad"}).getAttribute("href");
   await page.goto(view);
-  await expect(page.getByRole("dialog", {name: "Twilight Release"})).toBeVisible();
-  await expect(page.getByRole("dialog").getByText("Taste the night")).toBeVisible();
-  await page.keyboard.press("Escape");
+  await expect(page.getByRole("heading", {name: "Twilight Release"})).toBeVisible();
+  await expect(page.getByText("Taste the night")).toBeVisible();
+  await expect(page.locator(".campaign-art img")).toHaveCSS("object-fit", "contain");
+  await page.getByRole("link", {name: "All campaigns"}).click();
   await page.getByRole("button", {name: "Technology, Software & SaaS", exact: true}).click();
   await expect(page.locator(".work-card:visible")).toHaveCount(1);
+  const portrait = page.locator(".work-card:visible img");
+  await expect(portrait).toHaveCSS("object-fit", "contain");
+  await expect.poll(() => portrait.evaluate((img) => img.naturalHeight)).toBe(640);
+  await page.getByRole("button", {name: /Twilight Release/}).click();
+  await expect(page.locator(".case-image")).toHaveCSS("object-fit", "contain");
+  await expect(page.getByRole("link", {name: "Open shareable campaign page"})).toHaveAttribute("href", view);
   await page.goto(create);
   await expect(page.getByText("Template loaded. Edit the copy, then export or publish.")).toBeVisible();
   await expect(page.locator("#headline")).toHaveValue("Twilight Release\nTaste the night");
   await expect(page.getByLabel("Creative layout")).toHaveValue("marketing");
+  await expect(page.locator("#bgFit")).toHaveValue("contain");
+  await expect(page.locator("#publishCaption")).toHaveValue(new RegExp(view + "$"));
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", {name: "Download PNG frame"}).click()

@@ -67,6 +67,11 @@ function addFilter(sector) {
 }
 
 const dialog = document.querySelector("#case-dialog");
+const shareLink = document.createElement("a");
+shareLink.textContent = "Open shareable campaign page";
+shareLink.className = "text-link campaign-share-link";
+shareLink.hidden = true;
+dialog?.querySelector(".case-copy").append(shareLink);
 
 function openCase(study) {
   dialog.querySelector("#case-title").textContent = study.name;
@@ -76,7 +81,11 @@ function openCase(study) {
   dialog.querySelector("#case-tagline").textContent = study.tagline;
   const mainImage = dialog.querySelector(".case-image");
   mainImage.alt = study.alt;
+  mainImage.classList.toggle("uploaded-art", Boolean(study.imageUrl));
   mainImage.src = study.imageUrl || exampleArtworkPath(`${legacyArtworkDirectory}${study.image}.webp`);
+  shareLink.hidden = !study.sharePath;
+  if (study.sharePath) shareLink.href = study.sharePath;
+  else shareLink.removeAttribute("href");
   dialog.querySelector(".mockup-image").src = mainImage.src;
   const palette = dialog.querySelector("#case-palette");
   palette.previousElementSibling.hidden = palette.hidden = !study.colors.length;

@@ -65,7 +65,15 @@ function row(item) {
   controls.className = "publisher-actions";
   controls.append(action("Edit", null, () => edit(item)));
   if (item.published && item.previewReady) {
-    controls.append(action("View live", `/?campaign=${item.id}#work`),
+    controls.append(action("View live", item.sharePath),
+      action("Copy share link", null, async () => {
+        try {
+          await navigator.clipboard.writeText(new URL(item.sharePath, location.origin).href);
+          status.textContent = "Campaign share link copied.";
+        } catch {
+          status.textContent = "Open View live and copy the address from your browser.";
+        }
+      }),
       action("Create ad", `/admin-ad-studio/?campaign=${item.id}`));
   }
   result.append(copy, controls);
