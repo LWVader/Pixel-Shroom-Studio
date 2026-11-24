@@ -82,13 +82,61 @@
   color: var(--xmas-cream);
 }
 
-.pss-christmas [data-checkout] {
-  border-color: var(--xmas-gold);
-  background: var(--xmas-gold);
-  color: #331d15;
+.pss-christmas [data-checkout="attention"] {
+  border-color: #72c699;
+  background:
+    linear-gradient(153deg, #daffe52b, transparent 44%),
+    linear-gradient(180deg, #35865f 0%, #226b47 46%, #155638 49%, #0b3728 100%);
+  background-origin: border-box;
+  color: #fbfff0;
+  text-shadow: 0 1px 2px #062a20;
+  box-shadow: inset 0 1px 0 #e1ffdb9e, inset 0 0 0 2px #b8ffd12b, 0 4px 12px #081e1690;
 }
 
-.pss-christmas [data-checkout]:hover:not(:disabled) { background: #ffe2a7; }
+.pss-christmas [data-checkout="attention"]:hover:not(:disabled) {
+  border-color: #a7e8b3;
+  box-shadow: inset 0 1px 0 #f1ffdcce, inset 0 0 0 2px #b8ffd144, 0 5px 17px #124f3694;
+}
+
+.pss-christmas [data-checkout="attention"]:active:not(:disabled) {
+  box-shadow: inset 0 2px 6px #06251bbb, 0 2px 6px #081e1670;
+}
+
+.pss-christmas [data-checkout="attention"] > span[aria-hidden] {
+  position: relative;
+  flex: none;
+  width: 25px;
+  height: 21px;
+  filter: drop-shadow(0 1px 1px #031b17);
+}
+
+/* Two serrated leaves and three reflective berries replace the base button arrow. */
+.pss-christmas [data-checkout="attention"] > span[aria-hidden]::before {
+  position: absolute;
+  inset: 0 0 2px;
+  width: auto;
+  height: auto;
+  border: 0;
+  background:
+    linear-gradient(34deg, transparent 34%, #d1eda2 36%, transparent 39%) left / 50% 100% no-repeat,
+    linear-gradient(141deg, transparent 48%, #b6e889 51%, transparent 55%) right / 50% 100% no-repeat,
+    linear-gradient(155deg, #def7a4 0%, #80c86c 31%, #2b7b44 63%, #10462f 94%);
+  clip-path: polygon(51% 78%, 36% 71%, 24% 79%, 24% 62%, 10% 56%, 13% 44%, 1% 28%, 24% 32%, 34% 22%, 40% 39%, 49% 34%, 55% 59%, 60% 36%, 71% 38%, 73% 17%, 84% 20%, 99% 1%, 97% 25%, 100% 34%, 86% 44%, 87% 58%, 73% 61%, 69% 77%, 60% 84%, 63% 100%);
+}
+
+.pss-christmas [data-checkout="attention"] > span[aria-hidden]::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  bottom: 1px;
+  width: 13px;
+  height: 11px;
+  background:
+    radial-gradient(circle at 37% 32%, #ffb4a7, #d94252 35%, #740d29 67%, transparent 74%) 3px 5px / 7px 6px no-repeat,
+    radial-gradient(circle at 37% 32%, #ffc0aa, #e74757 35%, #811630 67%, transparent 74%) left top / 7px 7px no-repeat,
+    radial-gradient(circle at 37% 32%, #ffb4a7, #d94252 35%, #740d29 67%, transparent 74%) right top / 7px 7px no-repeat;
+}
+
 .pss-christmas :focus-visible { outline-color: var(--xmas-cream); }
 
 /* Each bulb hangs by a ribbed socket. The glass and the cord catch different highlights. */
