@@ -28,14 +28,15 @@
     const bow = document.createElement("span");
     bow.className = "pss-xmas-bow";
     bow.setAttribute("aria-hidden", "true");
-    bow.innerHTML = "<i></i><i></i><b></b>";
     const garlandBow = bow.cloneNode(true);
     garlandBow.classList.add("pss-xmas-garland-bow");
 
     const snowman = document.createElement("span");
     snowman.className = "pss-xmas-snowman";
     snowman.setAttribute("aria-hidden", "true");
-    snowman.innerHTML = '<i class="pss-xmas-bauble"></i><i class="pss-xmas-snow-body"></i><i class="pss-xmas-snow-face"></i><i class="pss-xmas-hat"></i><i class="pss-xmas-scarf"></i>';
+    const bauble = document.createElement("i");
+    bauble.className = "pss-xmas-bauble";
+    snowman.append(bauble);
 
     const motion = document.createElement("button");
     motion.type = "button";
