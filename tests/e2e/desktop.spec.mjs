@@ -39,7 +39,10 @@ test("homepage shows both service offers and independent fictional examples", as
     await img.scrollIntoViewIfNeeded();
     await expect.poll(() => img.evaluate(element => element.naturalWidth)).toBeGreaterThan(0);
   }
-  await expect(page.locator(".asset-examples img")).toHaveCount(3);
+  await expect(page.locator(".asset-examples img")).toHaveCount(10);
+  await expect(page.locator(".asset-examples a")).toHaveCount(10);
+  const sources = await page.locator(".asset-examples img").evaluateAll(images => images.map(image => image.getAttribute("src")));
+  expect(new Set(sources).size).toBe(10);
   await page.getByRole("link", {name: /Explore demo/}).click();
   await expect(page.getByRole("heading", {name: /Awaken.*the dark/})).toBeVisible();
   await page.getByRole("link", {name: /Meet the roast/}).click();
