@@ -51,9 +51,11 @@
           <button type="submit" class="button" disabled>Publish monthly ZIP</button>
           <button type="button" class="secondary" id="register-monthly-zip" disabled>Register existing ZIP</button>
         </div>
-        <p class="muted">Register existing ZIP recovers a file already in the private Supabase bucket as YYYY-MM.zip without overwriting it.</p>
+        <p class="status" id="monthly-recovery-help" role="status">Checking for an unregistered ZIP for the selected month…</p>
       </form>
       <p class="status" id="monthly-upload-status" role="status"></p>
+      <h3>Supabase files</h3><p class="status" id="monthly-inventory-status">Checking the private monthly-asset-packs bucket…</p>
+      <ul class="order-list" id="monthly-storage-files"></ul>
       <h3>Published packs</h3><ul class="order-list" id="monthly-packs"></ul>
       <h3>Recent automatic deliveries</h3><p class="status" id="monthly-counts"></p>
       <ul class="order-list" id="monthly-deliveries"></ul>

@@ -89,6 +89,9 @@ export async function createFixture() {
         }
         return Response.json({public:monthly.publicBucket,file_size_limit:monthly.bucketLimit,allowed_mime_types:["application/zip"]});
       }
+      if(url.pathname==="/storage/v1/object/list/monthly-asset-packs"){
+        return Response.json([...monthly.objects].map(([name,data])=>({id:"fixture-"+name,name,metadata:{size:data.byteLength}})));
+      }
       const path=url.pathname.split("/").at(-1);
       if(url.pathname.includes("/object/sign/")){
         if(!monthly.objects.has(path))return Response.json({}, {status:404});

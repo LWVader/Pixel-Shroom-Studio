@@ -162,6 +162,8 @@ test("monthly admin accepts a Windows ZIP larger than 20 MiB and registers the p
     await expect(page.locator("#monthly-configuration")).toContainText("Private bucket connected");
     await expect(page.getByRole("button",{name:"Publish monthly ZIP"})).toBeEnabled();
     await page.getByLabel("Pack month").fill("2027-02");
+    await expect(page.locator("#monthly-recovery-help")).toContainText("No stored ZIP for 2027-02");
+    await expect(page.getByRole("button",{name:"Register existing ZIP"})).toBeDisabled();
     const buffer=sampleZip(10,{folder:true,size:2400000});
     await page.locator("#monthly-upload-form input[type=file]").setInputFiles({name:"Windows Monthly Pack.zip",mimeType:"application/zip",buffer});
     await expect(page.locator("#monthly-file-selection")).toContainText("Windows Monthly Pack.zip");
@@ -171,6 +173,8 @@ test("monthly admin accepts a Windows ZIP larger than 20 MiB and registers the p
     await expect(page.locator("#monthly-upload-status")).toContainText("Published 2027-02: 10 images",{timeout:20000});
     await expect(page.locator("#monthly-packs")).toContainText("2027-02");
     await expect(page.locator("#monthly-packs")).toContainText("Published");
+    await expect(page.locator("#monthly-storage-files")).toContainText("2027-02.zip");
+    await expect(page.locator("#monthly-recovery-help")).toContainText("already published");
     await page.getByRole("button",{name:"Refresh delivery status"}).click();
     await expect(page.locator("#monthly-packs")).toContainText("2027-02");
   } finally {await request.post("/__test/configure-storage",{params:{enabled:"false"}});}

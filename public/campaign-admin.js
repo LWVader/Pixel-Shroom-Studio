@@ -247,14 +247,27 @@ function monthlyItem(text) {
   return item;
 }
 
-let monthlyBusy=false, storageReady=false;
+let monthlyBusy=false, storageReady=false, monthlyInventory=null;
 const zipInput=monthlyForm.elements.zip;
 const publishButton=monthlyForm.querySelector('button[type="submit"]');
 const registerButton=$("register-monthly-zip");
 const maxZip=25*1024*1024;
+monthlyForm.elements.month.addEventListener("change",syncMonthlyButtons);
+monthlyForm.elements.month.addEventListener("input",syncMonthlyButtons);
 function syncMonthlyButtons(){
-  publishButton.disabled=monthlyBusy || !storageReady;
-  registerButton.disabled=monthlyBusy || !storageReady;
+  const month=monthlyForm.elements.month.value;
+  const entry=monthlyInventory?.ok?monthlyInventory.files.find(file=>file.month===month):null;
+  const known=monthlyInventory?.ok && !monthlyInventory.partial;
+  const missing=monthlyInventory?.missing?.includes(month+".zip");
+  publishButton.disabled=monthlyBusy || !storageReady || entry?.status==="published" || Boolean(missing);
+  registerButton.disabled=monthlyBusy || !storageReady || (known && entry?.status!=="unregistered");
+  const help=$("monthly-recovery-help");
+  if(!storageReady)help.textContent="Recovery is unavailable until the private Supabase bucket connects.";
+  else if(entry?.status==="unregistered")help.textContent=`${entry.name} exists in Supabase but is not published. Use Register existing ZIP to validate and register it.`;
+  else if(missing)help.textContent=`A published record exists for ${month}, but its ZIP is missing in Storage. Restore the original ZIP in Supabase; do not replace a published pack with different artwork.`;
+  else if(entry?.status==="published")help.textContent=`${entry.name} is already published. No recovery is needed.`;
+  else if(known)help.textContent=`No stored ZIP for ${month||"the selected month"}. Choose your local ZIP and use Publish monthly ZIP.`;
+  else help.textContent="Storage inventory is unavailable or incomplete. Register existing ZIP only if the intended YYYY-MM.zip is already in the private bucket.";
 }
 zipInput.addEventListener("change",()=>{
   const file=zipInput.files[0];
@@ -264,14 +277,26 @@ zipInput.addEventListener("change",()=>{
 });
 async function loadMonthly() {
   try {
-    const {config,packs,deliveries,counts,storageCheck} = await api("/api/admin/monthly-delivery");
+    const {config,packs,deliveries,counts,storageCheck,inventory} = await api("/api/admin/monthly-delivery");
     storageReady=Boolean(storageCheck?.ok);
+    monthlyInventory=inventory||null;
     monthlyConfig.textContent = `Supabase: ${storageReady?"connected":"not connected"} · Stripe webhook: ${config.stripe ? "configured" : "not configured"} · Email: ${config.email ? "configured" : "not configured"} · Auto-delivery: ${config.enabled && storageReady && config.stripe && config.email ? "enabled" : "disabled"}. ${storageCheck?.message||""}`;
+    const storageList=$("monthly-storage-files");
+    if(inventory?.ok){
+      $("monthly-inventory-status").textContent=`Private bucket: monthly-asset-packs · ${inventory.files.length} item(s) found${inventory.partial?" (first 100 only)":""}. No files are modified by this check.`;
+      const items=inventory.files.map(file=>monthlyItem(`${file.name}${file.bytes===null?"":` · ${(file.bytes/1048576).toFixed(2)} MiB`} · ${file.status==="published"?"Published":file.status==="unregistered"?"Stored, not registered":"Not a monthly YYYY-MM.zip"}`));
+      items.push(...inventory.missing.map(name=>monthlyItem(`${name} · Published record exists but file is missing in Storage`)));
+      storageList.replaceChildren(...(items.length?items:[monthlyItem("The private bucket is empty. Publish a ZIP from your computer.")]));
+    }else{
+      $("monthly-inventory-status").textContent=inventory?.message||"Storage inventory unavailable.";
+      storageList.replaceChildren();
+    }
     $("monthly-packs").replaceChildren(...(packs.length ? packs.map(p => monthlyItem(`${p.pack_month} · ${(p.byte_size/1048576).toFixed(2)} MiB · Published`)) : [monthlyItem("No monthly ZIPs published yet.")]));
     $("monthly-counts").textContent = counts.length ? counts.map(c => `${c.state}: ${c.count}`).join(" · ") : "No queued deliveries.";
     $("monthly-deliveries").replaceChildren(...deliveries.map(d => monthlyItem(`${d.pack_month} · ${d.buyer_email} · ${d.state}${d.last_error ? " · "+d.last_error : ""}`)));
   } catch(error) {
     storageReady=false;
+    monthlyInventory=null;
     monthlyConfig.textContent = "Delivery status unavailable. " + error.message;
   } finally {syncMonthlyButtons();}
 }
