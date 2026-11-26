@@ -62,7 +62,7 @@ export const FontLibrary = (() => {
     get("captionFont").value = family;
     get("chosenFontLabel").textContent = family;
     const preview = get("bottomCopyPreview");
-    preview.style.fontFamily = '"' + family + '", sans-serif';
+    preview.style.fontFamily = '"' + family + '", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Noto Emoji", sans-serif';
     preview.style.color = palette.ink;
     preview.style.background = palette.post;
     get("captionCopyPreview").textContent = s.headline;

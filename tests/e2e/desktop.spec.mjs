@@ -411,15 +411,33 @@ test("social formats balance long copy and portrait artwork without changing exp
   const redBounds = () => canvas.evaluate(c => {
     const {data} = c.getContext("2d").getImageData(0, 0, c.width, c.height);
     let left=c.width,top=c.height,right=-1,bottom=-1;
-    for(let y=0;y<c.height;y+=2) for(let x=0;x<c.width;x+=2) {
-      const i=(y*c.width+x)*4;
-      if(data[i]>180 && data[i+1]<100 && data[i+2]<60) {
-        left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+    // The artwork is a large solid red region. Ignore small red emoji
+    // glyphs in the caption when measuring its aspect ratio.
+    for(let y=0;y<c.height;y+=2) {
+      let runStart=-1;
+      for(let x=0;x<=c.width;x+=2){
+        const i=(y*c.width+x)*4;
+        const isRed=x<c.width&&data[i]>180&&data[i+1]<100&&data[i+2]<60;
+        if(isRed){if(runStart<0)runStart=x;}
+        else if(runStart>=0){
+          if(x-runStart>80){left=Math.min(left,runStart);right=Math.max(right,x-2);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+          runStart=-1;
+        }
       }
     }
-    return {width:right-left+1,height:bottom-top+1};
+    let colorfulIcons=0;
+    const scale=c.width/864;
+    const buttonY=c.height===1920?(c.height/scale*.77-115)*scale:c.height-148*scale;
+    for(let y=Math.round(132*scale);y<buttonY;y++){
+      for(let x=Math.round(56*scale);x<Math.round(808*scale);x++){
+        if(x>=left-2&&x<=right+2&&y>=top-2&&y<=bottom+2)continue;
+        const i=(y*c.width+x)*4,r=data[i],g=data[i+1],b=data[i+2];
+        if(Math.max(r,g,b)>160&&Math.min(r,g,b)<100&&Math.max(r,g,b)-Math.min(r,g,b)>100)colorfulIcons++;
+      }
+    }
+    return {width:right-left+1,height:bottom-top+1,colorfulIcons,left,top};
   });
-  for (const [format,height,minArtworkHeight] of [["portrait",1350,.35],["square",1080,.43],["story",1920,.28]]) {
+  for (const [format,height,minArtworkHeight] of [["portrait",1350,.43],["square",1080,.43],["story",1920,.28]]) {
     await ratio.selectOption(format);
     await expect(canvas).toHaveAttribute("height", String(height));
     await expect(page.locator("#captionFit")).toContainText("Balanced image and copy at");
@@ -428,6 +446,8 @@ test("social formats balance long copy and portrait artwork without changing exp
     await expect.poll(async () => (await redBounds()).height).toBeGreaterThan(height*minArtworkHeight);
     const bounds=await redBounds();
     expect(Math.abs(bounds.width/bounds.height-.8)).toBeLessThan(.02);
+    expect(bounds.colorfulIcons).toBeGreaterThan(30);
+    if (format === "portrait" || format === "square") expect(bounds.left).toBeLessThan(100);
     expect(await canvas.getAttribute("width")).toBe("1080");
   }
   await ratio.selectOption("portrait");

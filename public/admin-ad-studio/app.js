@@ -32,7 +32,51 @@ const syncPaletteEditor = AdPalette.editor((colors, name) => {
 
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',3500)}
 function rounded(x,y,w,h,r,fill){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill()}
-function text(s,x,y,size,color='#fff',weight=500,family='sans-serif',maxWidth=0){ctx.fillStyle=color;ctx.font=`${FontLibrary.weight(family,weight)} ${size}px "${family}", "Noto Emoji", sans-serif`;while(maxWidth&&size>8&&ctx.measureText(s).width>maxWidth){size--;ctx.font=`${FontLibrary.weight(family,weight)} ${size}px "${family}", "Noto Emoji", sans-serif`}ctx.fillText(s,x,y)}
+const emojiFontStack = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Noto Emoji", sans-serif';
+const graphemeSegmenter = typeof Intl.Segmenter === "function" ? new Intl.Segmenter(undefined, {granularity: "grapheme"}) : null;
+const graphemes = value => graphemeSegmenter ? Array.from(graphemeSegmenter.segment(value), part => part.segment) : Array.from(value);
+const emojiPattern = /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3/u;
+const runCache = new Map();
+function textRuns(value) {
+  if (runCache.has(value)) return runCache.get(value);
+  const runs = [];
+  for (const cluster of graphemes(value)) {
+    // An explicit text-presentation selector must remain a text glyph.
+    const emoji = !cluster.includes("\ufe0e") && emojiPattern.test(cluster);
+    const previous = runs.at(-1);
+    if (previous && previous.emoji === emoji) previous.value += cluster;
+    else runs.push({value: cluster, emoji});
+  }
+  if (runCache.size > 1024) runCache.clear();
+  runCache.set(value, runs);
+  return runs;
+}
+function fontForRun(run, size, family, weight) {
+  return run.emoji ? `400 ${size}px ${emojiFontStack}` :
+    `${FontLibrary.weight(family,weight)} ${size}px "${family}", ${emojiFontStack}`;
+}
+function measureTextRuns(value, size, family, weight) {
+  let width = 0;
+  for (const run of textRuns(value)) {
+    ctx.font = fontForRun(run, size, family, weight);
+    width += ctx.measureText(run.value).width;
+  }
+  return width;
+}
+function text(s,x,y,size,color='#fff',weight=500,family='sans-serif',maxWidth=0) {
+  ctx.save();
+  ctx.fillStyle=color;
+  let width=measureTextRuns(s,size,family,weight);
+  while(maxWidth&&size>8&&width>maxWidth){size--;width=measureTextRuns(s,size,family,weight);}
+  let cursor=x-(ctx.textAlign==="center"?width/2:ctx.textAlign==="right"||ctx.textAlign==="end"?width:0);
+  ctx.textAlign="left";
+  for(const run of textRuns(s)){
+    ctx.font=fontForRun(run,size,family,weight);
+    ctx.fillText(run.value,cursor,y);
+    cursor+=ctx.measureText(run.value).width;
+  }
+  ctx.restore();
+}
 function setText(id, value) {
   const element = $(id);
   if (element.textContent !== value) element.textContent = value;
@@ -49,8 +93,8 @@ function measureCaption(s, w, h = Infinity, minimum = 14) {
   let size = requested;
   function wrap() {
     ctx.save();
-    ctx.font = `${weight} ${size}px "${family}", "Noto Emoji", sans-serif`;
     const rows = [];
+    const widthOf = value => measureTextRuns(value, size, family, weight);
     // Keep intentional paragraphs and bullets without spending an entire
     // line of artwork space on each blank separator.
     if (s.headline.trim()) {
@@ -58,11 +102,11 @@ function measureCaption(s, w, h = Infinity, minimum = 14) {
         let line = "";
         for (const word of paragraph.split(/\s+/).filter(Boolean)) {
           const next = line ? line + " " + word : word;
-          if (ctx.measureText(next).width <= w) { line = next; continue; }
+          if (widthOf(next) <= w) { line = next; continue; }
           if (line) rows.push(line);
           line = "";
-          for (const char of word) {
-            if (line && ctx.measureText(line + char).width > w) { rows.push(line); line = ""; }
+          for (const char of graphemes(word)) {
+            if (line && widthOf(line + char) > w) { rows.push(line); line = ""; }
             line += char;
           }
         }
@@ -201,15 +245,15 @@ function artworkRect(height) {
       h = backdrop.naturalHeight * scale;
     }
     const stacked = {x: (864 - w) / 2, y, w, h, edge: y + h};
-    // A square post with a tall image and a long caption can waste the
-    // side space in a stacked layout. Prefer a split body only when it
-    // materially improves the artwork while keeping every line readable.
-    if (state.ratio === "square" && state.bgFit === "contain" &&
+    // Tall artwork and long copy can waste the side space in a stacked
+    // feed post. Choose a split body only when the image becomes visibly
+    // larger and the caption remains comfortably readable.
+    if (state.ratio !== "story" && state.bgFit === "contain" &&
         naturalHeight > MARKETING_WIDTH && state.headline.length > 160) {
       const bodyHeight = buttonY - y - 18;
       const stackedCopy = measureCaption(state, copyWidth, buttonY - stacked.edge - CAPTION_GAPS);
       let best = null;
-      for (const fraction of [.40, .44, .48, .52]) {
+      for (const fraction of [.40, .44, .48, .52, .56]) {
         const columnWidth = MARKETING_WIDTH * fraction;
         const copyX = 56 + columnWidth + 22;
         const columnCopyWidth = 808 - copyX;
@@ -219,8 +263,9 @@ function artworkRect(height) {
         const artHeight = Math.min(bodyHeight, maxArtHeight);
         const artWidth = columnWidth * artHeight / maxArtHeight;
         const area = artHeight * artWidth;
-        if (area < stacked.w * stacked.h * 1.3 || copy.size < Math.min(stackedCopy.size, 16)) continue;
-        const score = Math.sqrt(area) * copy.size;
+        const minimumReadable = Math.max(18, stackedCopy.size - 1);
+        if (area < stacked.w * stacked.h * 1.18 || copy.size < Math.min(Number(state.captionFontSize), minimumReadable)) continue;
+        const score = Math.sqrt(area) * Math.sqrt(copy.size);
         if (!best || score > best.score) best = {
           x: 56 + (columnWidth - artWidth) / 2,
           y: y + (bodyHeight - artHeight) / 2,

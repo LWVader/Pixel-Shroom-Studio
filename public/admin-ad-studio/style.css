@@ -91,7 +91,7 @@ header .brand h1{margin:0;line-height:1.3;letter-spacing:1px}
 #captionOverrides textarea{width:100%;margin-top:.35rem}
 .eyebrow,.stage-note,.muted,.workspace-top,.palette-swatches code{font-size:12px}
 #characterGrid small{font-size:11px}
-.emoji-grid button{font-family:"Noto Emoji",sans-serif}
+.emoji-grid button{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Noto Emoji",sans-serif;font-weight:400}
 
 /* A taller preview workspace, without changing the actual export dimensions.
    On narrow screens the canvas still fits the available width. */
