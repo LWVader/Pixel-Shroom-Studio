@@ -377,12 +377,14 @@ test("adaptive template preserves complete 4:5 artwork, full canvas and exported
   await expect.poll(pixels).toEqual(expected);
 });
 
-test("auto-height post expands dynamically for artwork and multiline copy without reducing the selected font", async ({page}) => {
+test("social formats balance long copy and portrait artwork without changing export dimensions", async ({page}) => {
   await page.goto("/admin.html");
   await page.getByLabel("Administrator password").fill(testPassword);
   await page.getByRole("button", {name: "Sign in", exact: true}).click();
   await page.getByRole("link", {name: "Open AD Studio"}).click();
-  await expect(page.getByLabel("Aspect ratio")).toHaveValue("auto");
+  const ratio = page.getByLabel("Aspect ratio");
+  await expect(ratio).toHaveValue("portrait");
+  await expect(ratio.locator("option")).toHaveCount(3);
   const png = await page.evaluate(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 400; canvas.height = 500;
@@ -392,42 +394,54 @@ test("auto-height post expands dynamically for artwork and multiline copy withou
   });
   await page.locator("#bgUpload").setInputFiles({name: "portrait.png", mimeType: "image/png", buffer: Buffer.from(png, "base64")});
   await page.locator("#edit-marketing-copy").click();
-  const caption = page.locator("#headline");
-  await caption.fill("Short caption.");
-  await expect(page.locator("#captionFit")).toContainText("40px");
-  const canvas = page.locator("#scene");
-  await expect(canvas).toHaveAttribute("height", "1686");
-  const shortHeight = Number(await canvas.getAttribute("height"));
+  const caption = page.locator("#headline"), canvas = page.locator("#scene");
   const longCaption = [
-    "BORING FEEDS END HERE.",
-    "Give your social media a fresh creative edge.", "",
-    "10 new AI-generated backgrounds every month.",
-    "Unique styles for every promotion.",
-    "Ready for social media, advertising and branding.",
-    "Spend less time creating visuals.",
-    "All for just $49/month."
+    "🍄 BORING FEEDS END HERE.", "",
+    "Give your social media a fresh creative edge with the Pixel Shroom Studio Monthly Asset Pack.", "",
+    "🎨 10 new AI-generated backgrounds every month",
+    "🌈 Diverse themes and imaginative worlds",
+    "✨ Add your own headlines, branding and promotional messages",
+    "🚀 Spend less time creating backgrounds from scratch", "",
+    "All for just **$49/month.**", "",
+    "Good ads. Weird worlds. Unforgettable visuals.", "",
+    "👉 Explore the possibilities at https://www.pixelshroomstudio.com/", "",
+    "#PixelShroomStudio #SocialMediaMarketing #CreativeAdvertising #DigitalArt #ContentCreation"
   ].join("\n");
   await caption.fill(longCaption);
-  await expect.poll(async () => Number(await canvas.getAttribute("height"))).toBeGreaterThan(shortHeight + 200);
-  await expect(page.locator("#captionFit")).toHaveText("Caption uses 40px on the ad.");
-  const autoHeight = Number(await canvas.getAttribute("height"));
-  expect(autoHeight % 2).toBe(0);
-  // Full-width source art, including top and bottom edges, and complete copy.
-  const sample = await canvas.evaluate(c => {
-    const ctx = c.getContext("2d"), scale = c.width / 864;
-    return [[60, 136], [804, 1068]].map(([x,y]) => Array.from(ctx.getImageData(Math.round(x*scale),Math.round(y*scale),1,1).data).slice(0,3));
+  const redBounds = () => canvas.evaluate(c => {
+    const {data} = c.getContext("2d").getImageData(0, 0, c.width, c.height);
+    let left=c.width,top=c.height,right=-1,bottom=-1;
+    for(let y=0;y<c.height;y+=2) for(let x=0;x<c.width;x+=2) {
+      const i=(y*c.width+x)*4;
+      if(data[i]>180 && data[i+1]<100 && data[i+2]<60) {
+        left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+      }
+    }
+    return {width:right-left+1,height:bottom-top+1};
   });
-  expect(sample.every(([r,g,b]) => r > 180 && g < 100 && b < 60)).toBe(true);
+  for (const [format,height,minArtworkHeight] of [["portrait",1350,.35],["square",1080,.43],["story",1920,.28]]) {
+    await ratio.selectOption(format);
+    await expect(canvas).toHaveAttribute("height", String(height));
+    await expect(page.locator("#captionFit")).toContainText("Balanced image and copy at");
+    await expect(page.locator("#fit-status")).toBeEmpty();
+    expect(Number((await page.locator("#captionFit").textContent()).match(/at (\d+)px/)[1])).toBeGreaterThanOrEqual(18);
+    await expect.poll(async () => (await redBounds()).height).toBeGreaterThan(height*minArtworkHeight);
+    const bounds=await redBounds();
+    expect(Math.abs(bounds.width/bounds.height-.8)).toBeLessThan(.02);
+    expect(await canvas.getAttribute("width")).toBe("1080");
+  }
+  await ratio.selectOption("portrait");
+  await expect(canvas).toHaveAttribute("height", "1350");
   const [download] = await Promise.all([page.waitForEvent("download"),page.getByRole("button",{name:"Download PNG frame"}).click()]);
   const {readFile} = await import("node:fs/promises");
   const exported = await readFile(await download.path());
   expect(exported.readUInt32BE(16)).toBe(1080);
-  expect(exported.readUInt32BE(20)).toBe(autoHeight);
-  await page.getByLabel("Aspect ratio").selectOption("portrait");
-  await expect(canvas).toHaveAttribute("height", "1350");
-  await expect(page.locator("#captionFit")).toHaveText("Caption uses 40px on the ad.");
-  await page.getByRole("button", {name: "Auto fit artwork & text"}).click();
-  await expect(canvas).toHaveAttribute("height", String(autoHeight));
+  expect(exported.readUInt32BE(20)).toBe(1350);
   await caption.fill("Short caption.");
-  await expect(canvas).toHaveAttribute("height", String(shortHeight));
+  await expect(page.locator("#captionFit")).toHaveText("Caption uses 40px on the ad.");
+  await expect.poll(async () => (await redBounds()).height).toBeGreaterThan(700);
+  await caption.fill("A\n".repeat(299));
+  await expect(page.locator("#fit-status")).toContainText("Too much on-image text");
+  await page.getByRole("button",{name:"Download PNG frame"}).click();
+  await expect(page.locator("#toast")).toContainText("Shorten the on-image copy before exporting");
 });

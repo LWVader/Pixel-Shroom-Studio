@@ -39,18 +39,22 @@ function setText(id, value) {
 }
 
 const captionLayouts = new Map();
-function measureCaption(s, w, h = Infinity) {
+let captionOverflow = false;
+const textLineAdvance = (row, size) => row ? size * 1.19 : size * .42;
+function measureCaption(s, w, h = Infinity, minimum = 14) {
   const family = s.captionFont || "Arial", requested = Number(s.captionFontSize) || 28;
   const weight = FontLibrary.weight(family, s.captionWeight || "700");
-  const key = JSON.stringify([s.headline, requested, family, weight, w, h, FontLibrary.generation]);
+  const key = JSON.stringify([s.headline, requested, family, weight, w, h, minimum, FontLibrary.generation]);
   if (captionLayouts.has(key)) return captionLayouts.get(key);
   let size = requested;
   function wrap() {
     ctx.save();
     ctx.font = `${weight} ${size}px "${family}", "Noto Emoji", sans-serif`;
     const rows = [];
+    // Keep intentional paragraphs and bullets without spending an entire
+    // line of artwork space on each blank separator.
     if (s.headline.trim()) {
-      for (const paragraph of s.headline.split("\n")) {
+      for (const paragraph of s.headline.trim().split(/\r?\n/)) {
         let line = "";
         for (const word of paragraph.split(/\s+/).filter(Boolean)) {
           const next = line ? line + " " + word : word;
@@ -62,16 +66,15 @@ function measureCaption(s, w, h = Infinity) {
             line += char;
           }
         }
-        rows.push(line);
+        if (line || (rows.length && rows.at(-1) !== "")) rows.push(line);
       }
     }
     ctx.restore();
     return rows;
   }
   let rows = wrap();
-  const required = () => rows.length ? rows.length * size * 1.22 + 6 : 0;
-  // Never shrink normal copy down to unreadable 6px.
-  const minSize = Math.min(requested, 18);
+  const required = () => rows.length ? rows.reduce((sum, row) => sum + textLineAdvance(row, size), 0) + 6 : 0;
+  const minSize = Math.min(requested, minimum);
   while (size > minSize && required() > h) { size--; rows = wrap(); }
   const height = required(), overflow = height > h;
   const layout = {size, rows, height, overflow, family, weight, requested};
@@ -87,12 +90,20 @@ function drawCaption(s, x, y, w, h) {
   ctx.clip();
   ctx.textAlign = s.captionAlign || "left";
   const anchor = s.captionAlign === "center" ? x + w / 2 : s.captionAlign === "right" ? x + w : x;
-  const visibleRows = overflow ? rows.slice(0, Math.max(0, Math.floor((h - 6) / (size * 1.22)))) : rows;
-  visibleRows.forEach((row, i) => text(overflow && i === visibleRows.length - 1 ? row + "…" : row, anchor, y + size + i * size * 1.22, size, s.textColor, weight, family));
+  let offset = 0;
+  for (const row of rows) {
+    const advance = textLineAdvance(row, size);
+    if (offset + advance + 6 > h) break;
+    if (row) text(row, anchor, y + offset + size, size, s.textColor, weight, family);
+    offset += advance;
+  }
   ctx.restore();
-  setText("captionFit", overflow ? "Copy is too long for this canvas. Select Auto fit or shorten the caption." :
-    size < requested ? "Caption fitted to " + size + "px. Auto fit preserves the selected font size when space allows." :
+  captionOverflow = overflow;
+  const warning = "Too much on-image text for this social format. Shorten the on-image copy or put the longer message in Social post text.";
+  setText("captionFit", overflow ? warning :
+    size < requested ? "Balanced image and copy at " + size + "px (selected maximum " + requested + "px)." :
       "Caption uses " + size + "px on the ad.");
+  setText("fit-status", overflow ? warning : "");
 }
 const characters={};
 for(const entry of CHARACTER_CATALOG){const img=loadImage(entry.src);characters[entry.id]=img;}
@@ -140,37 +151,21 @@ function paintArtwork(x, y, width, height, zoom = Number(state.bgZoom)) {
   }
 }
 
-const canvasHeights = {square: 1080, story: 1920, portrait: 1350, auto: null};
-const AUTO_MAX_HEIGHT = 3000;
+const canvasHeights = {square: 1080, story: 1920, portrait: 1350};
 const MARKETING_WIDTH = 752;
 const ART_TOP = 132, CAPTION_GAPS = 48, FOOTER_SPACE = 148;
 function naturalArtworkHeight(width) {
   return backdrop?.complete && backdrop.naturalWidth
     ? width * backdrop.naturalHeight / backdrop.naturalWidth : width * 2 / 3;
 }
-function desiredCanvasHeight() {
-  if (state.ratio !== "auto") return canvasHeights[state.ratio] || 1350;
-  if (state.layout !== "marketing") return 1350;
-  const fullCanvas = state.artworkPlacement === "canvas" && state.bgImage;
-  const logical = fullCanvas ? naturalArtworkHeight(864) :
-    ART_TOP + naturalArtworkHeight(MARKETING_WIDTH) + CAPTION_GAPS +
-    Math.max(80, measureCaption(state, MARKETING_WIDTH).height) + FOOTER_SPACE;
-  // Even dimensions support video encoders; cap custom output to keep exports practical.
-  return Math.max(608, Math.min(AUTO_MAX_HEIGHT, Math.ceil(logical * CANVAS_WIDTH / 864 / 2) * 2));
-}
 function updateCanvasSize() {
-  const height = desiredCanvasHeight();
+  const height = canvasHeights[state.ratio] || 1350;
   if (canvas.width !== CANVAS_WIDTH || canvas.height !== height) {
     canvas.width = CANVAS_WIDTH;
     canvas.height = height;
   }
-  const aspect = CANVAS_WIDTH / height;
-  canvas.parentElement.style.setProperty("--scene-aspect", aspect);
-  const stage = canvas.closest(".stage");
-  stage.style.setProperty("--scene-aspect", aspect);
-  stage.dataset.autoHeight = String(state.ratio === "auto");
-  setText("output-size", CANVAS_WIDTH + " × " + height + " px" + (state.ratio === "auto" ? " · auto fit" : ""));
-  $("auto-height-note").hidden = state.ratio !== "auto";
+  canvas.parentElement.style.setProperty("--scene-aspect", CANVAS_WIDTH / height);
+  setText("output-size", CANVAS_WIDTH + " × " + height + " px");
 }
 const logicalHeight = () => canvas.height * 864 / CANVAS_WIDTH;
 const hasCharacter = () => state.layout === "popout" || state.showCharacter;
@@ -187,10 +182,17 @@ function artworkRect(height) {
     const buttonY = story ? height * .77 - 115 : height - FOOTER_SPACE;
     const available = Math.max(1, buttonY - y - CAPTION_GAPS);
     const copyWidth = story ? 688 : MARKETING_WIDTH;
-    const wanted = Math.max(80, measureCaption(state, copyWidth).height);
-    // Allocate caption height from its actual line breaks, not an arbitrary
-    // fixed slot. Fixed-ratio exports still leave at least some room for art.
-    const textHeight = Math.min(wanted, Math.max(80, available - 144));
+    // Use the true artwork aspect and wrapped caption measurements together.
+    // When copy is long, reserve roughly half of the content area for art
+    // rather than letting the selected font size turn it into a thumbnail.
+    const naturalHeight = state.bgFit === "contain" ? naturalArtworkHeight(MARKETING_WIDTH) : available;
+    const idealArt = Math.min(naturalHeight, available * .56);
+    const minimumArt = Math.min(naturalHeight, available * .42);
+    const preferredCopyHeight = Math.max(80, available - idealArt);
+    const maximumCopyHeight = Math.max(preferredCopyHeight, available - minimumArt);
+    let layout = measureCaption(state, copyWidth, preferredCopyHeight, 18);
+    if (layout.overflow) layout = measureCaption(state, copyWidth, maximumCopyHeight, 14);
+    const textHeight = Math.min(maximumCopyHeight, Math.max(80, layout.height));
     const maxWidth = MARKETING_WIDTH, maxHeight = Math.max(1, available - textHeight);
     let w = maxWidth, h = maxHeight;
     if (state.bgFit === "contain" && backdrop?.complete && backdrop.naturalWidth) {
@@ -198,7 +200,38 @@ function artworkRect(height) {
       w = backdrop.naturalWidth * scale;
       h = backdrop.naturalHeight * scale;
     }
-    return {x: (864 - w) / 2, y, w, h, edge: y + h};
+    const stacked = {x: (864 - w) / 2, y, w, h, edge: y + h};
+    // A square post with a tall image and a long caption can waste the
+    // side space in a stacked layout. Prefer a split body only when it
+    // materially improves the artwork while keeping every line readable.
+    if (state.ratio === "square" && state.bgFit === "contain" &&
+        naturalHeight > MARKETING_WIDTH && state.headline.length > 160) {
+      const bodyHeight = buttonY - y - 18;
+      const stackedCopy = measureCaption(state, copyWidth, buttonY - stacked.edge - CAPTION_GAPS);
+      let best = null;
+      for (const fraction of [.40, .44, .48, .52]) {
+        const columnWidth = MARKETING_WIDTH * fraction;
+        const copyX = 56 + columnWidth + 22;
+        const columnCopyWidth = 808 - copyX;
+        const copy = measureCaption(state, columnCopyWidth, bodyHeight, 14);
+        if (copy.overflow) continue;
+        const maxArtHeight = naturalArtworkHeight(columnWidth);
+        const artHeight = Math.min(bodyHeight, maxArtHeight);
+        const artWidth = columnWidth * artHeight / maxArtHeight;
+        const area = artHeight * artWidth;
+        if (area < stacked.w * stacked.h * 1.3 || copy.size < Math.min(stackedCopy.size, 16)) continue;
+        const score = Math.sqrt(area) * copy.size;
+        if (!best || score > best.score) best = {
+          x: 56 + (columnWidth - artWidth) / 2,
+          y: y + (bodyHeight - artHeight) / 2,
+          w: artWidth, h: artHeight,
+          copy: {x: copyX, y: y + (bodyHeight - copy.height) / 2, w: columnCopyWidth, h: copy.height + .1},
+          score
+        };
+      }
+      if (best) return {...best, edge: best.y + best.h};
+    }
+    return stacked;
   }
   const y = 172, h = Math.min(440, height * .36);
   return {x: 122, y, w: 620, h, edge: y + h};
@@ -267,7 +300,7 @@ function paintCharacter(rect, height) {
   if (state.motion !== "none") SceneEffects.after(ctx, state, t, rect);
 }
 
-function draw(){if(!recording) updateCanvasSize();const s=canvas.width/864;ctx.setTransform(s,0,0,s,0,0);const h=logicalHeight();
+function draw(){if(!recording) updateCanvasSize();captionOverflow=false;if(state.layout==="marketing"&&state.artworkPlacement==="canvas"&&state.bgImage){setText("fit-status","");setText("captionFit","Full canvas uses your finished image; editor copy stays in the social post text.");}const s=canvas.width/864;ctx.setTransform(s,0,0,s,0,0);const h=logicalHeight();
 paintCanvas(h);
 if(state.layout==='marketing'){
   renderMarketingAd(ctx,state,t,h,brandLogo);
@@ -377,8 +410,7 @@ function sync() {
   FontLibrary.sync(state, paletteTheme);
 
   const isPopout = state.layout === "popout";
-  if (isPopout && state.ratio === "auto") state.ratio = "portrait";
-  $("ratio").querySelector('option[value="auto"]').disabled = isPopout;
+  if (!Object.hasOwn(canvasHeights, state.ratio)) state.ratio = "portrait";
   const visible = hasCharacter();
   $("characterSection").hidden = $("character-placement").hidden = $("character-stage-note").hidden = !visible;
   $("depth-setting").hidden = state.motion === "none";
@@ -435,7 +467,6 @@ for (const id of [...regularControls, ...extraControls]) {
 
 $("fit-artwork-copy").onclick = () => {
   if (state.layout !== "marketing") return;
-  state.ratio = "auto";
   state.artworkPlacement = "template";
   state.bgFit = "contain";
   state.bgZoom = 100;
@@ -525,7 +556,7 @@ $("projectFile").onchange = async (event) => {
     toast(error.message === "This project version is unsupported." ? error.message : "Please select a valid AD Studio project JSON.");
   }
 };
-$('snapshot').onclick=()=>{if(!assetsReady())return toast('Wait for your images and selected font to load.');draw();canvas.toBlob(b=>download(b,state.layout==='marketing'?'campaign-ad.png':'popout-frame.png'),'image/png')};
+$('snapshot').onclick=()=>{if(!assetsReady())return toast('Wait for your images and selected font to load.');draw();if(captionOverflow)return toast('Shorten the on-image copy before exporting.');canvas.toBlob(b=>download(b,state.layout==='marketing'?'campaign-ad.png':'popout-frame.png'),'image/png')};
 async function renderAnimation(onProgress = () => {}, {publish = false, announce = () => {}} = {}) {
   if (recording) throw Error("Already recording.");
   if (!assetsReady()) throw Error("Wait for your images and selected font to load.");
@@ -538,6 +569,8 @@ async function renderAnimation(onProgress = () => {}, {publish = false, announce
   try {
     await prepareExportSymbols().catch(() => {});
     updateCanvasSize();
+    draw();
+    if (captionOverflow) throw Error("Shorten the on-image copy before exporting or publishing.");
     return await exportAdVideo(canvas, state.duration / PLAYBACK_RATE, {
       publish, announce, progress: onProgress,
       paint(seconds) { t = seconds * PLAYBACK_RATE; draw(); }

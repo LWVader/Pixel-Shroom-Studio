@@ -5,7 +5,7 @@ import {AdPalette} from "./ad-palette.js";
 'use strict';
 
 export function renderMarketingAd(ctx, state, time, height, logo) {
-  const {x: mediaX, w: mediaWidth, y: mediaTop, h: mediaHeight, edge: mediaBottom} = artworkRect(height);
+  const {x: mediaX, w: mediaWidth, y: mediaTop, h: mediaHeight, edge: mediaBottom, copy: splitCopy} = artworkRect(height);
   const margin = 56, width = 752;
   const {ink, post, outline, button, buttonInk} = paletteTheme;
 
@@ -53,7 +53,8 @@ export function renderMarketingAd(ctx, state, time, height, logo) {
   const copyX = story ? 88 : margin;
   const copyWidth = 864 - 2 * copyX;
   const buttonY = story ? height * .77 - 115 : height - 148;
-  drawCaption({...state, textColor: ink}, copyX, mediaBottom + 30, copyWidth, buttonY - mediaBottom - 48);
+  const caption = splitCopy || {x: copyX, y: mediaBottom + 30, w: copyWidth, h: buttonY - mediaBottom - 48};
+  drawCaption({...state, textColor: ink}, caption.x, caption.y, caption.w, caption.h);
   if (state.cta.trim()) {
     rounded(copyX, buttonY, copyWidth, 62, 11, button);
     text(state.cta, copyX + 24, buttonY + 40, 23, buttonInk, 700, state.captionFont, copyWidth - 48);
@@ -182,7 +183,6 @@ $("edit-marketing-copy").addEventListener("click", () => {
   headline.focus();
 });
 
-state.ratio = "auto";
 applyMarketingAd("offer", null, BUNDLED_ARTWORK);
 void loadCampaigns();
 const requestedCampaign = new URL(location.href).searchParams.get("campaign");
