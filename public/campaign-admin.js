@@ -39,7 +39,7 @@ function row(title, description, action) {
 }
 
 const stages = {
-  new: ["New brief", "#bca1ff"], production: ["In production", "#ec9bff"],
+  new: ["New order", "#bca1ff"], production: ["In production", "#ec9bff"],
   ready: ["Ready to email", "#f5c177"], delivered: ["Delivered", "#d9ff55"]
 };
 
@@ -79,15 +79,15 @@ function renderOrders() {
   const shown = rows.filter((order) =>
     [order.business, order.industry, order.buyer_email].some((field) => field.toLowerCase().includes(query)));
   list.replaceChildren(...shown.map((order) => {
-    const delivery = stages[order.fulfillment_stage]?.[0] || "New brief";
+    const delivery = stages[order.fulfillment_stage]?.[0] || "New order";
     return row(order.business,
       `${offers[order.offer]} · ${order.buyer_email} · ${delivery}`,
-      button("Open brief", () => openOrder(order)));
+      button(order.offer === "monthly" ? "Open order" : "Open brief", () => openOrder(order)));
   }));
   $("more-orders").hidden = !more;
   $("order-status").textContent = shown.length
-    ? `${shown.length} loaded ${shown.length === 1 ? "brief" : "briefs"} shown.`
-    : query ? "No loaded briefs match this search." : "No campaign briefs have been submitted.";
+    ? `${shown.length} loaded ${shown.length === 1 ? "order" : "orders"} shown.`
+    : query ? "No loaded orders match this search." : "No orders or campaign briefs have been received.";
 }
 
 async function api(path, method = "GET", body) {
@@ -111,7 +111,7 @@ async function loadOrders(reset = false) {
   const refresh = $("refresh");
   const moreButton = $("more-orders");
   refresh.disabled = moreButton.disabled = true;
-  $("order-status").textContent = "Loading briefs…";
+  $("order-status").textContent = "Loading orders…";
   try {
     const {orders: page, more: hasNext, counts, activity} = await adminApi(`?offset=${offset}`);
     if (request !== generation) return;
@@ -122,7 +122,7 @@ async function loadOrders(reset = false) {
     renderOrders();
     renderWorkflow(counts || {}, activity || []);
   } catch {
-    if (request === generation) $("order-status").textContent = "Briefs could not be loaded. Try refreshing.";
+    if (request === generation) $("order-status").textContent = "Orders could not be loaded. Try refreshing.";
   } finally {
     if (request === generation) refresh.disabled = moreButton.disabled = false;
   }
@@ -132,7 +132,12 @@ function openOrder(order) {
   selected = order;
   $("detail-title").textContent = order.business;
   $("detail-offer").textContent = offers[order.offer];
-  const fields = [
+  const fields = order.offer === "monthly" ? [
+    ["Buyer email", order.buyer_email],
+    ["Delivery", "10 independent, randomly themed backgrounds per month"],
+    ["Creative brief", "Not required"],
+    ["Received", date.format(new Date(order.created_at))]
+  ] : [
     ["Buyer email", order.buyer_email], ["Industry", order.industry], ["Vibe", order.vibe],
     ["Colors", order.colors || "No preference"], ["Campaign goal", order.goal],
     ["Received", date.format(new Date(order.created_at))]
@@ -168,7 +173,7 @@ function renderDelivery(order) {
     tf: "cm",
     to: order.buyer_email,
     su: `Pixel Shroom Studio | Your ${offers[order.offer]}`,
-    body: "Hi,\r\n\r\nYour finished campaign ZIP is attached.\r\n\r\nThanks,\r\nLoren\r\nPixel Shroom Studio"
+    body: order.offer === "monthly" ? "Hi,\r\n\r\nYour Monthly Asset Pack ZIP with 10 fresh backgrounds is attached.\r\n\r\nThanks,\r\nLoren\r\nPixel Shroom Studio" : "Hi,\r\n\r\nYour finished campaign ZIP is attached.\r\n\r\nThanks,\r\nLoren\r\nPixel Shroom Studio"
   }).toString();
   $("compose-email").href = draft.href;
 }

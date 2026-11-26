@@ -73,7 +73,7 @@ For social publishing, reuse the previous Worker’s `AD_STUDIO_DB` binding and 
 
 ### Track and publish campaigns
 
-From the footer mushroom, sign in to Campaign Admin. The workflow overview shows all orders by stage and the latest activity. Open a brief to move it from New brief to In production or Ready to email. Marking the delivery email as sent moves it to Delivered. For a recurring Monthly Asset Pack, you can move a delivered order back into production for the next delivery.
+From the footer mushroom, sign in to Campaign Admin. The workflow overview shows all orders by stage and the latest activity. Open an order to move it from New order to In production or Ready to email. Marking the delivery email as sent moves it to Delivered. For a recurring Monthly Asset Pack, you can move a delivered order back into production for the next delivery.
 
 Use **New campaign** in Campaign publisher to add artwork and a case study. **Save as draft** holds it in admin. **Publish to site** adds it to the public portfolio. **View live** opens its shareable case-study link, and **Unpublish to draft** takes it off the portfolio. The form converts JPG, PNG, or WebP uploads to WebP for the site. The five bundled examples are still available.
 
@@ -104,11 +104,11 @@ The archive includes prebuilt AD Studio assets. After changing AD Studio source 
 
 ## Email a finished ZIP
 
-1. Open the buyer’s submitted brief in Campaign Admin. Confirm the matching Stripe invoice for each Monthly Asset Pack delivery.
+1. Open the buyer’s order in Campaign Admin. A paid Monthly Asset Pack subscription is registered automatically on the verified Stripe return, without requiring a creative brief. Confirm the matching Stripe invoice before every monthly delivery of 10 independent, randomly themed backgrounds.
 2. Select **Compose in Gmail**. Verify the From address is `weirichloren@gmail.com`, attach the ZIP, and send it from Gmail. If Gmail opens the inbox, compose a message in that account using the buyer’s email from the order.
 3. Select **Mark email sent** after sending. For another ZIP, select **Record another send** after the next email goes out.
 
-Stripe Dashboard shows paid orders from buyers who left before submitting a brief. Follow up with those buyers separately. The checkout return page is used for submitting the brief and offering the optional landing page.
+Stripe Dashboard shows paid orders from buyers who leave before returning to the site or, for Attention Packs, before submitting a brief. Follow up with those buyers separately. The checkout return page confirms Monthly Asset Pack subscriptions without a creative brief; Attention Pack buyers still submit a brief and may add a landing page.
 
 ## Optional offers
 

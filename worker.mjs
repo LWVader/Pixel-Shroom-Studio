@@ -94,8 +94,10 @@ async function notifyBrief(env, record) {
       from: env.RESEND_FROM_EMAIL,
       to: [env.ADMIN_ALERT_EMAIL || "lwvader@pixelshroomstudio.com"],
       reply_to: record.buyer_email,
-      subject: "New Pixel Shroom Studio campaign brief",
-      text: `Offer: ${record.offer}\nBusiness: ${record.business}\nIndustry: ${record.industry}\nVibe: ${record.vibe}\nColors: ${record.colors || "No preference"}\n\nCampaign goal\n${record.goal}`
+      subject: record.offer === "monthly" ? "New Pixel Shroom Studio Monthly Asset Pack subscription" : "New Pixel Shroom Studio campaign brief",
+      text: record.offer === "monthly"
+        ? `Paid Monthly Asset Pack subscription\nBuyer: ${record.buyer_email}\n10 independent, randomly themed backgrounds per month. No creative brief required.\nConfirm the current paid invoice in Stripe before delivery.`
+        : `Offer: ${record.offer}\nBusiness: ${record.business}\nIndustry: ${record.industry}\nVibe: ${record.vibe}\nColors: ${record.colors || "No preference"}\n\nCampaign goal\n${record.goal}`
     }),
     signal: AbortSignal.timeout(8000),
     redirect: "error"

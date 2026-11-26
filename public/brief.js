@@ -11,10 +11,13 @@ surprise.addEventListener("change", () => {
 
 function showThanks(order) {
   form.hidden = true;
+  if (order.offer === "monthly") {
+    title.textContent = "Subscription confirmed.";
+    status.textContent = "Your Monthly Asset Pack is confirmed! No creative brief is needed. Each month, I’ll send a ZIP of 10 fresh, randomly themed backgrounds from weirichloren@gmail.com to the email address you used at checkout.";
+    return;
+  }
   title.textContent = "Brief received.";
-  status.textContent = order.offer === "monthly"
-    ? "Your Monthly Asset Pack brief is in. I’ll send each finished ZIP from weirichloren@gmail.com to the email address you used at checkout."
-    : "Your Attention Pack brief is in. I’ll send the finished ZIP from weirichloren@gmail.com to the email address you used at checkout.";
+  status.textContent = "Your Attention Pack brief is in. I’ll send the finished ZIP from weirichloren@gmail.com to the email address you used at checkout.";
   if (order.canAddLanding) {
     const panel = document.querySelector("#addon-panel");
     const confirm = panel.querySelector("#addon-confirm");

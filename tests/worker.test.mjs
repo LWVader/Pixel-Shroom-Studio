@@ -151,8 +151,22 @@ test("configured monthly subscription and $199 landing add-on use the correct ch
   assert.equal(monthlyForm.get("mode"), "subscription");
   assert.equal(monthlyForm.get("line_items[0][price]"), "price_fixture_monthly");
   const monthlyId = monthlyURL.split("/").at(-1);
+  assert.equal((await campaign({action: "order", sessionId: monthlyId})).status, 409);
   site.completePayment(monthlyId);
-  assert.equal((await (await campaign({action: "order", sessionId: monthlyId})).json()).offer, "monthly");
+  const confirmed = {offer: "monthly", submitted: true, canAddLanding: false};
+  assert.deepEqual((await (await campaign({action: "order", sessionId: monthlyId})).json()), confirmed);
+  assert.deepEqual((await (await campaign({action: "order", sessionId: monthlyId})).json()), confirmed);
+  // Older cached clients may submit a brief; the monthly order needs no brief fields.
+  assert.deepEqual((await (await campaign({action: "brief", sessionId: monthlyId})).json()), confirmed);
+  const credentials = await login(site);
+  const headers = {Cookie: credentials.headers.get("Set-Cookie").split(";")[0]};
+  const {orders: monthlyOrders} = await (await site.call(adminApi, {headers})).json();
+  assert.equal(monthlyOrders.length, 1);
+  assert.equal(monthlyOrders[0].buyer_email, testBuyer);
+  assert.equal(monthlyOrders[0].business, "Monthly Asset Pack");
+  assert.equal(monthlyOrders[0].industry, "");
+  assert.equal(monthlyOrders[0].vibe, "");
+  assert.match(monthlyOrders[0].goal, /randomly themed/);
   const attention = await campaign({action: "checkout", offer: "attention", requestId: crypto.randomUUID()});
   const parentSession = (await attention.json()).url.split("/").at(-1);
   const landing = {action: "checkout", offer: "landing", parentSession, requestId: crypto.randomUUID()};

@@ -82,10 +82,10 @@ test("mock Stripe checkout, campaign brief and footer admin delivery", async ({p
   await page.getByRole("link", {name: "Studio administrator sign-in"}).click();
   await expect(page).toHaveURL("/admin.html");
   await expect(page.getByRole("heading", {name: "Administrator sign-in"})).toBeVisible();
-  await expect(page.getByRole("heading", {name: "Submitted briefs"})).toBeHidden();
+  await expect(page.getByRole("heading", {name: "Orders & briefs"})).toBeHidden();
   await page.getByLabel("Administrator password").fill(testPassword);
   await page.getByRole("button", {name: "Sign in", exact: true}).click();
-  await expect(page.getByRole("heading", {name: "Submitted briefs"})).toBeVisible();
+  await expect(page.getByRole("heading", {name: "Orders & briefs"})).toBeVisible();
   await page.getByRole("button", {name: "Check Stripe connection"}).click();
   await expect(page.getByText("Stripe Checkout API reachable in test mode.")).toBeVisible();
 
@@ -110,6 +110,43 @@ test("mock Stripe checkout, campaign brief and footer admin delivery", async ({p
   await page.getByRole("button", {name: "Sign out"}).click();
   await expect(page.getByRole("heading", {name: "Administrator sign-in"})).toBeVisible();
   expect((await page.request.get("/api/admin/campaigns")).status()).toBe(401);
+});
+
+test("monthly subscription confirms with no creative brief and creates one admin order", async ({page, request, baseURL}) => {
+  await request.post("/__test/configure-monthly", {params: {enabled: "true"}});
+  try {
+    await page.route("https://checkout.stripe.com/c/pay/*", async (route) => {
+      const id = new URL(route.request().url()).pathname.split("/").at(-1);
+      const complete = await request.post("/__test/complete-checkout", {params: {session: id}});
+      expect(complete.ok()).toBeTruthy();
+      const {redirect} = await complete.json();
+      expect(new URL(redirect).origin).toBe(baseURL);
+      await route.fulfill({status: 302, headers: {Location: redirect}});
+    });
+    await page.goto("/");
+    await expect(page.locator("#monthly")).toContainText("No creative brief required");
+    await page.getByRole("button", {name: "Subscribe for $49/month"}).click();
+    await expect(page.getByRole("heading", {name: "Subscription confirmed."})).toBeVisible();
+    await expect(page.locator("#brief-status")).toContainText("10 fresh, randomly themed backgrounds");
+    await expect(page.locator("#brief-form")).toBeHidden();
+    await expect(page.locator("#addon-panel")).toBeHidden();
+    await page.reload();
+    await expect(page.getByRole("heading", {name: "Subscription confirmed."})).toBeVisible();
+    await page.goto("/admin.html");
+    await page.getByLabel("Administrator password").fill(testPassword);
+    await page.getByRole("button", {name: "Sign in", exact: true}).click();
+    const entry = page.locator("#order-list li").filter({hasText: "Monthly Asset Pack"});
+    await expect(entry).toHaveCount(1);
+    await entry.getByRole("button", {name: "Open order"}).click();
+    const order = page.getByRole("dialog", {name: "Monthly Asset Pack"});
+    await expect(order).toBeVisible();
+    await expect(order.getByText("Not required", {exact: true})).toBeVisible();
+    await expect(order.getByText("10 independent, randomly themed backgrounds per month")).toBeVisible();
+    const draft = new URL(await order.getByRole("link", {name: "Compose in Gmail"}).getAttribute("href"));
+    expect(draft.searchParams.get("body")).toContain("10 fresh backgrounds");
+  } finally {
+    await request.post("/__test/configure-monthly", {params: {enabled: "false"}});
+  }
 });
 
 test("publishes a campaign and starts a marketing ad from its artwork", async ({page, request}) => {

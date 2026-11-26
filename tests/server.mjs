@@ -7,6 +7,13 @@ const fixture = await createFixture();
 const server = createServer(async (request, reply) => {
   try {
     const url = new URL(request.url, origin);
+    if (url.pathname === "/__test/configure-monthly" && request.method === "POST") {
+      const enabled = url.searchParams.get("enabled") === "true";
+      fixture.env.CAMPAIGN_MONTHLY_PRICE_ID = enabled ? "price_fixture_monthly" : "";
+      fixture.env.CAMPAIGN_BILLING_PORTAL_URL = enabled ? "https://billing.stripe.com/p/login/fixture" : "";
+      reply.writeHead(204).end();
+      return;
+    }
     if (url.pathname === "/__test/complete-checkout" && request.method === "POST") {
       const redirect = fixture.completePayment(url.searchParams.get("session"));
       if (!redirect) {
