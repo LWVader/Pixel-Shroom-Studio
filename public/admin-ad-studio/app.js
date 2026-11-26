@@ -38,16 +38,18 @@ function setText(id, value) {
   if (element.textContent !== value) element.textContent = value;
 }
 
-let captionLayout;
-function drawCaption(s, x, y, w, h) {
+const captionLayouts = new Map();
+function measureCaption(s, w, h = Infinity) {
   const family = s.captionFont || "Arial", requested = Number(s.captionFontSize) || 28;
   const weight = FontLibrary.weight(family, s.captionWeight || "700");
   const key = JSON.stringify([s.headline, requested, family, weight, w, h, FontLibrary.generation]);
-  if (captionLayout?.key !== key) {
-    let size = requested;
-    function wrap() {
-      ctx.font = `${weight} ${size}px "${family}", "Noto Emoji", sans-serif`;
-      const rows = [];
+  if (captionLayouts.has(key)) return captionLayouts.get(key);
+  let size = requested;
+  function wrap() {
+    ctx.save();
+    ctx.font = `${weight} ${size}px "${family}", "Noto Emoji", sans-serif`;
+    const rows = [];
+    if (s.headline.trim()) {
       for (const paragraph of s.headline.split("\n")) {
         let line = "";
         for (const word of paragraph.split(/\s+/).filter(Boolean)) {
@@ -62,25 +64,35 @@ function drawCaption(s, x, y, w, h) {
         }
         rows.push(line);
       }
-      return rows;
     }
-    let rows = wrap();
-    while (size > 6 && rows.length * size * 1.22 > h) {
-      size--;
-      rows = wrap();
-    }
-    captionLayout = {key, size, rows};
+    ctx.restore();
+    return rows;
   }
-  const {size, rows} = captionLayout;
+  let rows = wrap();
+  const required = () => rows.length ? rows.length * size * 1.22 + 6 : 0;
+  // Never shrink normal copy down to unreadable 6px.
+  const minSize = Math.min(requested, 18);
+  while (size > minSize && required() > h) { size--; rows = wrap(); }
+  const height = required(), overflow = height > h;
+  const layout = {size, rows, height, overflow, family, weight, requested};
+  if (captionLayouts.size >= 32) captionLayouts.clear();
+  captionLayouts.set(key, layout);
+  return layout;
+}
+function drawCaption(s, x, y, w, h) {
+  const {size, rows, overflow, family, weight, requested} = measureCaption(s, w, Math.max(0, h));
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x, y, w, h);
+  ctx.rect(x, y, w, Math.max(0, h));
   ctx.clip();
   ctx.textAlign = s.captionAlign || "left";
   const anchor = s.captionAlign === "center" ? x + w / 2 : s.captionAlign === "right" ? x + w : x;
-  rows.forEach((row, i) => text(row, anchor, y + size + i * size * 1.22, size, s.textColor, weight, family));
+  const visibleRows = overflow ? rows.slice(0, Math.max(0, Math.floor((h - 6) / (size * 1.22)))) : rows;
+  visibleRows.forEach((row, i) => text(overflow && i === visibleRows.length - 1 ? row + "…" : row, anchor, y + size + i * size * 1.22, size, s.textColor, weight, family));
   ctx.restore();
-  setText("captionFit", size < requested ? "Caption fitted to " + size + "px on the ad." : "Caption uses " + size + "px on the ad.");
+  setText("captionFit", overflow ? "Copy is too long for this canvas. Select Auto fit or shorten the caption." :
+    size < requested ? "Caption fitted to " + size + "px. Auto fit preserves the selected font size when space allows." :
+      "Caption uses " + size + "px on the ad.");
 }
 const characters={};
 for(const entry of CHARACTER_CATALOG){const img=loadImage(entry.src);characters[entry.id]=img;}
@@ -128,7 +140,38 @@ function paintArtwork(x, y, width, height, zoom = Number(state.bgZoom)) {
   }
 }
 
-const canvasHeights = {square: 1080, story: 1920, portrait: 1350};
+const canvasHeights = {square: 1080, story: 1920, portrait: 1350, auto: null};
+const AUTO_MAX_HEIGHT = 3000;
+const MARKETING_WIDTH = 752;
+const ART_TOP = 132, CAPTION_GAPS = 48, FOOTER_SPACE = 148;
+function naturalArtworkHeight(width) {
+  return backdrop?.complete && backdrop.naturalWidth
+    ? width * backdrop.naturalHeight / backdrop.naturalWidth : width * 2 / 3;
+}
+function desiredCanvasHeight() {
+  if (state.ratio !== "auto") return canvasHeights[state.ratio] || 1350;
+  if (state.layout !== "marketing") return 1350;
+  const fullCanvas = state.artworkPlacement === "canvas" && state.bgImage;
+  const logical = fullCanvas ? naturalArtworkHeight(864) :
+    ART_TOP + naturalArtworkHeight(MARKETING_WIDTH) + CAPTION_GAPS +
+    Math.max(80, measureCaption(state, MARKETING_WIDTH).height) + FOOTER_SPACE;
+  // Even dimensions support video encoders; cap custom output to keep exports practical.
+  return Math.max(608, Math.min(AUTO_MAX_HEIGHT, Math.ceil(logical * CANVAS_WIDTH / 864 / 2) * 2));
+}
+function updateCanvasSize() {
+  const height = desiredCanvasHeight();
+  if (canvas.width !== CANVAS_WIDTH || canvas.height !== height) {
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = height;
+  }
+  const aspect = CANVAS_WIDTH / height;
+  canvas.parentElement.style.setProperty("--scene-aspect", aspect);
+  const stage = canvas.closest(".stage");
+  stage.style.setProperty("--scene-aspect", aspect);
+  stage.dataset.autoHeight = String(state.ratio === "auto");
+  setText("output-size", CANVAS_WIDTH + " × " + height + " px" + (state.ratio === "auto" ? " · auto fit" : ""));
+  $("auto-height-note").hidden = state.ratio !== "auto";
+}
 const logicalHeight = () => canvas.height * 864 / CANVAS_WIDTH;
 const hasCharacter = () => state.layout === "popout" || state.showCharacter;
 const characterImage = () => state.model === "custom" ? characterUpload : characters[state.model];
@@ -139,11 +182,16 @@ function artworkRect(height) {
     return {x: 0, y: 0, w: 864, h: height, edge: height};
   }
   if (marketing) {
-    const y = 132;
-    // Give art all the space available above the copy/CTA. Reserve room
-    // for the logo, headline, button and footer at every export ratio.
-    const buttonY = state.ratio === "story" ? height * .77 - 115 : height - 148;
-    const maxWidth = 752, maxHeight = Math.max(1, buttonY - y - 128);
+    const y = ART_TOP;
+    const story = state.ratio === "story";
+    const buttonY = story ? height * .77 - 115 : height - FOOTER_SPACE;
+    const available = Math.max(1, buttonY - y - CAPTION_GAPS);
+    const copyWidth = story ? 688 : MARKETING_WIDTH;
+    const wanted = Math.max(80, measureCaption(state, copyWidth).height);
+    // Allocate caption height from its actual line breaks, not an arbitrary
+    // fixed slot. Fixed-ratio exports still leave at least some room for art.
+    const textHeight = Math.min(wanted, Math.max(80, available - 144));
+    const maxWidth = MARKETING_WIDTH, maxHeight = Math.max(1, available - textHeight);
     let w = maxWidth, h = maxHeight;
     if (state.bgFit === "contain" && backdrop?.complete && backdrop.naturalWidth) {
       const scale = Math.min(maxWidth / backdrop.naturalWidth, maxHeight / backdrop.naturalHeight);
@@ -219,7 +267,7 @@ function paintCharacter(rect, height) {
   if (state.motion !== "none") SceneEffects.after(ctx, state, t, rect);
 }
 
-function draw(){const s=canvas.width/864;ctx.setTransform(s,0,0,s,0,0);const h=logicalHeight();
+function draw(){if(!recording) updateCanvasSize();const s=canvas.width/864;ctx.setTransform(s,0,0,s,0,0);const h=logicalHeight();
 paintCanvas(h);
 if(state.layout==='marketing'){
   renderMarketingAd(ctx,state,t,h,brandLogo);
@@ -329,6 +377,8 @@ function sync() {
   FontLibrary.sync(state, paletteTheme);
 
   const isPopout = state.layout === "popout";
+  if (isPopout && state.ratio === "auto") state.ratio = "portrait";
+  $("ratio").querySelector('option[value="auto"]').disabled = isPopout;
   const visible = hasCharacter();
   $("characterSection").hidden = $("character-placement").hidden = $("character-stage-note").hidden = !visible;
   $("depth-setting").hidden = state.motion === "none";
@@ -361,12 +411,7 @@ function sync() {
   $("depthOut").value = state.depth + "%";
   $("durationOut").value = Number(state.duration) / PLAYBACK_RATE + "s";
   $("seek").max = Number(state.duration) / PLAYBACK_RATE;
-  const height = canvasHeights[state.ratio];
-  if (canvas.width !== CANVAS_WIDTH || canvas.height !== height) {
-    canvas.width = CANVAS_WIDTH;
-    canvas.height = height;
-  }
-  canvas.parentElement.style.setProperty("--scene-aspect", CANVAS_WIDTH / height);
+  updateCanvasSize();
   $("safe-zone-control").hidden = state.ratio !== "story";
   $("safe-zone-guide").hidden = state.ratio !== "story" || !$("safe-zone").checked;
   syncPlacement();
@@ -387,6 +432,15 @@ for (const id of [...regularControls, ...extraControls]) {
     sync();
   });
 }
+
+$("fit-artwork-copy").onclick = () => {
+  if (state.layout !== "marketing") return;
+  state.ratio = "auto";
+  state.artworkPlacement = "template";
+  state.bgFit = "contain";
+  state.bgZoom = 100;
+  sync();
+};
 
 $("subjectX").oninput = () => syncPlacement($("subjectX").value, state.subjectY);
 $("subjectY").oninput = () => syncPlacement(state.subjectX, $("subjectY").value);
@@ -483,6 +537,7 @@ async function renderAnimation(onProgress = () => {}, {publish = false, announce
   $("export").textContent = "Rendering…";
   try {
     await prepareExportSymbols().catch(() => {});
+    updateCanvasSize();
     return await exportAdVideo(canvas, state.duration / PLAYBACK_RATE, {
       publish, announce, progress: onProgress,
       paint(seconds) { t = seconds * PLAYBACK_RATE; draw(); }
@@ -654,7 +709,7 @@ async function prepareExportSymbols() {
   await document.fonts.load('14px "Noto Emoji"', "🍄");
   if (!document.fonts.check('14px "Noto Emoji"', "🍄")) return;
   exportSymbolsReady = true;
-  captionLayout = null;
+  captionLayouts.clear();
   requestPreview();
 }
 

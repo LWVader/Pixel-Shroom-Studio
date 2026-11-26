@@ -312,6 +312,8 @@ test("adaptive template preserves complete 4:5 artwork, full canvas and exported
     return source.toDataURL("image/png").split(",")[1];
   });
   await page.getByLabel("Aspect ratio").selectOption("portrait");
+  await page.locator("#edit-marketing-copy").click();
+  await page.locator("#headline").fill("Sample artwork.");
   await page.locator("#bgUpload").setInputFiles({name: "finished-ad-4x5.png", mimeType: "image/png", buffer: Buffer.from(data, "base64")});
   await expect(page.locator("#artworkPlacement")).toHaveValue("template");
   await expect(page.locator("#bgFit")).toHaveValue("contain");
@@ -373,4 +375,59 @@ test("adaptive template preserves complete 4:5 artwork, full canvas and exported
   await page.locator("#artworkPlacement").selectOption("canvas");
   await page.getByLabel("Aspect ratio").selectOption("portrait");
   await expect.poll(pixels).toEqual(expected);
+});
+
+test("auto-height post expands dynamically for artwork and multiline copy without reducing the selected font", async ({page}) => {
+  await page.goto("/admin.html");
+  await page.getByLabel("Administrator password").fill(testPassword);
+  await page.getByRole("button", {name: "Sign in", exact: true}).click();
+  await page.getByRole("link", {name: "Open AD Studio"}).click();
+  await expect(page.getByLabel("Aspect ratio")).toHaveValue("auto");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 400; canvas.height = 500;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ed2500"; ctx.fillRect(0, 0, 400, 500);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await page.locator("#bgUpload").setInputFiles({name: "portrait.png", mimeType: "image/png", buffer: Buffer.from(png, "base64")});
+  await page.locator("#edit-marketing-copy").click();
+  const caption = page.locator("#headline");
+  await caption.fill("Short caption.");
+  await expect(page.locator("#captionFit")).toContainText("40px");
+  const canvas = page.locator("#scene");
+  await expect(canvas).toHaveAttribute("height", "1686");
+  const shortHeight = Number(await canvas.getAttribute("height"));
+  const longCaption = [
+    "BORING FEEDS END HERE.",
+    "Give your social media a fresh creative edge.", "",
+    "10 new AI-generated backgrounds every month.",
+    "Unique styles for every promotion.",
+    "Ready for social media, advertising and branding.",
+    "Spend less time creating visuals.",
+    "All for just $49/month."
+  ].join("\n");
+  await caption.fill(longCaption);
+  await expect.poll(async () => Number(await canvas.getAttribute("height"))).toBeGreaterThan(shortHeight + 200);
+  await expect(page.locator("#captionFit")).toHaveText("Caption uses 40px on the ad.");
+  const autoHeight = Number(await canvas.getAttribute("height"));
+  expect(autoHeight % 2).toBe(0);
+  // Full-width source art, including top and bottom edges, and complete copy.
+  const sample = await canvas.evaluate(c => {
+    const ctx = c.getContext("2d"), scale = c.width / 864;
+    return [[60, 136], [804, 1068]].map(([x,y]) => Array.from(ctx.getImageData(Math.round(x*scale),Math.round(y*scale),1,1).data).slice(0,3));
+  });
+  expect(sample.every(([r,g,b]) => r > 180 && g < 100 && b < 60)).toBe(true);
+  const [download] = await Promise.all([page.waitForEvent("download"),page.getByRole("button",{name:"Download PNG frame"}).click()]);
+  const {readFile} = await import("node:fs/promises");
+  const exported = await readFile(await download.path());
+  expect(exported.readUInt32BE(16)).toBe(1080);
+  expect(exported.readUInt32BE(20)).toBe(autoHeight);
+  await page.getByLabel("Aspect ratio").selectOption("portrait");
+  await expect(canvas).toHaveAttribute("height", "1350");
+  await expect(page.locator("#captionFit")).toHaveText("Caption uses 40px on the ad.");
+  await page.getByRole("button", {name: "Auto fit artwork & text"}).click();
+  await expect(canvas).toHaveAttribute("height", String(autoHeight));
+  await caption.fill("Short caption.");
+  await expect(canvas).toHaveAttribute("height", String(shortHeight));
 });

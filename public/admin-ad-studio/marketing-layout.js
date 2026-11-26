@@ -182,6 +182,7 @@ $("edit-marketing-copy").addEventListener("click", () => {
   headline.focus();
 });
 
+state.ratio = "auto";
 applyMarketingAd("offer", null, BUNDLED_ARTWORK);
 void loadCampaigns();
 const requestedCampaign = new URL(location.href).searchParams.get("campaign");
