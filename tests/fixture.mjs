@@ -72,9 +72,30 @@ export async function createFixture() {
     CAMPAIGN_ATTENTION_ENABLED: "true",
     CAMPAIGN_LANDING_ENABLED: "true"
   };
+  const monthly = {objects:new Map(), mail:[], signatures:0, publicBucket:false, failMailOnce:false};
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input, options) => {
     const url = new URL(input);
+    if(url.origin==="https://fixtureproject.supabase.co"){
+      if(options.headers.get("Authorization")!=="Bearer fixture-storage-key")return Response.json({}, {status:401});
+      if(url.pathname==="/storage/v1/bucket/monthly-asset-packs")return Response.json({public:monthly.publicBucket});
+      const path=url.pathname.split("/").at(-1);
+      if(url.pathname.includes("/object/sign/")){
+        if(!monthly.objects.has(path))return Response.json({}, {status:404});
+        return Response.json({signedURL:"/object/sign/monthly-asset-packs/"+path+"?token=fixture"+(++monthly.signatures)});
+      }
+      if(url.pathname.includes("/object/monthly-asset-packs/") && options.method==="POST"){
+        if(monthly.objects.has(path))return Response.json({}, {status:409});
+        monthly.objects.set(path,new Uint8Array(options.body));return Response.json({Key:path});
+      }
+      return Response.json({}, {status:404});
+    }
+    if(url.origin==="https://api.resend.com"){
+      const payload=JSON.parse(options.body);
+      monthly.mail.push({key:options.headers["Idempotency-Key"],payload});
+      if(monthly.failMailOnce){monthly.failMailOnce=false;return Response.json({}, {status:503});}
+      return Response.json({id:"fixture-mail-"+monthly.mail.length});
+    }
     if (url.origin !== "https://api.stripe.com") throw new Error("Unexpected external API: " + url.origin);
     if (options.headers.get("Authorization") !== "Bearer " + fakeStripeKey) {
       return Response.json({error: {code: "invalid_api_key"}}, {status: 401});
@@ -115,7 +136,7 @@ export async function createFixture() {
   };
 
   return {
-    env, requests,
+    env, requests, monthly,
     request: (request) => worker.fetch(request, env),
     completePayment(id) {
       const session = sessions.get(id);

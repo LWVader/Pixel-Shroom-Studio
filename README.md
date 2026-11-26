@@ -56,7 +56,7 @@ You can continue to use it for admin sign-in. Use one self-hosted Access applica
 
 ## Previous orders and retirement
 
-This package contains no Supabase runtime, keys, webhook, or legacy Worker fallback. Existing Stripe campaign sessions can still be verified using the same Stripe account. If the earlier campaign system stored briefs, export `campaign_briefs` to CSV, prepare the import locally, and apply it to D1 before directing production traffic here:
+This package does not use the legacy Supabase campaign runtime. It now supports a dedicated private Supabase Storage connection and verified Stripe invoice webhook for monthly asset delivery; no credentials are included. Existing Stripe campaign sessions can still be verified using the same Stripe account. If the earlier campaign system stored briefs, export `campaign_briefs` to CSV, prepare the import locally, and apply it to D1 before directing production traffic here:
 
 ```powershell
 py tools/prepare-campaign-import.py campaign-briefs.csv campaign-briefs-import.sql
@@ -120,3 +120,23 @@ Stripe Dashboard shows paid orders from buyers who leave before returning to the
 The homepage now always displays the $199 one-page landing page add-on and the $49/month Monthly Asset Pack, including ten clearly labeled independent background examples and a fictional landing page. The landing page uses the existing Attention Pack post-brief checkout; it is enabled by `CAMPAIGN_LANDING_ENABLED=true` in the Wrangler configuration. The example site is at `/landing-example.html`.
 
 The monthly card uses the existing Stripe subscription flow when `CAMPAIGN_MONTHLY_PRICE_ID` is set to an active $49 USD monthly Price and `CAMPAIGN_BILLING_PORTAL_URL` is set to an enabled Stripe customer portal login link. Otherwise it displays an email inquiry CTA instead of hiding or offering nonfunctional checkout. Service sample art in `public/assets/service-previews/` uses the same baked-in Example / PROTECTED PREVIEW pattern as campaign previews, plus the supplied translucent Pixel Shroom Studio logo. The former service-example URLs serve the new protected copies with no-store caching; unmarked originals are not deployed.
+
+## Automatic Monthly Asset Pack fulfillment
+
+Upload one ZIP for each UTC calendar month containing ten independent JPG, PNG, or WebP images directly at the archive root. Monthly packs are shared by paid subscribers for the matching invoice billing-period start month, not customized to an individual brand. The ZIP limit is 20 MiB; existing published monthly packs cannot be overwritten. The originals should be your finished customer files, not the watermarked website previews.
+
+### One-time connection setup
+
+1. In the intended Supabase project, create a **private** Storage bucket named `monthly-asset-packs`. Set the allowed MIME type to `application/zip` and a maximum file size of at least 20 MiB (prefer 20 MiB). Do not make the bucket public or add anonymous read policies. Use the project URL and legacy `service_role` API key; the key is server-only. Never put it in a browser, Git, or chat.
+2. Open Cloudflare Workers & Pages → pixel-shroom-studio → Settings → Variables and Secrets. Add the following as encrypted Worker **secrets** (including non-sensitive settings, to persist dashboard values on Git deploy):
+   - `SUPABASE_URL` — `https://YOUR_PROJECT_REF.supabase.co`
+   - `SUPABASE_SERVICE_ROLE_KEY` — Supabase legacy service_role key
+   - `RESEND_API_KEY` — Resend key with sending permission (keep the existing key if configured)
+   - `RESEND_FROM_EMAIL` — a sender on your verified Resend domain (keep the existing valid sender)
+   - `STRIPE_MONTHLY_WEBHOOK_SECRET` — endpoint signing secret from Step 3, not the Stripe API key.
+3. In Stripe Workbench → Webhooks, add a **live-mode** event destination for `invoice.paid` (snapshot event for the account), URL `https://www.pixelshroomstudio.com/api/stripe/monthly-webhook`. Keep any existing unrelated destination. Copy its signing secret straight into Cloudflare. Test-mode events are deliberately ignored for actual delivery. The signed invoice must identify the configured $49 monthly Price ID, a paid USD subscription creation or renewal, and the buyer email. Other invoices and payment failures do not deliver.
+4. Sign in to Campaign Admin, open **Monthly Asset Pack delivery**, select this month's pack month and upload a ZIP. The server checks there are exactly 10 distinct, flat image entries and stores the ZIP privately. Ensure the supplied images are valid and ready for delivery. Check the connection status and verify the ZIP is published.
+5. When ready to email real paid subscribers, set the encrypted Worker secret `MONTHLY_DELIVERY_ENABLED` to `true`. This deliberate opt-in prevents accidental sends during setup. The Cloudflare Cron Trigger processes eligible deliveries every five minutes (up to four at a time); an authenticated invoice can queue while delivery is disabled. A missing ZIP waits for upload. Each Stripe invoice is a unique delivery; Resend receives a per-invoice idempotency key and short-lived private signed attachment URL. Uncertain outcomes after the retry window require manual review. "Sent" signifies email-provider acceptance, not inbox receipt. Check Resend's logs for bounces or delivery.
+6. Repeat monthly: prepare 10 new backgrounds, ZIP them, publish the next month before it begins. Recurring invoices automatically dispatch that month's pack. The separate Attention Pack brief and manual delivery flow remain unchanged.
+
+The signed webhook does not depend on the purchaser returning to the site. For subscriptions that paid before the webhook was installed, check Stripe invoice history and manually reconcile any missing deliveries; do not replay an already manually delivered invoice. The monthly administrator panel is the source of truth for automated invoice deliveries. If a provider accepts a send but the result is not recorded, retry uses the exact same request within the provider's idempotency window; after 23 hours the row requires review. Do not manually resend without inspecting provider logs. If an upload succeeds at Supabase but fails to update D1, verify the orphan object and resolve it before uploading the immutable month again.

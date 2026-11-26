@@ -13,7 +13,7 @@ function showThanks(order) {
   form.hidden = true;
   if (order.offer === "monthly") {
     title.textContent = "Subscription confirmed.";
-    status.textContent = "Your Monthly Asset Pack is confirmed! No creative brief is needed. Each month, I’ll send a ZIP of 10 fresh, randomly themed backgrounds from weirichloren@gmail.com to the email address you used at checkout.";
+    status.textContent = "Your Monthly Asset Pack is confirmed! No creative brief is needed. Each month, your ZIP of 10 fresh, randomly themed backgrounds will be sent to the email address you used at checkout.";
     return;
   }
   title.textContent = "Brief received.";

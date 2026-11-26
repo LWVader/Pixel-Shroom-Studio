@@ -39,6 +39,21 @@
       </div>
       <p id="stripe-status" class="status" role="status">Check which Stripe mode the Worker is using.</p>
     </section>
+    <section class="admin-panel" id="monthly-delivery-panel" aria-labelledby="monthly-delivery-title" hidden>
+      <div class="orders-top"><div><p class="eyebrow">Automated subscription fulfillment</p><h2 id="monthly-delivery-title">Monthly Asset Pack delivery</h2></div><button type="button" class="secondary" id="refresh-monthly">Refresh delivery status</button></div>
+      <p class="status" id="monthly-configuration" role="status">Checking connection…</p>
+      <p>Upload one ZIP containing exactly 10 independent JPG, PNG or WebP images for each month. The month uses UTC billing period start. Once published, the ZIP is immutable and the same pack is sent to paid subscribers for that month.</p>
+      <form class="brief-form" id="monthly-upload-form">
+        <label>Pack month <input name="month" type="month" required></label>
+        <label>Monthly ZIP (up to 20 MB) <input name="zip" type="file" accept=".zip,application/zip" required></label>
+        <button type="submit" class="button" disabled>Publish monthly ZIP</button>
+      </form>
+      <p class="status" id="monthly-upload-status" role="status"></p>
+      <h3>Published packs</h3><ul class="order-list" id="monthly-packs"></ul>
+      <h3>Recent automatic deliveries</h3><p class="status" id="monthly-counts"></p>
+      <ul class="order-list" id="monthly-deliveries"></ul>
+      <p class="muted">A paid invoice waits if its ZIP is missing. The queue runs every five minutes. “Sent” means the email provider accepted the message; check Resend for delivery or bounce details. Review uncertain sends before resending manually.</p>
+    </section>
     <section id="workflow-overview" class="admin-panel" aria-labelledby="workflow-title" hidden>
       <div class="orders-top"><h2 id="workflow-title">Campaign workflow</h2><span id="workflow-total"></span></div>
       <div id="workflow-bar" class="workflow-bar" aria-hidden="true"></div>

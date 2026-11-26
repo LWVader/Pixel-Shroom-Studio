@@ -159,7 +159,7 @@ function openOrder(order) {
 function renderDelivery(order) {
   const deliveryInstruction = `In Gmail, check that the From address is ${deliverySender} and attach the finished ZIP before sending.`;
   $("delivery-help").textContent = order.offer === "monthly"
-    ? `Confirm the matching monthly invoice in Stripe. ${deliveryInstruction}`
+    ? `Use the Monthly Asset Pack delivery panel for automatic sends. Only use this manual fallback after checking the invoice and delivery log to avoid duplicate delivery. ${deliveryInstruction}`
     : deliveryInstruction;
   $("delivery-state").textContent = order.email_delivered_at
     ? `Last email recorded as sent ${date.format(new Date(order.email_delivered_at))}.`
@@ -233,6 +233,49 @@ $("close-order").addEventListener("click", () => { if (!busy) panel.close(); });
 panel.addEventListener("cancel", (event) => { if (busy) event.preventDefault(); });
 panel.addEventListener("close", () => { selected = null; });
 
+const monthlyPanel = $("monthly-delivery-panel");
+const monthlyForm = $("monthly-upload-form");
+const monthlyConfig = $("monthly-configuration");
+monthlyForm.elements.month.value = new Date().toISOString().slice(0,7);
+
+function monthlyItem(text) {
+  const item = document.createElement("li");
+  item.className = "order-row";
+  const title = document.createElement("span");
+  title.textContent = text;
+  item.append(title);
+  return item;
+}
+
+async function loadMonthly() {
+  try {
+    const {config,packs,deliveries,counts} = await api("/api/admin/monthly-delivery");
+    monthlyConfig.textContent = `Supabase: ${config.storage ? "configured" : "not configured"} · Stripe webhook: ${config.stripe ? "configured" : "not configured"} · Email: ${config.email ? "configured" : "not configured"} · Auto-delivery: ${config.enabled && config.storage && config.stripe && config.email ? "enabled" : "disabled"}`;
+    monthlyForm.querySelector("button").disabled = !config.storage;
+    $("monthly-packs").replaceChildren(...(packs.length ? packs.map(p => monthlyItem(`${p.pack_month} · ${(p.byte_size/1048576).toFixed(2)} MB`)) : [monthlyItem("No monthly ZIPs published yet.")]));
+    $("monthly-counts").textContent = counts.length ? counts.map(c => `${c.state}: ${c.count}`).join(" · ") : "No queued deliveries.";
+    $("monthly-deliveries").replaceChildren(...deliveries.map(d => monthlyItem(`${d.pack_month} · ${d.buyer_email} · ${d.state}${d.last_error ? " · "+d.last_error : ""}`)));
+  } catch(error) {
+    monthlyConfig.textContent = "Delivery status unavailable. " + error.message;
+  }
+}
+$("refresh-monthly").addEventListener("click",loadMonthly);
+monthlyForm.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const file=monthlyForm.elements.zip.files[0], month=monthlyForm.elements.month.value, submit=event.submitter, status=$("monthly-upload-status");
+  if(!file || file.size>20*1024*1024){status.textContent="Choose a ZIP of ten images up to 20 MB.";return;}
+  if(!window.confirm(`Publish the ${month} ZIP? It will be the permanent pack for paid subscribers in that billing month.`))return;
+  submit.disabled=true;status.textContent="Uploading private monthly ZIP…";
+  try {
+    const response=await fetch("/api/admin/monthly-delivery",{method:"POST",headers:{"Content-Type":"application/zip","X-Pack-Month":month},body:file});
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error || "Upload failed.");
+    status.textContent=`Published ${result.month}: 10 images. Paid invoices will be processed automatically when configured.`;
+    monthlyForm.elements.zip.value="";
+  }catch(error){status.textContent=error.message;}
+  finally{await loadMonthly();}
+});
+
 const login = $("admin-login");
 const signOut = $("sign-out");
 const stripePanel = $("stripe-panel");
@@ -243,10 +286,10 @@ async function openWorkspace(session) {
   mode = session.mode || "";
   login.hidden = session.authenticated;
   signOut.hidden = orders.hidden = stripePanel.hidden = $("admin-actions").hidden =
-    $("workflow-overview").hidden = $("campaign-publisher").hidden = !session.authenticated;
+    $("workflow-overview").hidden = $("campaign-publisher").hidden = monthlyPanel.hidden = !session.authenticated;
   if (session.authenticated) {
     accessStatus.textContent = "";
-    await Promise.all([loadOrders(true), loadPortfolio()]);
+    await Promise.all([loadOrders(true), loadPortfolio(), loadMonthly()]);
   } else {
     login.querySelector("button").disabled = !session.passwordConfigured;
     accessStatus.textContent = session.passwordConfigured ? "" :

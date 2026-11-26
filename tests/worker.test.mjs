@@ -346,3 +346,81 @@ test("AD publishing signs uploads and records account history with caption overr
   assert.equal((await post("publish", form, headers)).status, 200);
   assert.deepEqual(await (await get("history")).json(), {submissions: []});
 });
+
+import {deliverMonthlyQueue, validateMonthlyZip} from "../lib/monthly-delivery.mjs";
+
+function sampleZip(count=10){
+  const local=[], directory=[];let offset=0;
+  for(let i=0;i<count;i++){
+    const name=Buffer.from("image-"+i+".png"), data=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRz8AAAAASUVORK5CYII=","base64");
+    const h=Buffer.alloc(30);h.writeUInt32LE(0x04034b50);h.writeUInt16LE(20,4);
+    h.writeUInt32LE(data.length,18);h.writeUInt32LE(data.length,22);h.writeUInt16LE(name.length,26);
+    local.push(h,name,data);
+    const c=Buffer.alloc(46);c.writeUInt32LE(0x02014b50);c.writeUInt16LE(20,4);c.writeUInt16LE(20,6);
+    c.writeUInt32LE(data.length,20);c.writeUInt32LE(data.length,24);c.writeUInt16LE(name.length,28);c.writeUInt32LE(offset,42);
+    directory.push(c,name);offset+=h.length+name.length+data.length;
+  }
+  const central=Buffer.concat(directory), end=Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50);end.writeUInt16LE(count,8);end.writeUInt16LE(count,10);end.writeUInt32LE(central.length,12);end.writeUInt32LE(offset,16);
+  return Buffer.concat([...local,central,end]);
+}
+
+async function signedInvoice(site,{id="in_first",type="invoice.paid",live=true,price="price_fixture_monthly",reason="subscription_create",paid=4900,status="paid",period=Math.floor(Date.now()/1000),badSignature=false}={}){
+  const timestamp=Math.floor(Date.now()/1000);
+  const event={type,livemode:live,data:{object:{object:"invoice",id,livemode:live,status,billing_reason:reason,
+    currency:"usd",amount_paid:paid,customer_email:testBuyer,parent:{subscription_details:{subscription:"sub_fixture"}},lines:{data:[{pricing:{price_details:{price}},amount:4900,quantity:1,period:{start:period},parent:{subscription_item_details:{proration:false}}}]}}}};
+  const raw=JSON.stringify(event), encoder=new TextEncoder();
+  const key=await crypto.subtle.importKey("raw",encoder.encode(site.env.STRIPE_MONTHLY_WEBHOOK_SECRET),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+  const signature=Buffer.from(await crypto.subtle.sign("HMAC",key,encoder.encode(timestamp+"."+raw))).toString("hex");
+  return site.request(new Request(origin+"/api/stripe/monthly-webhook",{method:"POST",headers:{"Stripe-Signature":"t="+timestamp+",v1="+(badSignature?"0".repeat(64):signature),"Content-Type":"application/json"},body:raw}));
+}
+
+test("paid monthly invoice queues privately; only ten-image ZIPs are published and emails retry without duplicates", async t=>{
+  const site=await setup(t), now=Math.floor(Date.now()/1000), month=new Date(now*1000).toISOString().slice(0,7);
+  Object.assign(site.env,{SUPABASE_URL:"https://fixtureproject.supabase.co",SUPABASE_SERVICE_ROLE_KEY:"fixture-storage-key",
+    STRIPE_MONTHLY_WEBHOOK_SECRET:"fixture-signing-secret",CAMPAIGN_MONTHLY_PRICE_ID:"price_fixture_monthly",
+    CAMPAIGN_BILLING_PORTAL_URL:"https://billing.stripe.com/p/login/fixture",RESEND_API_KEY:"fixture-email-key",RESEND_FROM_EMAIL:"studio@example.test"});
+  const path="/api/admin/monthly-delivery";
+  assert.equal((await site.call(path)).status,401);
+  assert.equal((await signedInvoice(site,{badSignature:true})).status,400);
+  for(const ignored of [{live:false},{type:"invoice.payment_failed"},{price:"price_unrelated"},{paid:0},{status:"open"},{reason:"subscription_update"}])
+    assert.equal((await (await signedInvoice(site,ignored)).json()).ignored,true);
+  assert.equal((await (await signedInvoice(site)).json()).queued,true);
+  assert.equal((await (await signedInvoice(site)).json()).queued,false);
+  assert.equal((await deliverMonthlyQueue(site.env,now)).sent,0);
+  site.env.MONTHLY_DELIVERY_ENABLED="true";
+  await deliverMonthlyQueue(site.env,now);
+  const credentials=await login(site), cookie=credentials.headers.get("Set-Cookie").split(";")[0];
+  const status=async()=>await (await site.call(path,{headers:{Cookie:cookie}})).json();
+  assert.equal((await status()).deliveries[0].state,"waiting");
+  assert.equal(site.monthly.mail.length,0);
+  const upload=(bytes,requestOrigin=origin)=>site.request(new Request(origin+path,{method:"POST",
+    headers:{Cookie:cookie,Origin:requestOrigin,"Content-Type":"application/zip","X-Pack-Month":month},body:bytes}));
+  assert.throws(()=>validateMonthlyZip(sampleZip(9)));
+  assert.equal((await upload(sampleZip(9))).status,400);
+  assert.equal((await upload(sampleZip(),"https://not-the-studio.example")).status,403);
+  site.monthly.publicBucket=true;
+  assert.equal((await upload(sampleZip())).status,503);
+  site.monthly.publicBucket=false;
+  assert.equal((await upload(sampleZip())).status,200);
+  assert.equal((await upload(sampleZip())).status,409);
+  site.monthly.failMailOnce=true;
+  await deliverMonthlyQueue(site.env,now+10);
+  assert.equal((await status()).deliveries[0].state,"pending");
+  assert.equal(site.monthly.mail.length,1);
+  assert.equal((await deliverMonthlyQueue(site.env,now+320)).sent,1);
+  assert.equal(site.monthly.mail.length,2);
+  assert.equal(site.monthly.mail[0].key,site.monthly.mail[1].key);
+  assert.deepEqual(site.monthly.mail[0].payload,site.monthly.mail[1].payload);
+  assert.equal(site.monthly.mail[1].payload.to[0],testBuyer);
+  assert.equal(site.monthly.mail[1].payload.attachments[0].filename,"Pixel-Shroom-Monthly-Asset-Pack-"+month+".zip");
+  assert.equal(site.monthly.signatures,1);
+  assert.equal((await status()).deliveries[0].state,"sent");
+  assert.equal((await deliverMonthlyQueue(site.env,now+640)).sent,0);
+  assert.equal((await (await signedInvoice(site,{id:"in_renewal",reason:"subscription_cycle"})).json()).queued,true);
+  assert.equal((await deliverMonthlyQueue(site.env,now+650)).sent,1);
+  assert.equal((await status()).deliveries.length,2);
+  assert.equal((await status()).deliveries.every(d=>d.state==="sent"),true);
+  assert.equal(site.monthly.mail.length,3);
+  assert.equal(JSON.stringify(await status()).includes("token=fixture"),false);
+});

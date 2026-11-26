@@ -6,6 +6,7 @@ import {handleSocial} from "./lib/ad-studio-social.mjs";
 import {createCampaignOrders, sessionPattern} from "./lib/campaign-orders.mjs";
 import {campaignStore} from "./lib/campaign-store.mjs";
 import {StripeRequestError, stripeApi} from "./lib/stripe-api.mjs";
+import {acceptMonthlyInvoice, deliverMonthlyQueue, monthlyStatus, uploadMonthlyPack} from "./lib/monthly-delivery.mjs";
 import {exampleArtworkPath} from "./public/campaign-artwork-paths.js";
 
 const canonicalHost = "www.pixelshroomstudio.com";
@@ -335,7 +336,27 @@ function adminResponse(response, isEditor) {
   return result;
 }
 
+async function monthlyWebhookRoute(request, env) {
+  if(request.method !== "POST") return methodNotAllowed("POST");
+  try { return json(await acceptMonthlyInvoice(request, env)); }
+  catch(error) { return routeFailure(error, "Monthly webhook could not be processed."); }
+}
+
+async function monthlyAdminRoute(request, env, url) {
+  if(request.method === "GET"){
+    try { return json(await monthlyStatus(env)); }
+    catch(error) { return routeFailure(error, "Monthly delivery status unavailable."); }
+  }
+  if(request.method !== "POST") return methodNotAllowed("GET, POST");
+  if(request.headers.get("Origin") !== url.origin) return apiError("Same-origin requests required.",403);
+  try { return json(await uploadMonthlyPack(request,env)); }
+  catch(error) { return routeFailure(error,"Monthly ZIP upload failed."); }
+}
+
 export default {
+  async scheduled(_controller, env, ctx) {
+    ctx.waitUntil(deliverMonthlyQueue(env).catch(() => console.error("Monthly delivery queue unavailable.")));
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     if (aliases.has(url.hostname) || (url.hostname === canonicalHost && url.protocol !== "https:")) {
@@ -350,6 +371,7 @@ export default {
       return apiError("Page not found.", 404);
     }
     if (url.pathname === "/api/campaign-orders") return buyerRoute(request, env, url);
+    if (url.pathname === "/api/stripe/monthly-webhook") return monthlyWebhookRoute(request, env);
 
     if (url.pathname === "/api/admin/session") return adminSessionRoute(request, env, url);
 
@@ -360,8 +382,9 @@ export default {
     if (isPortfolio) return portfolioRoute(request, env, url, false);
     const isAdminPortfolio = url.pathname === "/api/admin/portfolio" || url.pathname.startsWith("/api/admin/portfolio/");
     const isStripeStatus = url.pathname === "/api/admin/stripe";
+    const isMonthlyAdmin = url.pathname === "/api/admin/monthly-delivery";
     const isSocialApi = url.pathname.startsWith("/api/ad-studio/social/");
-    if (isEditor || isAdminApi || isAdminPortfolio || isStripeStatus || isSocialApi) {
+    if (isEditor || isAdminApi || isAdminPortfolio || isStripeStatus || isMonthlyAdmin || isSocialApi) {
       const user = await adminUser(request, env, url);
       if (!user) {
         if (isEditor && (!url.pathname.split("/").at(-1) || url.pathname.endsWith(".html"))) {
@@ -372,6 +395,7 @@ export default {
       if (isAdminPortfolio) return portfolioRoute(request, env, url, true);
       if (isAdminApi) return adminCampaignRoute(request, env, url);
       if (isStripeStatus) return stripeStatusRoute(request, env);
+      if (isMonthlyAdmin) return monthlyAdminRoute(request, env, url);
       if (isSocialApi) return socialRoute(request, env, url, user);
     }
 

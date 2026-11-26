@@ -86,6 +86,9 @@ test("mock Stripe checkout, campaign brief and footer admin delivery", async ({p
   await page.getByLabel("Administrator password").fill(testPassword);
   await page.getByRole("button", {name: "Sign in", exact: true}).click();
   await expect(page.getByRole("heading", {name: "Orders & briefs"})).toBeVisible();
+  await expect(page.getByRole("heading", {name: "Monthly Asset Pack delivery"})).toBeVisible();
+  await expect(page.locator("#monthly-configuration")).toContainText("Auto-delivery: disabled");
+  await expect(page.getByRole("button", {name: "Publish monthly ZIP"})).toBeDisabled();
   await page.getByRole("button", {name: "Check Stripe connection"}).click();
   await expect(page.getByText("Stripe Checkout API reachable in test mode.")).toBeVisible();
 

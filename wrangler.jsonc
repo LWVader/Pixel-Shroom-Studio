@@ -18,6 +18,7 @@
       "migrations_dir": "migrations/campaign"
     }
   ],
+  "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "CAMPAIGN_ATTENTION_ENABLED": "true",
     "CAMPAIGN_LANDING_ENABLED": "true",
