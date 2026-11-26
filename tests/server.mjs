@@ -7,6 +7,13 @@ const fixture = await createFixture();
 const server = createServer(async (request, reply) => {
   try {
     const url = new URL(request.url, origin);
+    if (url.pathname === "/__test/configure-storage" && request.method === "POST") {
+      const enabled = url.searchParams.get("enabled") === "true";
+      fixture.env.SUPABASE_URL = enabled ? "https://fixtureproject.supabase.co" : "";
+      fixture.env.SUPABASE_SERVICE_ROLE_KEY = enabled ? "sb_secret_fixture" : "";
+      reply.writeHead(204).end();
+      return;
+    }
     if (url.pathname === "/__test/configure-monthly" && request.method === "POST") {
       const enabled = url.searchParams.get("enabled") === "true";
       fixture.env.CAMPAIGN_MONTHLY_PRICE_ID = enabled ? "price_fixture_monthly" : "";

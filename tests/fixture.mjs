@@ -72,19 +72,33 @@ export async function createFixture() {
     CAMPAIGN_ATTENTION_ENABLED: "true",
     CAMPAIGN_LANDING_ENABLED: "true"
   };
-  const monthly = {objects:new Map(), mail:[], signatures:0, publicBucket:false, failMailOnce:false};
+  const monthly = {objects:new Map(), mail:[], signatures:0, publicBucket:false, bucketLimit:20*1024*1024, rejectBucketUpdate:false, failMailOnce:false};
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input, options) => {
     const url = new URL(input);
     if(url.origin==="https://fixtureproject.supabase.co"){
-      if(options.headers.get("Authorization")!=="Bearer fixture-storage-key")return Response.json({}, {status:401});
-      if(url.pathname==="/storage/v1/bucket/monthly-asset-packs")return Response.json({public:monthly.publicBucket});
+      const key=options.headers.get("apikey");
+      if(!((key==="fixture-storage-key" && options.headers.get("Authorization")==="Bearer fixture-storage-key") ||
+          (key==="sb_secret_fixture" && !options.headers.get("Authorization"))))return Response.json({}, {status:401});
+      if(url.pathname==="/storage/v1/bucket/monthly-asset-packs"){
+        if(options.method==="PUT"){
+          if(monthly.rejectBucketUpdate)return Response.json({}, {status:400});
+          const patch=JSON.parse(options.body);
+          monthly.bucketLimit=patch.file_size_limit;
+          return Response.json({message:"updated"});
+        }
+        return Response.json({public:monthly.publicBucket,file_size_limit:monthly.bucketLimit,allowed_mime_types:["application/zip"]});
+      }
       const path=url.pathname.split("/").at(-1);
       if(url.pathname.includes("/object/sign/")){
         if(!monthly.objects.has(path))return Response.json({}, {status:404});
         return Response.json({signedURL:"/object/sign/monthly-asset-packs/"+path+"?token=fixture"+(++monthly.signatures)});
       }
+      if(url.pathname.includes("/object/authenticated/monthly-asset-packs/")){
+        return monthly.objects.has(path)?new Response(monthly.objects.get(path),{headers:{"Content-Length":String(monthly.objects.get(path).byteLength)}}):Response.json({}, {status:404});
+      }
       if(url.pathname.includes("/object/monthly-asset-packs/") && options.method==="POST"){
+        if(options.body.byteLength>monthly.bucketLimit)return Response.json({message:"File too large"},{status:413});
         if(monthly.objects.has(path))return Response.json({}, {status:409});
         monthly.objects.set(path,new Uint8Array(options.body));return Response.json({Key:path});
       }

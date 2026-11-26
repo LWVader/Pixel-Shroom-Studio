@@ -1,5 +1,6 @@
 import {expect, test} from "@playwright/test";
 import {testPassword} from "../fixture.mjs";
+import {sampleZip} from "../monthly-zip-fixture.mjs";
 
 test.beforeEach(async ({context}) => {
   await context.route("**/*", async (route) => {
@@ -150,6 +151,29 @@ test("monthly subscription confirms with no creative brief and creates one admin
   } finally {
     await request.post("/__test/configure-monthly", {params: {enabled: "false"}});
   }
+});
+
+test("monthly admin accepts a Windows ZIP larger than 20 MiB and registers the pack", async ({page,request}) => {
+  await request.post("/__test/configure-storage",{params:{enabled:"true"}});
+  try {
+    await page.goto("/admin.html");
+    await page.getByLabel("Administrator password").fill(testPassword);
+    await page.getByRole("button",{name:"Sign in",exact:true}).click();
+    await expect(page.locator("#monthly-configuration")).toContainText("Private bucket connected");
+    await expect(page.getByRole("button",{name:"Publish monthly ZIP"})).toBeEnabled();
+    await page.getByLabel("Pack month").fill("2027-02");
+    const buffer=sampleZip(10,{folder:true,size:2400000});
+    await page.locator("#monthly-upload-form input[type=file]").setInputFiles({name:"Windows Monthly Pack.zip",mimeType:"application/zip",buffer});
+    await expect(page.locator("#monthly-file-selection")).toContainText("Windows Monthly Pack.zip");
+    await expect(page.locator("#monthly-file-selection")).toContainText("22.89 MiB");
+    page.once("dialog",dialog=>dialog.accept());
+    await page.getByRole("button",{name:"Publish monthly ZIP"}).click();
+    await expect(page.locator("#monthly-upload-status")).toContainText("Published 2027-02: 10 images",{timeout:20000});
+    await expect(page.locator("#monthly-packs")).toContainText("2027-02");
+    await expect(page.locator("#monthly-packs")).toContainText("Published");
+    await page.getByRole("button",{name:"Refresh delivery status"}).click();
+    await expect(page.locator("#monthly-packs")).toContainText("2027-02");
+  } finally {await request.post("/__test/configure-storage",{params:{enabled:"false"}});}
 });
 
 test("publishes a campaign and starts a marketing ad from its artwork", async ({page, request}) => {

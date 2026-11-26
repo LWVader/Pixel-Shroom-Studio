@@ -247,33 +247,87 @@ function monthlyItem(text) {
   return item;
 }
 
+let monthlyBusy=false, storageReady=false;
+const zipInput=monthlyForm.elements.zip;
+const publishButton=monthlyForm.querySelector('button[type="submit"]');
+const registerButton=$("register-monthly-zip");
+const maxZip=25*1024*1024;
+function syncMonthlyButtons(){
+  publishButton.disabled=monthlyBusy || !storageReady;
+  registerButton.disabled=monthlyBusy || !storageReady;
+}
+zipInput.addEventListener("change",()=>{
+  const file=zipInput.files[0];
+  $("monthly-file-selection").textContent=file
+    ? `Selected: ${file.name} · ${(file.size/1048576).toFixed(2)} MiB${file.size>maxZip?" — exceeds 25 MiB": " — ready to publish"}`
+    : "Choose a Windows ZIP with 10 images.";
+});
 async function loadMonthly() {
   try {
-    const {config,packs,deliveries,counts} = await api("/api/admin/monthly-delivery");
-    monthlyConfig.textContent = `Supabase: ${config.storage ? "configured" : "not configured"} · Stripe webhook: ${config.stripe ? "configured" : "not configured"} · Email: ${config.email ? "configured" : "not configured"} · Auto-delivery: ${config.enabled && config.storage && config.stripe && config.email ? "enabled" : "disabled"}`;
-    monthlyForm.querySelector("button").disabled = !config.storage;
-    $("monthly-packs").replaceChildren(...(packs.length ? packs.map(p => monthlyItem(`${p.pack_month} · ${(p.byte_size/1048576).toFixed(2)} MB`)) : [monthlyItem("No monthly ZIPs published yet.")]));
+    const {config,packs,deliveries,counts,storageCheck} = await api("/api/admin/monthly-delivery");
+    storageReady=Boolean(storageCheck?.ok);
+    monthlyConfig.textContent = `Supabase: ${storageReady?"connected":"not connected"} · Stripe webhook: ${config.stripe ? "configured" : "not configured"} · Email: ${config.email ? "configured" : "not configured"} · Auto-delivery: ${config.enabled && storageReady && config.stripe && config.email ? "enabled" : "disabled"}. ${storageCheck?.message||""}`;
+    $("monthly-packs").replaceChildren(...(packs.length ? packs.map(p => monthlyItem(`${p.pack_month} · ${(p.byte_size/1048576).toFixed(2)} MiB · Published`)) : [monthlyItem("No monthly ZIPs published yet.")]));
     $("monthly-counts").textContent = counts.length ? counts.map(c => `${c.state}: ${c.count}`).join(" · ") : "No queued deliveries.";
     $("monthly-deliveries").replaceChildren(...deliveries.map(d => monthlyItem(`${d.pack_month} · ${d.buyer_email} · ${d.state}${d.last_error ? " · "+d.last_error : ""}`)));
   } catch(error) {
+    storageReady=false;
     monthlyConfig.textContent = "Delivery status unavailable. " + error.message;
-  }
+  } finally {syncMonthlyButtons();}
 }
 $("refresh-monthly").addEventListener("click",loadMonthly);
+function uploadZip(file,month,status){
+  return new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();
+    xhr.open("POST","/api/admin/monthly-delivery");
+    xhr.setRequestHeader("Content-Type","application/zip");
+    xhr.setRequestHeader("X-Pack-Month",month);
+    xhr.timeout=180000;
+    xhr.upload.onprogress=event=>{
+      if(event.lengthComputable)status.textContent=`Uploading ZIP: ${Math.round(100*event.loaded/event.total)}%`;
+    };
+    xhr.upload.onload=()=>{status.textContent="ZIP received. Validating and registering with private storage…";};
+    xhr.onload=()=>{
+      let result;
+      try{result=JSON.parse(xhr.responseText);}catch{}
+      if(xhr.status>=200&&xhr.status<300&&result?.month)resolve(result);
+      else reject(new Error(result?.error || `Upload failed (HTTP ${xhr.status}). Refresh delivery status and retry.`));
+    };
+    xhr.onerror=()=>reject(new Error("Connection interrupted. Refresh status or retry the same ZIP to recover registration."));
+    xhr.ontimeout=()=>reject(new Error("Upload timed out. Refresh status or retry the same ZIP to recover registration."));
+    xhr.send(file);
+  });
+}
+function published(result,status){
+  status.textContent=`Published ${result.month}: 10 images (${(result.bytes/1048576).toFixed(2)} MiB). Paid invoices will be processed automatically when configured.`;
+  zipInput.value="";
+  $("monthly-file-selection").textContent="Choose a Windows ZIP with 10 images.";
+}
 monthlyForm.addEventListener("submit",async event=>{
   event.preventDefault();
-  const file=monthlyForm.elements.zip.files[0], month=monthlyForm.elements.month.value, submit=event.submitter, status=$("monthly-upload-status");
-  if(!file || file.size>20*1024*1024){status.textContent="Choose a ZIP of ten images up to 20 MB.";return;}
+  if(monthlyBusy || !storageReady)return;
+  const file=zipInput.files[0], month=monthlyForm.elements.month.value, status=$("monthly-upload-status");
+  if(!file || file.size>maxZip){status.textContent="Choose a ZIP of ten images up to 25 MiB.";return;}
+  if(!month){status.textContent="Select the pack month.";return;}
   if(!window.confirm(`Publish the ${month} ZIP? It will be the permanent pack for paid subscribers in that billing month.`))return;
-  submit.disabled=true;status.textContent="Uploading private monthly ZIP…";
-  try {
-    const response=await fetch("/api/admin/monthly-delivery",{method:"POST",headers:{"Content-Type":"application/zip","X-Pack-Month":month},body:file});
+  monthlyBusy=true;syncMonthlyButtons();status.textContent="Uploading private monthly ZIP…";
+  try{published(await uploadZip(file,month,status),status);}
+  catch(error){status.textContent=error.message;}
+  finally{monthlyBusy=false;await loadMonthly();}
+});
+registerButton.addEventListener("click",async()=>{
+  if(monthlyBusy || !storageReady)return;
+  const month=monthlyForm.elements.month.value,status=$("monthly-upload-status");
+  if(!month){status.textContent="Select the pack month.";return;}
+  if(!window.confirm(`Register the existing private ${month}.zip as the permanent monthly pack? Paid subscribers will receive it.`))return;
+  monthlyBusy=true;syncMonthlyButtons();status.textContent="Checking stored ZIP and registering…";
+  try{
+    const response=await fetch("/api/admin/monthly-delivery",{method:"POST",headers:{"X-Pack-Month":month,"X-Register-Existing":"true","Content-Type":"application/json"},body:"{}"});
     const result=await response.json();
-    if(!response.ok)throw new Error(result.error || "Upload failed.");
-    status.textContent=`Published ${result.month}: 10 images. Paid invoices will be processed automatically when configured.`;
-    monthlyForm.elements.zip.value="";
+    if(!response.ok)throw new Error(result.error||"Registration failed.");
+    published(result,status);
   }catch(error){status.textContent=error.message;}
-  finally{await loadMonthly();}
+  finally{monthlyBusy=false;await loadMonthly();}
 });
 
 const login = $("admin-login");

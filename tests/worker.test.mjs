@@ -349,21 +349,7 @@ test("AD publishing signs uploads and records account history with caption overr
 
 import {deliverMonthlyQueue, validateMonthlyZip} from "../lib/monthly-delivery.mjs";
 
-function sampleZip(count=10){
-  const local=[], directory=[];let offset=0;
-  for(let i=0;i<count;i++){
-    const name=Buffer.from("image-"+i+".png"), data=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRz8AAAAASUVORK5CYII=","base64");
-    const h=Buffer.alloc(30);h.writeUInt32LE(0x04034b50);h.writeUInt16LE(20,4);
-    h.writeUInt32LE(data.length,18);h.writeUInt32LE(data.length,22);h.writeUInt16LE(name.length,26);
-    local.push(h,name,data);
-    const c=Buffer.alloc(46);c.writeUInt32LE(0x02014b50);c.writeUInt16LE(20,4);c.writeUInt16LE(20,6);
-    c.writeUInt32LE(data.length,20);c.writeUInt32LE(data.length,24);c.writeUInt16LE(name.length,28);c.writeUInt32LE(offset,42);
-    directory.push(c,name);offset+=h.length+name.length+data.length;
-  }
-  const central=Buffer.concat(directory), end=Buffer.alloc(22);
-  end.writeUInt32LE(0x06054b50);end.writeUInt16LE(count,8);end.writeUInt16LE(count,10);end.writeUInt32LE(central.length,12);end.writeUInt32LE(offset,16);
-  return Buffer.concat([...local,central,end]);
-}
+import {sampleZip} from "./monthly-zip-fixture.mjs";
 
 async function signedInvoice(site,{id="in_first",type="invoice.paid",live=true,price="price_fixture_monthly",reason="subscription_create",paid=4900,status="paid",period=Math.floor(Date.now()/1000),badSignature=false}={}){
   const timestamp=Math.floor(Date.now()/1000);
@@ -423,4 +409,38 @@ test("paid monthly invoice queues privately; only ten-image ZIPs are published a
   assert.equal((await status()).deliveries.every(d=>d.state==="sent"),true);
   assert.equal(site.monthly.mail.length,3);
   assert.equal(JSON.stringify(await status()).includes("token=fixture"),false);
+});
+
+test("Windows ZIP folders, 25 MiB limit, connection diagnostics, and orphan recovery", async t=>{
+  const site=await setup(t);
+  Object.assign(site.env,{SUPABASE_URL:"https://fixtureproject.supabase.co",SUPABASE_SERVICE_ROLE_KEY:"sb_secret_fixture"});
+  const credentials=await login(site),cookie=credentials.headers.get("Set-Cookie").split(";")[0];
+  const path="/api/admin/monthly-delivery";
+  const status=async()=>await (await site.call(path,{headers:{Cookie:cookie}})).json();
+  assert.equal((await status()).storageCheck.ok,true);
+  assert.match((await status()).storageCheck.message,/raised to 25 MiB/);
+  const upload=(month,bytes,existing=false)=>site.request(new Request(origin+path,{method:"POST",
+    headers:{Cookie:cookie,Origin:origin,"Content-Type":existing?"application/json":"application/zip","X-Pack-Month":month,...(existing?{"X-Register-Existing":"true"}:{})},body:bytes}));
+  const windowsZip=sampleZip(10,{folder:true});
+  assert.equal(validateMonthlyZip(windowsZip),10);
+  site.monthly.rejectBucketUpdate=true;
+  assert.match((await (await upload("2026-11",windowsZip)).json()).error,/project upload limits/);
+  site.monthly.rejectBucketUpdate=false;
+  const large=sampleZip(10,{folder:true,size:2400000});
+  assert.ok(large.length>20*1024*1024 && large.length<25*1024*1024);
+  assert.equal((await upload("2026-11",large)).status,200);
+  assert.equal(site.monthly.bucketLimit,25*1024*1024);
+  assert.equal((await status()).packs[0].byte_size,large.length);
+  assert.equal((await upload("2026-12",Buffer.alloc(25*1024*1024+1))).status,413);
+  site.monthly.objects.set("2026-12.zip",windowsZip);
+  const mismatched=sampleZip();
+  assert.equal((await upload("2026-12",mismatched)).status,409);
+  assert.equal((await upload("2026-12",windowsZip)).status,200);
+  site.monthly.objects.set("2027-01.zip",windowsZip);
+  assert.equal((await upload("2027-01","{}",true)).status,200);
+  assert.equal((await status()).packs.length,3);
+  assert.equal((await upload("2027-01","{}",true)).status,409);
+  assert.equal((await upload("2027-02","{}",true)).status,409);
+  site.monthly.publicBucket=true;
+  assert.equal((await status()).storageCheck.ok,false);
 });

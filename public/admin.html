@@ -42,11 +42,16 @@
     <section class="admin-panel" id="monthly-delivery-panel" aria-labelledby="monthly-delivery-title" hidden>
       <div class="orders-top"><div><p class="eyebrow">Automated subscription fulfillment</p><h2 id="monthly-delivery-title">Monthly Asset Pack delivery</h2></div><button type="button" class="secondary" id="refresh-monthly">Refresh delivery status</button></div>
       <p class="status" id="monthly-configuration" role="status">Checking connection…</p>
-      <p>Upload one ZIP containing exactly 10 independent JPG, PNG or WebP images for each month. The month uses UTC billing period start. Once published, the ZIP is immutable and the same pack is sent to paid subscribers for that month.</p>
+      <p>Upload one ZIP containing exactly 10 independent JPG, PNG or WebP images for each month. Windows ZIPs with folders and ordinary filenames are supported. The month uses UTC billing period start. Once published, the ZIP is immutable and the same pack is sent to paid subscribers for that month.</p>
       <form class="brief-form" id="monthly-upload-form">
         <label>Pack month <input name="month" type="month" required></label>
-        <label>Monthly ZIP (up to 20 MB) <input name="zip" type="file" accept=".zip,application/zip" required></label>
-        <button type="submit" class="button" disabled>Publish monthly ZIP</button>
+        <label>Monthly ZIP (up to 25 MiB) <input name="zip" type="file" accept=".zip,application/zip" required></label>
+        <p class="status" id="monthly-file-selection">Choose a Windows ZIP with 10 images.</p>
+        <div class="admin-actions">
+          <button type="submit" class="button" disabled>Publish monthly ZIP</button>
+          <button type="button" class="secondary" id="register-monthly-zip" disabled>Register existing ZIP</button>
+        </div>
+        <p class="muted">Register existing ZIP recovers a file already in the private Supabase bucket as YYYY-MM.zip without overwriting it.</p>
       </form>
       <p class="status" id="monthly-upload-status" role="status"></p>
       <h3>Published packs</h3><ul class="order-list" id="monthly-packs"></ul>
