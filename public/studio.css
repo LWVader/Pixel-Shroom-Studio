@@ -216,8 +216,8 @@ dialog::backdrop { background: #09060de0; }
 .asset-gallery-heading h4 { margin: 0; font-size: .9rem; }
 .asset-gallery-heading span { color: var(--muted); font-size: .72rem; }
 .asset-examples { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .55rem; align-items: stretch; }
-.asset-examples figure { overflow: hidden; border: 1px solid #574865; background: #100c16; border-radius: .45rem; }
-.asset-examples a { display: block; outline-offset: -3px; }
+.asset-examples figure { display: flex; flex-direction: column; overflow: hidden; border: 1px solid #574865; background: #100c16; border-radius: .45rem; }
+.asset-examples a { display: flex; align-items: center; justify-content: center; flex: 1; outline-offset: -3px; }
 .asset-examples a:hover img { filter: brightness(1.12); }
 .asset-examples img { width: 100%; height: auto; object-fit: contain; }
 .asset-examples figcaption { padding: .5rem .38rem; color: var(--muted); font-size: .72rem; text-align: center; }

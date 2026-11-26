@@ -45,6 +45,13 @@ test("homepage shows both service offers and independent fictional examples", as
   const sources = await page.locator(".asset-examples img").evaluateAll(images => images.map(image => image.getAttribute("src")));
   expect(new Set(sources).size).toBe(10);
   expect(sources.every(src => src.startsWith("/assets/service-previews/"))).toBeTruthy();
+  for(const name of ["neon-mushroom-mischief","cafe-friends","ceramic-panda-garden","prismatic-dragon","mediterranean-highland"]){
+    expect(sources).toContain("/assets/service-previews/"+name+".webp");
+  }
+  for(const image of await page.locator(".asset-examples img").all()){
+    const valid=await image.evaluate(img=>img.naturalWidth>0 && Math.abs(img.naturalWidth/img.naturalHeight-Number(img.width)/Number(img.height))<.025);
+    expect(valid).toBeTruthy();
+  }
   await expect(page.locator(".landing-preview img")).toHaveAttribute("src", "/assets/service-previews/ember-orbit.webp");
   await page.getByRole("link", {name: /Explore demo/}).click();
   await expect(page.getByRole("heading", {name: /Awaken.*the dark/})).toBeVisible();
