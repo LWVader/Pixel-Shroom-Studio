@@ -453,3 +453,30 @@ test("Windows ZIP folders, 25 MiB limit, connection diagnostics, and orphan reco
   site.monthly.publicBucket=true;
   assert.equal((await status()).storageCheck.ok,false);
 });
+
+test("monthly admin recovers missing monthly D1 tables and still reports Storage independently", async t=>{
+  const site=await setup(t);
+  Object.assign(site.env,{SUPABASE_URL:"https://fixtureproject.supabase.co",SUPABASE_SERVICE_ROLE_KEY:"sb_secret_fixture"});
+  const credentials=await login(site), cookie=credentials.headers.get("Set-Cookie").split(";")[0];
+  const path="/api/admin/monthly-delivery";
+  const status=async()=>await (await site.call(path,{headers:{Cookie:cookie}})).json();
+  await site.env.CAMPAIGN_DB.prepare("DROP TABLE monthly_asset_deliveries").bind().run();
+  await site.env.CAMPAIGN_DB.prepare("DROP TABLE monthly_asset_packs").bind().run();
+  const recovered=await status();
+  assert.equal(recovered.databaseCheck.ok,true);
+  assert.equal(recovered.storageCheck.ok,true);
+  assert.equal(recovered.inventory.ok,true);
+  assert.deepEqual(recovered.packs,[]);
+  const original=site.env.CAMPAIGN_DB;
+  // Simulate an error only on monthly queries, keeping admin authentication working.
+  site.env.CAMPAIGN_DB={...original,prepare(statement){
+    if(statement.includes("monthly_asset_"))throw new Error("D1 unavailable");
+    return original.prepare(statement);
+  }};
+  site.monthly.objects.set("2026-12.zip",sampleZip());
+  const partial=await status();
+  assert.equal(partial.databaseCheck.ok,false);
+  assert.equal(partial.storageCheck.ok,true);
+  assert.equal(partial.inventory.ok,true);
+  assert.equal(partial.inventory.files[0].status,"unknown");
+});

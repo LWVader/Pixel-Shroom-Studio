@@ -247,7 +247,7 @@ function monthlyItem(text) {
   return item;
 }
 
-let monthlyBusy=false, storageReady=false, monthlyInventory=null;
+let monthlyBusy=false, storageReady=false, databaseReady=false, monthlyInventory=null;
 const zipInput=monthlyForm.elements.zip;
 const publishButton=monthlyForm.querySelector('button[type="submit"]');
 const registerButton=$("register-monthly-zip");
@@ -259,10 +259,11 @@ function syncMonthlyButtons(){
   const entry=monthlyInventory?.ok?monthlyInventory.files.find(file=>file.month===month):null;
   const known=monthlyInventory?.ok && !monthlyInventory.partial;
   const missing=monthlyInventory?.missing?.includes(month+".zip");
-  publishButton.disabled=monthlyBusy || !storageReady || entry?.status==="published" || Boolean(missing);
-  registerButton.disabled=monthlyBusy || !storageReady || (known && entry?.status!=="unregistered");
+  publishButton.disabled=monthlyBusy || !storageReady || !databaseReady || entry?.status==="published" || Boolean(missing);
+  registerButton.disabled=monthlyBusy || !storageReady || !databaseReady || (known && entry?.status!=="unregistered");
   const help=$("monthly-recovery-help");
   if(!storageReady)help.textContent="Recovery is unavailable until the private Supabase bucket connects.";
+  else if(!databaseReady)help.textContent="Storage is connected, but ZIP registration is unavailable until the Cloudflare delivery database is ready.";
   else if(entry?.status==="unregistered")help.textContent=`${entry.name} exists in Supabase but is not published. Use Register existing ZIP to validate and register it.`;
   else if(missing)help.textContent=`A published record exists for ${month}, but its ZIP is missing in Storage. Restore the original ZIP in Supabase; do not replace a published pack with different artwork.`;
   else if(entry?.status==="published")help.textContent=`${entry.name} is already published. No recovery is needed.`;
@@ -276,15 +277,17 @@ zipInput.addEventListener("change",()=>{
     : "Choose a Windows ZIP with 10 images.";
 });
 async function loadMonthly() {
+  $("monthly-inventory-status").textContent="Checking the private monthly-asset-packs bucket…";
   try {
-    const {config,packs,deliveries,counts,storageCheck,inventory} = await api("/api/admin/monthly-delivery");
+    const {config,packs,deliveries,counts,storageCheck,inventory,databaseCheck} = await api("/api/admin/monthly-delivery");
     storageReady=Boolean(storageCheck?.ok);
+    databaseReady=Boolean(databaseCheck?.ok);
     monthlyInventory=inventory||null;
-    monthlyConfig.textContent = `Supabase: ${storageReady?"connected":"not connected"} · Stripe webhook: ${config.stripe ? "configured" : "not configured"} · Email: ${config.email ? "configured" : "not configured"} · Auto-delivery: ${config.enabled && storageReady && config.stripe && config.email ? "enabled" : "disabled"}. ${storageCheck?.message||""}`;
+    monthlyConfig.textContent = `Supabase: ${storageReady?"connected":"not connected"} · Delivery database: ${databaseReady?"ready":"not ready"} · Stripe webhook: ${config.stripe ? "configured" : "not configured"} · Email: ${config.email ? "configured" : "not configured"} · Auto-delivery: ${config.enabled && storageReady && databaseReady && config.stripe && config.email ? "enabled" : "disabled"}. ${storageCheck?.message||""} ${databaseCheck?.message||""}`;
     const storageList=$("monthly-storage-files");
     if(inventory?.ok){
       $("monthly-inventory-status").textContent=`Private bucket: monthly-asset-packs · ${inventory.files.length} item(s) found${inventory.partial?" (first 100 only)":""}. No files are modified by this check.`;
-      const items=inventory.files.map(file=>monthlyItem(`${file.name}${file.bytes===null?"":` · ${(file.bytes/1048576).toFixed(2)} MiB`} · ${file.status==="published"?"Published":file.status==="unregistered"?"Stored, not registered":"Not a monthly YYYY-MM.zip"}`));
+      const items=inventory.files.map(file=>monthlyItem(`${file.name}${file.bytes===null?"":` · ${(file.bytes/1048576).toFixed(2)} MiB`} · ${file.status==="published"?"Published":file.status==="unregistered"?"Stored, not registered":file.status==="unknown"?"Stored; registration status unknown":"Not a monthly YYYY-MM.zip"}`));
       items.push(...inventory.missing.map(name=>monthlyItem(`${name} · Published record exists but file is missing in Storage`)));
       storageList.replaceChildren(...(items.length?items:[monthlyItem("The private bucket is empty. Publish a ZIP from your computer.")]));
     }else{
@@ -296,7 +299,10 @@ async function loadMonthly() {
     $("monthly-deliveries").replaceChildren(...deliveries.map(d => monthlyItem(`${d.pack_month} · ${d.buyer_email} · ${d.state}${d.last_error ? " · "+d.last_error : ""}`)));
   } catch(error) {
     storageReady=false;
+    databaseReady=false;
     monthlyInventory=null;
+    $("monthly-inventory-status").textContent="Storage check failed: "+error.message;
+    $("monthly-storage-files").replaceChildren();
     monthlyConfig.textContent = "Delivery status unavailable. " + error.message;
   } finally {syncMonthlyButtons();}
 }
@@ -330,7 +336,7 @@ function published(result,status){
 }
 monthlyForm.addEventListener("submit",async event=>{
   event.preventDefault();
-  if(monthlyBusy || !storageReady)return;
+  if(monthlyBusy || !storageReady || !databaseReady)return;
   const file=zipInput.files[0], month=monthlyForm.elements.month.value, status=$("monthly-upload-status");
   if(!file || file.size>maxZip){status.textContent="Choose a ZIP of ten images up to 25 MiB.";return;}
   if(!month){status.textContent="Select the pack month.";return;}
@@ -341,7 +347,7 @@ monthlyForm.addEventListener("submit",async event=>{
   finally{monthlyBusy=false;await loadMonthly();}
 });
 registerButton.addEventListener("click",async()=>{
-  if(monthlyBusy || !storageReady)return;
+  if(monthlyBusy || !storageReady || !databaseReady)return;
   const month=monthlyForm.elements.month.value,status=$("monthly-upload-status");
   if(!month){status.textContent="Select the pack month.";return;}
   if(!window.confirm(`Register the existing private ${month}.zip as the permanent monthly pack? Paid subscribers will receive it.`))return;
