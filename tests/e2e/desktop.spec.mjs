@@ -43,8 +43,11 @@ test("homepage shows both service offers and independent fictional examples", as
   await expect(page.locator(".asset-examples a")).toHaveCount(10);
   const sources = await page.locator(".asset-examples img").evaluateAll(images => images.map(image => image.getAttribute("src")));
   expect(new Set(sources).size).toBe(10);
+  expect(sources.every(src => src.startsWith("/assets/service-previews/"))).toBeTruthy();
+  await expect(page.locator(".landing-preview img")).toHaveAttribute("src", "/assets/service-previews/ember-orbit.webp");
   await page.getByRole("link", {name: /Explore demo/}).click();
   await expect(page.getByRole("heading", {name: /Awaken.*the dark/})).toBeVisible();
+  await expect(page.locator(".hero img")).toHaveAttribute("src", "/assets/service-previews/ember-orbit.webp");
   await page.getByRole("link", {name: /Meet the roast/}).click();
   await expect(page).toHaveURL(/#roast$/);
 });

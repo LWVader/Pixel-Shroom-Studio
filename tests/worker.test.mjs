@@ -40,6 +40,21 @@ test("legacy gallery artwork URLs serve the same protected files as the new URLs
   }
 });
 
+test("legacy service artwork URLs serve only the new protected previews", async (t) => {
+  const site = await setup(t);
+  for (const filename of ["solar-dunes", "emerald-mist", "arcade-wave", "alpine-dawn",
+    "velvet-rose", "neon-underpass", "paper-architecture", "celestial-drift", "citrus-splash", "ink-and-sun", "ember-orbit"]) {
+    const legacy = await site.call(`/assets/service-examples/${filename}.webp`);
+    const preview = await site.call(`/assets/service-previews/${filename}.webp`);
+    assert.equal(legacy.status, 200);
+    assert.equal(legacy.headers.get("Cache-Control"), "no-store");
+    assert.equal(preview.status, 200);
+    assert.equal(preview.headers.get("Content-Type"), "image/webp");
+    assert.deepEqual(await legacy.arrayBuffer(), await preview.arrayBuffer());
+  }
+  assert.equal((await site.call("/assets/service-examples/unknown.webp")).status, 404);
+});
+
 test("the footer opens admin sign-in and protected routes require a valid session", async (t) => {
   const site = await setup(t);
   const home = await site.call("/");
