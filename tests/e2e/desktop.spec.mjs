@@ -28,6 +28,24 @@ test("portfolio filter and keyboard dismissal", async ({page}) => {
   await expect(page.locator(".work-card:visible")).toHaveCount(5);
 });
 
+test("homepage shows both service offers and independent fictional examples", async ({page}) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", {name: "One-page landing page"})).toBeVisible();
+  await expect(page.getByRole("heading", {name: "Keep your feed fresh."})).toBeVisible();
+  await expect(page.locator("#monthly .price")).toContainText("$49");
+  await expect(page.getByRole("link", {name: "Ask about subscribing"})).toBeVisible();
+  await expect(page.locator("[data-checkout=monthly]")).toBeHidden();
+  for (const img of await page.locator(".asset-examples img, .landing-preview img").all()) {
+    await img.scrollIntoViewIfNeeded();
+    await expect.poll(() => img.evaluate(element => element.naturalWidth)).toBeGreaterThan(0);
+  }
+  await expect(page.locator(".asset-examples img")).toHaveCount(3);
+  await page.getByRole("link", {name: /Explore demo/}).click();
+  await expect(page.getByRole("heading", {name: /Awaken.*the dark/})).toBeVisible();
+  await page.getByRole("link", {name: /Meet the roast/}).click();
+  await expect(page).toHaveURL(/#roast$/);
+});
+
 test("mock Stripe checkout, campaign brief and footer admin delivery", async ({page, request, baseURL}) => {
   await page.route("https://checkout.stripe.com/c/pay/*", async (route) => {
     const id = new URL(route.request().url()).pathname.split("/").at(-1);
@@ -49,6 +67,10 @@ test("mock Stripe checkout, campaign brief and footer admin delivery", async ({p
   await page.getByRole("button", {name: "Send the campaign brief"}).click();
   await expect(page.getByRole("heading", {name: "Brief received."})).toBeVisible();
   await expect(page.locator("#brief-status")).toContainText("weirichloren@gmail.com");
+  await expect(page.getByRole("button", {name: "Continue to Stripe"})).toBeDisabled();
+  await page.getByLabel("Want a basic one-page landing page to match your brand? Add for $199.").check();
+  await page.getByRole("button", {name: "Continue to Stripe"}).click();
+  await expect(page.getByRole("heading", {name: "Landing page added."})).toBeVisible();
 
   await page.goto("/");
   await page.getByRole("link", {name: "Studio administrator sign-in"}).click();

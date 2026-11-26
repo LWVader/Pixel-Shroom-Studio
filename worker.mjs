@@ -120,7 +120,7 @@ async function buyerRoute(request, env, url) {
       site: new URL(env.CAMPAIGN_SITE_URL || url.origin).origin
     };
     if (input?.action === "offers") {
-      return json({attention: options.attention, monthly: Boolean(options.monthlyPrice), billingPortal: portal});
+      return json({attention: options.attention, landing: options.landing, monthly: Boolean(options.monthlyPrice), billingPortal: portal});
     }
     if (!ready) return apiError("Online checkout is temporarily unavailable.", 503);
     const handle = createCampaignOrders({

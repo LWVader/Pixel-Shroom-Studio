@@ -83,6 +83,10 @@ export async function createFixture() {
     if (url.pathname === "/v1/checkout/sessions" && options.method === "GET") {
       return Response.json({object: "list", data: []});
     }
+    if (url.pathname === "/v1/prices/price_fixture_monthly" && options.method === "GET") {
+      return Response.json({id: "price_fixture_monthly", active: true, currency: "usd", unit_amount: 4900,
+        recurring: {interval: "month", interval_count: 1, usage_type: "licensed"}, billing_scheme: "per_unit"});
+    }
     if (url.pathname === "/v1/checkout/sessions" && options.method === "POST") {
       const idempotencyKey = options.headers.get("Idempotency-Key");
       const existing = checkoutKeys.get(idempotencyKey);
@@ -95,8 +99,8 @@ export async function createFixture() {
       const id = `cs_test_fixturecampaign${sessions.size + 1}`;
       const session = {
         id, metadata, mode: form.get("mode"),
-        currency: form.get("line_items[0][price_data][currency]"),
-        amount_total: Number(form.get("line_items[0][price_data][unit_amount]")),
+        currency: form.get("line_items[0][price_data][currency]") || (form.get("line_items[0][price]") === "price_fixture_monthly" ? "usd" : null),
+        amount_total: form.get("line_items[0][price]") === "price_fixture_monthly" ? 4900 : Number(form.get("line_items[0][price_data][unit_amount]")),
         status: "open", payment_status: "unpaid",
         customer_details: {email: testBuyer},
         success_url: form.get("success_url"),

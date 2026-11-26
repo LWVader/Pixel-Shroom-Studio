@@ -114,3 +114,9 @@ Stripe Dashboard shows paid orders from buyers who left before submitting a brie
 
 - Set `CAMPAIGN_LANDING_ENABLED=true` to offer the $199 landing page after the Attention Pack brief is submitted.
 - For the $49 Monthly Asset Pack, set `CAMPAIGN_MONTHLY_PRICE_ID` to the active monthly USD Stripe Price and `CAMPAIGN_BILLING_PORTAL_URL` to the Stripe Customer Portal login URL.
+
+### Homepage service offers
+
+The homepage now always displays the $199 one-page landing page add-on and the $49/month Monthly Asset Pack, including clearly labeled fictional examples. The landing page uses the existing Attention Pack post-brief checkout; it is enabled by `CAMPAIGN_LANDING_ENABLED=true` in the Wrangler configuration. The example site is at `/landing-example.html`.
+
+The monthly card uses the existing Stripe subscription flow when `CAMPAIGN_MONTHLY_PRICE_ID` is set to an active $49 USD monthly Price and `CAMPAIGN_BILLING_PORTAL_URL` is set to an enabled Stripe customer portal login link. Otherwise it displays an email inquiry CTA instead of hiding or offering nonfunctional checkout. Sample art in `public/assets/service-examples/` is compressed and watermarked for display.

@@ -281,15 +281,24 @@ if (attention) {
       contact.textContent = "Email about an order.";
       status.append(contact);
     }
-    if (offers.monthly) {
-      const monthly = document.querySelector("#monthly");
-      monthly.hidden = false;
+    const monthly = document.querySelector("#monthly");
+    if (monthly && offers.monthly && offers.billingPortal) {
       const button = monthly.querySelector('button[data-checkout="monthly"]');
+      const monthlyStatus = monthly.querySelector("[data-monthly-status]");
+      button.hidden = false;
       button.disabled = false;
-      wireCheckout(button, monthly.querySelector("[data-monthly-status]"));
+      monthly.querySelector("[data-monthly-contact]").hidden = true;
+      wireCheckout(button, monthlyStatus);
+      monthlyStatus.textContent = "Billed monthly through Stripe. Manage or cancel your subscription through the billing portal.";
       const link = monthly.querySelector("[data-billing-link]");
       link.href = offers.billingPortal;
       link.hidden = false;
+    } else if (monthly) {
+      monthly.querySelector("[data-monthly-status]").textContent = "Online subscription checkout is not available yet. Email the studio to get started.";
+    }
+    if (offers.landing === false) {
+      const landingStatus = document.querySelector("#landing-status");
+      if (landingStatus) landingStatus.textContent = "Email the studio about adding a landing page to your Attention Pack.";
     }
   }).catch(() => {
     status.textContent = "Checkout is temporarily unavailable. Email the studio for help.";

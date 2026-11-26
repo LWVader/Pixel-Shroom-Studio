@@ -20,6 +20,7 @@
   ],
   "vars": {
     "CAMPAIGN_ATTENTION_ENABLED": "true",
+    "CAMPAIGN_LANDING_ENABLED": "true",
     "ACCESS_TEAM_DOMAIN": "",
     "ACCESS_AUDIENCE": "",
     "ACCESS_ADMIN_EMAIL": ""

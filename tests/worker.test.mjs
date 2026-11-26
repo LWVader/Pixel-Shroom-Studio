@@ -83,7 +83,10 @@ test("password attempts are rate limited and other origins cannot sign in", asyn
 test("Stripe creates a $199 session and only a paid session can save a brief", async (t) => {
   const site = await setup(t);
   const campaign = (body) => site.call("/api/campaign-orders", {body});
-  assert.equal((await (await campaign({action: "offers"})).json()).attention, true);
+  const offers = await (await campaign({action: "offers"})).json();
+  assert.equal(offers.attention, true);
+  assert.equal(offers.landing, true);
+  assert.equal(offers.monthly, false);
 
   const checkout = {action: "checkout", offer: "attention", requestId: crypto.randomUUID()};
   const first = await campaign(checkout);
@@ -116,6 +119,41 @@ test("Stripe creates a $199 session and only a paid session can save a brief", a
   assert.ok(Date.parse(sent.email_delivered_at));
   const retry = await (await site.call(adminApi, {body: delivery, headers})).json();
   assert.deepEqual(retry, sent);
+});
+
+test("configured monthly subscription and $199 landing add-on use the correct checkout", async (t) => {
+  const site = await setup(t);
+  const campaign = (body) => site.call("/api/campaign-orders", {body});
+  site.env.CAMPAIGN_MONTHLY_PRICE_ID = "price_fixture_monthly";
+  site.env.CAMPAIGN_BILLING_PORTAL_URL = "https://billing.stripe.com/p/login/fixture";
+  const offers = await (await campaign({action: "offers"})).json();
+  assert.equal(offers.monthly, true);
+  assert.equal(offers.landing, true);
+  const monthly = await campaign({action: "checkout", offer: "monthly", requestId: crypto.randomUUID()});
+  assert.equal(monthly.status, 200);
+  const monthlyURL = (await monthly.json()).url;
+  const monthlyForm = site.requests.find(r => r.method === "POST").form;
+  assert.equal(monthlyForm.get("mode"), "subscription");
+  assert.equal(monthlyForm.get("line_items[0][price]"), "price_fixture_monthly");
+  const monthlyId = monthlyURL.split("/").at(-1);
+  site.completePayment(monthlyId);
+  assert.equal((await (await campaign({action: "order", sessionId: monthlyId})).json()).offer, "monthly");
+  const attention = await campaign({action: "checkout", offer: "attention", requestId: crypto.randomUUID()});
+  const parentSession = (await attention.json()).url.split("/").at(-1);
+  const landing = {action: "checkout", offer: "landing", parentSession, requestId: crypto.randomUUID()};
+  assert.equal((await campaign(landing)).status, 409);
+  site.completePayment(parentSession);
+  assert.equal((await campaign(landing)).status, 409);
+  const brief = {business: "Landing fixture", industry: "Coffee", vibe: "Bright bold wild", goal: "Demo"};
+  const order = await (await campaign({action: "brief", sessionId: parentSession, brief})).json();
+  assert.equal(order.canAddLanding, true);
+  const addOn = await campaign(landing);
+  assert.equal(addOn.status, 200);
+  const landingId = (await addOn.json()).url.split("/").at(-1);
+  assert.equal(site.requests.filter(r => r.method === "POST").at(-1).form.get("line_items[0][price_data][unit_amount]"), "19900");
+  site.completePayment(landingId);
+  assert.equal((await (await campaign({action: "order", sessionId: landingId})).json()).offer, "landing");
+  assert.equal((await (await campaign({action: "order", sessionId: parentSession})).json()).canAddLanding, false);
 });
 
 test("portfolio drafts stay private and published campaigns can be edited or withdrawn", async (t) => {
