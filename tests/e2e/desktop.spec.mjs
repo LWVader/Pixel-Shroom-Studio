@@ -293,3 +293,65 @@ test("AD Studio export and publishing validation share the editor state", async 
   await expect(page.locator("#sendSocial")).toBeEnabled();
   expect(errors).toEqual([]);
 });
+
+test("finished 4:5 artwork fills the canvas without cropping and exports the same frame", async ({page}) => {
+  await page.goto("/admin.html");
+  await page.getByLabel("Administrator password").fill(testPassword);
+  await page.getByRole("button", {name: "Sign in", exact: true}).click();
+  await page.getByRole("link", {name: "Open AD Studio"}).click();
+  // A unique color at each corner makes cropping or misplaced artwork visible.
+  const data = await page.evaluate(() => {
+    const source = document.createElement("canvas");
+    source.width = 400;
+    source.height = 500;
+    const ctx = source.getContext("2d");
+    for (const [color, x, y] of [["#ff0000", 0, 0], ["#00ff00", 200, 0], ["#0000ff", 0, 250], ["#ffff00", 200, 250]]) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, 200, 250);
+    }
+    return source.toDataURL("image/png").split(",")[1];
+  });
+  await page.getByLabel("Aspect ratio").selectOption("portrait");
+  await page.locator("#bgUpload").setInputFiles({name: "finished-ad-4x5.png", mimeType: "image/png", buffer: Buffer.from(data, "base64")});
+  await expect(page.locator("#artworkPlacement")).toHaveValue("canvas");
+  await expect(page.locator("#bgFit")).toHaveValue("contain");
+  await expect(page.locator("#bgZoom")).toHaveValue("100");
+  await expect(page.locator("#bgDim")).toHaveValue("0");
+  const pixels = () => page.locator("#scene").evaluate(canvas => {
+    const ctx = canvas.getContext("2d");
+    const points = [[5, 5], [canvas.width - 6, 5], [5, canvas.height - 6], [canvas.width - 6, canvas.height - 6]];
+    return points.map(([x, y]) => Array.from(ctx.getImageData(x, y, 1, 1).data).slice(0, 3).map(v => v > 128 ? 255 : 0));
+  });
+  const expected = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0]];
+  await expect.poll(pixels).toEqual(expected);
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"), page.getByRole("button", {name: "Download PNG frame"}).click()
+  ]);
+  const {readFile} = await import("node:fs/promises");
+  const png = await readFile(await download.path());
+  expect(png.readUInt32BE(16)).toBe(1080);
+  expect(png.readUInt32BE(20)).toBe(1350);
+  const exported = await page.evaluate(async base64 => {
+    const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+    const image = await createImageBitmap(new Blob([bytes], {type: "image/png"}));
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width; canvas.height = image.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0);
+    return [[5, 5], [canvas.width - 6, 5], [5, canvas.height - 6], [canvas.width - 6, canvas.height - 6]]
+      .map(([x, y]) => Array.from(ctx.getImageData(x, y, 1, 1).data).slice(0, 3).map(v => v > 128 ? 255 : 0));
+  }, png.toString("base64"));
+  expect(exported).toEqual(expected);
+
+  // Other output ratios retain the entire image, while the original template
+  // is still available for users who want editor-generated copy and logos.
+  await page.getByLabel("Aspect ratio").selectOption("story");
+  await expect(page.locator("#scene")).toHaveAttribute("height", "1920");
+  await page.locator("#artwork-title").click();
+  await page.locator("#artworkPlacement").selectOption("template");
+  await expect(page.locator("#bgFit")).toHaveValue("contain");
+  await page.locator("#artworkPlacement").selectOption("canvas");
+  await page.getByLabel("Aspect ratio").selectOption("portrait");
+  await expect.poll(pixels).toEqual(expected);
+});

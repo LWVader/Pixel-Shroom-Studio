@@ -13,7 +13,7 @@ import {initEmojiPicker} from "./emoji-picker.js";
 'use strict';
 const $=id=>document.getElementById(id), canvas=$('scene');let ctx=canvas.getContext('2d');const subjectLayer=document.createElement('canvas');
 const CANVAS_WIDTH = 1080;
-export let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',channelCaptions:{},aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',platform:'Instagram',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,bgFit:'cover',bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
+export let state={layout:'popout',model:'sir-shroomalot',motion:'none',showCharacter:false,brand:'Pixel Shroom Studio',headline:'Art that breaks the frame.',captionFont:'Arial',captionFontSize:28,captionWeight:'700',captionAlign:'left',socialTitle:'',socialCaption:'',youtubePrivacy:'public',pinterestBoard:'',channelCaptions:{},aiGenerated:true,cta:'Explore the collection ↗',website:'pixelshroomstudio.com',platform:'Instagram',depth:100,size:90,duration:6,ratio:'portrait',shadows:true,characterImage:null,bgImage:null,outerImage:null,logoImage:null,artworkPlacement:'template',bgFit:'contain',bgZoom:100,bgX:50,bgY:50,bgDim:15,bgBlur:0,subjectX:0,subjectY:0,characterName:'Sir Shroomalot',weatherType:'snow',weatherLayer:'both',weatherDensity:65,weatherSpeed:100,weatherWind:15,burnOrigin:'bottom',burnIntensity:65,burnSmoke:true,burnEmbers:true,emberAmount:45},t=0,playing=true,last=0,orbit=0,tilt=0,drag=null,recording=false;
 const PLAYBACK_RATE = .5;
 const BUNDLED_ARTWORK = "/admin-ad-studio/assets/campaign-art/orbit-roast.webp";
 const OLD_BUNDLED_ARTWORK = "/assets/campaigns/orbit-roast.webp";
@@ -89,7 +89,7 @@ let characterUpload=null,backdrop=null,outerBackdrop=null,brandLogo=null;
 let characterHitArea = null;
 const extraControls = [
   "captionFont", "captionFontSize", "captionWeight", "captionAlign",
-  "bgFit", "bgZoom", "bgX", "bgY", "bgDim", "bgBlur", "weatherType", "weatherLayer",
+  "artworkPlacement", "bgFit", "bgZoom", "bgX", "bgY", "bgDim", "bgBlur", "weatherType", "weatherLayer",
   "weatherDensity", "weatherSpeed", "weatherWind", "burnOrigin", "burnIntensity", "burnSmoke", "burnEmbers", "emberAmount"
 ];
 function coverImage(image, x, y, width, height, zoom = 100, horizontal = 50, vertical = 50, fit = "cover") {
@@ -132,6 +132,9 @@ const characterImage = () => state.model === "custom" ? characterUpload : charac
 
 function artworkRect(height) {
   const marketing = state.layout === "marketing";
+  if (marketing && state.artworkPlacement === "canvas" && state.bgImage) {
+    return {x: 0, y: 0, w: 864, h: height, edge: height};
+  }
   const y = marketing ? 132 : 172;
   const h = marketing ? Math.min(height * .48, height - 425) : Math.min(440, height * .36);
   return {x: marketing ? 56 : 122, y, w: marketing ? 752 : 620, h, edge: y + h};
@@ -318,6 +321,7 @@ function sync() {
 
   $("artwork-title").textContent = isPopout ? "Scene background" : "Campaign artwork";
   $("bgAdjust").hidden = !state.bgImage;
+  $("artwork-placement-help").hidden = isPopout || state.artworkPlacement !== "canvas";
   $("clearBg").hidden = !state.bgImage;
   $("clearOuter").hidden = !state.outerImage;
   $("clearLogo").hidden = !state.logoImage;
@@ -544,7 +548,15 @@ function restoreCustomAssets() {
   outerBackdrop = loadImage(state.outerImage);
   brandLogo = loadImage(state.logoImage);
 }
-bindImageUpload("bgUpload", ({source, data}) => { backdrop = source; state.bgImage = data; });
+bindImageUpload("bgUpload", ({source, data}) => {
+  backdrop = source;
+  state.bgImage = data;
+  state.artworkPlacement = state.layout === "marketing" ? "canvas" : "template";
+  state.bgFit = "contain";
+  state.bgZoom = 100;
+  state.bgX = state.bgY = 50;
+  state.bgDim = state.bgBlur = 0;
+});
 bindImageUpload("outerUpload", ({source, data}) => { outerBackdrop = source; state.outerImage = data; });
 bindImageUpload("logoUpload", ({source, data}) => { brandLogo = source; state.logoImage = data; });
 $('clearBg').onclick=()=>{state.bgImage=null;backdrop=null;$('bgUpload').value='';sync()};$('clearOuter').onclick=()=>{state.outerImage=null;outerBackdrop=null;$('outerUpload').value='';sync()};$('clearLogo').onclick=()=>{state.logoImage=null;brandLogo=null;$('logoUpload').value='';sync()};
@@ -579,7 +591,7 @@ function sanitizeProject() {
   state.palette = AdPalette.normalize(state.palette) || defaults.palette;
   state.paletteName = typeof state.paletteName === "string" ? state.paletteName.trim().slice(0, 48) : "";
   const options = {
-    layout: ["marketing", "popout"], bgFit: ["cover", "contain"], ratio: Object.keys(canvasHeights),
+    layout: ["marketing", "popout"], artworkPlacement: ["canvas", "template"], bgFit: ["cover", "contain"], ratio: Object.keys(canvasHeights),
     platform: ["Instagram", "Facebook", "TikTok"], captionAlign: ["left", "center", "right"], captionWeight: ["400", "700"],
     youtubePrivacy: ["public", "unlisted", "private"], weatherType: ["snow", "rain", "storm", "petals", "confetti"],
     weatherLayer: ["behind", "front", "both"], burnOrigin: ["bottom", "center"]

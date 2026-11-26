@@ -8,6 +8,21 @@ export function renderMarketingAd(ctx, state, time, height, logo) {
   const {x: margin, w: width, y: mediaTop, h: mediaHeight, edge: mediaBottom} = artworkRect(height);
   const {ink, post, outline, button, buttonInk} = paletteTheme;
 
+  if (state.artworkPlacement === "canvas" && state.bgImage) {
+    // Finished ads already contain their own logo and copy. Use the entire
+    // output canvas, with the same image-fit calculation for preview/export.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, 864, height);
+    ctx.clip();
+    const progress = time / Math.max(1, Number(state.duration));
+    const animateZoom = state.motion !== "none" && state.bgFit === "cover";
+    const zoom = Number(state.bgZoom) + (animateZoom ? (1 - Math.cos(progress * Math.PI * 2)) * 2.5 : 0);
+    paintArtwork(0, 0, 864, height, zoom);
+    ctx.restore();
+    return;
+  }
+
   rounded(22, 22, 820, height - 44, 24, outline);
   rounded(23, 23, 818, height - 46, 23, post);
   let brandX = margin;
@@ -68,6 +83,7 @@ function applyMarketingAd(kind, campaign, artwork) {
     state.palette = campaignPalette;
     state.paletteName = "";
   }
+  state.artworkPlacement = "template";
   state.bgFit = campaign ? "contain" : "cover";
   state.bgZoom = 100;
   state.bgX = state.bgY = 50;
