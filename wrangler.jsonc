@@ -21,6 +21,8 @@
   "vars": {
     "CAMPAIGN_ATTENTION_ENABLED": "true",
     "CAMPAIGN_LANDING_ENABLED": "true",
+    "CAMPAIGN_MONTHLY_PRICE_ID": "price_1Ug3NLRow5dBNMWtjKdUmQi6",
+    "CAMPAIGN_BILLING_PORTAL_URL": "https://billing.stripe.com/p/login/4gMdRbfDK8FlgvW9pK5os00",
     "ACCESS_TEAM_DOMAIN": "",
     "ACCESS_AUDIENCE": "",
     "ACCESS_ADMIN_EMAIL": ""
