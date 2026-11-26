@@ -92,3 +92,13 @@ header .brand h1{margin:0;line-height:1.3;letter-spacing:1px}
 .eyebrow,.stage-note,.muted,.workspace-top,.palette-swatches code{font-size:12px}
 #characterGrid small{font-size:11px}
 .emoji-grid button{font-family:"Noto Emoji",sans-serif}
+
+/* A taller preview workspace, without changing the actual export dimensions.
+   On narrow screens the canvas still fits the available width. */
+@media (min-width: 801px) {
+  .stage { height: clamp(840px, 92dvh, 1040px); }
+}
+@media (max-width: 800px) {
+  .stage { height: clamp(380px, 130vw, 740px); }
+}
+.preview-canvas canvas { border-radius: 0; }

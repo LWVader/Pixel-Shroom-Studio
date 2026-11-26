@@ -294,7 +294,7 @@ test("AD Studio export and publishing validation share the editor state", async 
   expect(errors).toEqual([]);
 });
 
-test("finished 4:5 artwork fills the canvas without cropping and exports the same frame", async ({page}) => {
+test("adaptive template preserves complete 4:5 artwork, full canvas and exported frames", async ({page}) => {
   await page.goto("/admin.html");
   await page.getByLabel("Administrator password").fill(testPassword);
   await page.getByRole("button", {name: "Sign in", exact: true}).click();
@@ -313,8 +313,29 @@ test("finished 4:5 artwork fills the canvas without cropping and exports the sam
   });
   await page.getByLabel("Aspect ratio").selectOption("portrait");
   await page.locator("#bgUpload").setInputFiles({name: "finished-ad-4x5.png", mimeType: "image/png", buffer: Buffer.from(data, "base64")});
-  await expect(page.locator("#artworkPlacement")).toHaveValue("canvas");
+  await expect(page.locator("#artworkPlacement")).toHaveValue("template");
   await expect(page.locator("#bgFit")).toHaveValue("contain");
+  const templateCorners = () => page.locator("#scene").evaluate(canvas => {
+    const ctx = canvas.getContext("2d"), scale = canvas.width / 864;
+    const height = canvas.height / scale;
+    const h = Math.min(752 / .8, height - 148 - 132 - 128);
+    const w = .8 * h, x = (864 - w) / 2, y = 132;
+    return [[x + 5, y + 5], [x + w - 5, y + 5], [x + 5, y + h - 5], [x + w - 5, y + h - 5]]
+      .map(([px, py]) => Array.from(ctx.getImageData(Math.round(px * scale), Math.round(py * scale), 1, 1).data).slice(0, 3).map(v => v > 128 ? 255 : 0));
+  });
+  const expected = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0]];
+  await expect.poll(templateCorners).toEqual(expected);
+  const stage = page.locator(".stage");
+  expect((await stage.boundingBox()).height).toBeGreaterThanOrEqual(840);
+  expect(await page.locator("#scene").evaluate(canvas => {
+    const rect = canvas.getBoundingClientRect();
+    const bounds = canvas.closest(".stage").getBoundingClientRect();
+    return rect.top >= bounds.top && rect.bottom <= bounds.bottom && rect.left >= bounds.left &&
+      rect.right <= bounds.right && Math.abs(rect.width / rect.height - .8) < .01;
+  })).toBe(true);
+  await page.locator("#artwork-title").click();
+  await expect(page.locator("#bgZoom")).toBeDisabled();
+  await page.locator("#artworkPlacement").selectOption("canvas");
   await expect(page.locator("#bgZoom")).toHaveValue("100");
   await expect(page.locator("#bgDim")).toHaveValue("0");
   const pixels = () => page.locator("#scene").evaluate(canvas => {
@@ -322,7 +343,6 @@ test("finished 4:5 artwork fills the canvas without cropping and exports the sam
     const points = [[5, 5], [canvas.width - 6, 5], [5, canvas.height - 6], [canvas.width - 6, canvas.height - 6]];
     return points.map(([x, y]) => Array.from(ctx.getImageData(x, y, 1, 1).data).slice(0, 3).map(v => v > 128 ? 255 : 0));
   });
-  const expected = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0]];
   await expect.poll(pixels).toEqual(expected);
 
   const [download] = await Promise.all([
@@ -348,7 +368,6 @@ test("finished 4:5 artwork fills the canvas without cropping and exports the sam
   // is still available for users who want editor-generated copy and logos.
   await page.getByLabel("Aspect ratio").selectOption("story");
   await expect(page.locator("#scene")).toHaveAttribute("height", "1920");
-  await page.locator("#artwork-title").click();
   await page.locator("#artworkPlacement").selectOption("template");
   await expect(page.locator("#bgFit")).toHaveValue("contain");
   await page.locator("#artworkPlacement").selectOption("canvas");

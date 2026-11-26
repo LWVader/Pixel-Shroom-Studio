@@ -5,7 +5,8 @@ import {AdPalette} from "./ad-palette.js";
 'use strict';
 
 export function renderMarketingAd(ctx, state, time, height, logo) {
-  const {x: margin, w: width, y: mediaTop, h: mediaHeight, edge: mediaBottom} = artworkRect(height);
+  const {x: mediaX, w: mediaWidth, y: mediaTop, h: mediaHeight, edge: mediaBottom} = artworkRect(height);
+  const margin = 56, width = 752;
   const {ink, post, outline, button, buttonInk} = paletteTheme;
 
   if (state.artworkPlacement === "canvas" && state.bgImage) {
@@ -39,12 +40,13 @@ export function renderMarketingAd(ctx, state, time, height, logo) {
 
   ctx.save();
   ctx.beginPath();
-  ctx.roundRect(margin, mediaTop, width, mediaHeight, 18);
+  if (state.bgFit === "contain") ctx.rect(mediaX, mediaTop, mediaWidth, mediaHeight);
+  else ctx.roundRect(mediaX, mediaTop, mediaWidth, mediaHeight, 18);
   ctx.clip();
   const progress = time / Math.max(1, Number(state.duration));
   const animateZoom = state.motion !== "none" && state.bgFit === "cover";
   const zoom = Number(state.bgZoom) + (animateZoom ? (1 - Math.cos(progress * Math.PI * 2)) * 2.5 : 0);
-  paintArtwork(margin, mediaTop, width, mediaHeight, zoom);
+  paintArtwork(mediaX, mediaTop, mediaWidth, mediaHeight, zoom);
   ctx.restore();
 
   const story = state.ratio === "story";
@@ -84,7 +86,7 @@ function applyMarketingAd(kind, campaign, artwork) {
     state.paletteName = "";
   }
   state.artworkPlacement = "template";
-  state.bgFit = campaign ? "contain" : "cover";
+  state.bgFit = "contain";
   state.bgZoom = 100;
   state.bgX = state.bgY = 50;
   state.bgDim = state.bgBlur = 0;

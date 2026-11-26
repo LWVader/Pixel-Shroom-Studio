@@ -118,7 +118,10 @@ function paintArtwork(x, y, width, height, zoom = Number(state.bgZoom)) {
   if (backdrop?.complete && backdrop.naturalWidth) {
     ctx.save();
     ctx.filter = `blur(${state.bgBlur}px)`;
-    coverImage(backdrop, x, y, width, height, zoom, Number(state.bgX), Number(state.bgY), state.bgFit);
+    // Whole-image mode must never crop, even when a previous cover-mode
+    // project stored an enlarged zoom value.
+    coverImage(backdrop, x, y, width, height, state.bgFit === "contain" ? 100 : zoom,
+      Number(state.bgX), Number(state.bgY), state.bgFit);
     ctx.restore();
     ctx.fillStyle = `rgba(0,0,0,${Number(state.bgDim) / 100})`;
     ctx.fillRect(x, y, width, height);
@@ -135,9 +138,22 @@ function artworkRect(height) {
   if (marketing && state.artworkPlacement === "canvas" && state.bgImage) {
     return {x: 0, y: 0, w: 864, h: height, edge: height};
   }
-  const y = marketing ? 132 : 172;
-  const h = marketing ? Math.min(height * .48, height - 425) : Math.min(440, height * .36);
-  return {x: marketing ? 56 : 122, y, w: marketing ? 752 : 620, h, edge: y + h};
+  if (marketing) {
+    const y = 132;
+    // Give art all the space available above the copy/CTA. Reserve room
+    // for the logo, headline, button and footer at every export ratio.
+    const buttonY = state.ratio === "story" ? height * .77 - 115 : height - 148;
+    const maxWidth = 752, maxHeight = Math.max(1, buttonY - y - 128);
+    let w = maxWidth, h = maxHeight;
+    if (state.bgFit === "contain" && backdrop?.complete && backdrop.naturalWidth) {
+      const scale = Math.min(maxWidth / backdrop.naturalWidth, maxHeight / backdrop.naturalHeight);
+      w = backdrop.naturalWidth * scale;
+      h = backdrop.naturalHeight * scale;
+    }
+    return {x: (864 - w) / 2, y, w, h, edge: y + h};
+  }
+  const y = 172, h = Math.min(440, height * .36);
+  return {x: 122, y, w: 620, h, edge: y + h};
 }
 
 function characterCenterY(rect) {
@@ -321,7 +337,11 @@ function sync() {
 
   $("artwork-title").textContent = isPopout ? "Scene background" : "Campaign artwork";
   $("bgAdjust").hidden = !state.bgImage;
-  $("artwork-placement-help").hidden = isPopout || state.artworkPlacement !== "canvas";
+  $("artwork-placement-help").hidden = isPopout;
+  $("artwork-placement-help").textContent = state.artworkPlacement === "canvas"
+    ? "Full canvas shows your artwork without an extra logo, headline or button."
+    : "The artwork area automatically fits the complete image between the brand header and the caption and button.";
+  for (const id of ["bgZoom", "bgX", "bgY"]) $(id).disabled = state.bgFit === "contain";
   $("clearBg").hidden = !state.bgImage;
   $("clearOuter").hidden = !state.outerImage;
   $("clearLogo").hidden = !state.logoImage;
@@ -551,7 +571,7 @@ function restoreCustomAssets() {
 bindImageUpload("bgUpload", ({source, data}) => {
   backdrop = source;
   state.bgImage = data;
-  state.artworkPlacement = state.layout === "marketing" ? "canvas" : "template";
+  if (state.layout !== "marketing") state.artworkPlacement = "template";
   state.bgFit = "contain";
   state.bgZoom = 100;
   state.bgX = state.bgY = 50;
