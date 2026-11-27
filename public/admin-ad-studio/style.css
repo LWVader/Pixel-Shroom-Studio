@@ -109,3 +109,29 @@ header .brand h1{margin:0;line-height:1.3;letter-spacing:1px}
 #fit-status:empty { display: none; }
 
 .publishing-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}.publishing-buttons button{width:100%;min-height:44px}.publishing-buttons p{margin:7px 0 0}@media(max-width:800px){.publishing-buttons{grid-template-columns:1fr}}
+
+/* Feed-style previews are illustrative, not replicas of the social network UI. */
+.publish-media-column{min-width:0;display:grid;gap:18px;align-content:start}
+.static-post-workspace h2{font-size:20px;margin:8px 0}
+.still-actions{display:flex;gap:8px;flex-wrap:wrap}
+.feed-previews{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:900px;margin:18px auto;align-items:start}
+.feed-viewer{min-width:0;background:#191b1d;border:1px solid #393d3e;border-radius:12px;padding:12px}
+.feed-viewer h3{font-size:13px;margin:0 0 12px;color:#d9e2dc}
+.feed-card{border:1px solid #383c3d;border-radius:10px;overflow:hidden;background:#212425}
+.feed-card header{height:auto;display:flex;gap:9px;align-items:center;padding:12px;border:0;min-width:0}
+.feed-avatar{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#493663;color:#e0ff86;font-weight:700;font-size:12px}
+.linkedin-feed .feed-avatar{border-radius:50%;background:#16496d;color:#fff}
+.feed-card header>div{min-width:0;flex:1}
+.feed-card header strong{display:block;font-size:13px;overflow-wrap:anywhere}
+.feed-card header small{display:block;color:#aeb4b6;font-size:10px;margin-top:4px}
+.feed-dots{color:#abb1b4;font-size:12px}
+.feed-caption{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.45;color:#ebeeee;margin:0;padding:0 12px 14px}
+.feed-image{background:#101113;text-align:center;min-width:0}
+.feed-image img{display:block;width:100%;height:auto;max-width:100%;object-fit:contain}
+.feed-image img[hidden]{display:none}.feed-image img:not([hidden])+.feed-placeholder{display:none}
+.feed-placeholder{display:block;padding:25px 12px;color:#a0a7a5;font-size:11px}
+.feed-card footer{display:flex;justify-content:space-around;gap:5px;flex-wrap:wrap;padding:12px 6px;color:#cdd3d1;font-size:10px;border-top:1px solid #383c3d}
+#sendStaticPost{width:100%;min-height:44px}
+@media(max-width:760px){.feed-previews{grid-template-columns:1fr;max-width:440px}}
+
+.publish-heading-actions{display:flex;gap:8px;flex-wrap:wrap}.static-post-workspace{margin-top:24px;scroll-margin-top:16px}.feed-card header strong{word-break:normal}.static-post-workspace #staticImageUrl{width:100%}

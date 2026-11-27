@@ -1,4 +1,6 @@
 export const MAX_VIDEO_BYTES = 16 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export const BUFFER_IMAGE_TYPES = ["image/png", "image/jpeg"];
 export const BUFFER_VIDEO_TYPES = ["video/mp4", "video/quicktime"];
 const limits = {facebook: 5000, instagram: 2196, linkedin: 3000, pinterest: 500, tiktok: 2200,
   threads: 500, bluesky: 300, youtube: 5000, googlebusiness: 4000, twitter: 280};
@@ -25,16 +27,17 @@ export function captionLength(platform, text) {
   return {count, limit: limits[platform] || null};
 }
 
-export function publicMediaUrl(value) {
+export function publicMediaUrl(value, kind = "video") {
+  const image = kind === "image";
   let url;
-  try { url = new URL(String(value)); } catch { throw Error("Enter a direct HTTPS video URL."); }
+  try { url = new URL(String(value)); } catch { throw Error(image ? "Enter a direct HTTPS image URL." : "Enter a direct HTTPS video URL."); }
   const host = url.hostname.toLowerCase();
   if (url.protocol !== "https:" || url.username || url.password || url.port || !host.includes(".") ||
       /[\[\]:]/.test(host) || /^\d+(\.\d+){3}$/.test(host) || /\.(local|internal|localhost)\.?$/.test(host) ||
-      url.hash || url.href.length > 2000) throw Error("Use a public HTTPS video URL without credentials.");
-  if (!/\.(mp4|mov)$/i.test(url.pathname)) throw Error("Use a direct MP4 or MOV file URL.");
+      url.hash || url.href.length > 2000) throw Error(image ? "Use a public HTTPS image URL without credentials." : "Use a public HTTPS video URL without credentials.");
+  if (image ? !/\.(png|jpe?g)$/i.test(url.pathname) : !/\.(mp4|mov)$/i.test(url.pathname)) throw Error(image ? "Use a direct PNG or JPEG image URL." : "Use a direct MP4 or MOV file URL.");
   if (/(?:signature|token|expires|x-amz-|x-goog-)/i.test(url.search)) {
-    throw Error("Use a stable video URL that will not expire before Buffer publishes.");
+    throw Error(image ? "Use a stable image URL that will not expire before Buffer publishes." : "Use a stable video URL that will not expire before Buffer publishes.");
   }
   return url.href;
 }

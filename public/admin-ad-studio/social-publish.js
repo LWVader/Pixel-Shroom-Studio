@@ -1,9 +1,10 @@
-import {$, state, renderRevision, requestPreview, renderAnimation} from "./app.js";
-import {BUFFER_VIDEO_TYPES, MAX_VIDEO_BYTES, captionLength, publicMediaUrl} from "../ad-studio-rules.mjs";
+import {$, state, renderRevision, requestPreview, renderAnimation, renderStillImage} from "./app.js";
+import {BUFFER_VIDEO_TYPES, MAX_VIDEO_BYTES, MAX_IMAGE_BYTES, captionLength, publicMediaUrl} from "../ad-studio-rules.mjs";
 
 const SOCIAL_CATALOG=[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['twitter','X'],['threads','Threads'],['pinterest','Pinterest'],['bluesky','Bluesky'],['mastodon','Mastodon'],['googlebusiness','Google Business']];
 let socialConfig = {configured: false, platforms: []};
 const hostedVideos = new WeakMap();
+let stillImage = null, stillRevision = null, stillUrl = null, capturingStill = false;
 let preparedVideo = null, preparedRevision = null, videoUrl = null, posting = false, preparingVideo = false, submissions = [];
 const groupSubmissions = new Map();
 const publishGroups = [{key:"twitter", button:"sendSocialX", status:"xPublishReady"}, {key:"other", button:"sendSocial", status:"otherPublishReady"}];
@@ -70,6 +71,81 @@ function readyVideo() {
   return preparedVideo && preparedRevision === renderRevision &&
     preparedVideo.size <= MAX_VIDEO_BYTES && BUFFER_VIDEO_TYPES.includes(preparedVideo.type.split(";")[0]);
 }
+function staticTargets(chosen = selectedAccounts()) {
+  return chosen.filter(t => t.platform === "facebook" || t.platform === "linkedin");
+}
+function staticSnapshot() {
+  const snapshot = submissionSnapshot("other", staticTargets());
+  const mediaKind = $("staticPostMode").value;
+  const media = mediaKind === "image" ? $("staticImageUrl").value.trim() : "";
+  const signature = JSON.stringify({targets:snapshot.targets,fields:snapshot.fields,captions:snapshot.captions,dueAt:snapshot.dueAt,
+    mediaKind,media,revision:mediaKind==="image"&&!media?renderRevision:null,aiGenerated:snapshot.aiGenerated});
+  return {...snapshot, mediaKind, media, signature};
+}
+function updateStaticPreviews() {
+  const textOnly = $("staticPostMode").value === "text";
+  const rawUrl = $("staticImageUrl").value.trim();
+  let url = "", error = "";
+  if (!textOnly && rawUrl) {
+    try { url = publicMediaUrl(rawUrl, "image"); } catch (cause) { error = cause.message; }
+  }
+  $("staticImageControls").hidden = textOnly;
+  $("staticImageUrl").setCustomValidity(error);
+  $("staticImageUrl").setAttribute("aria-invalid", String(Boolean(error)));
+  for (const [platform,prefix] of [["facebook","fb"],["linkedin","li"]]) {
+    const account = socialConfig.platforms?.find(p=>p.id===platform && selectedAccounts().some(t=>t.accountId===p.accountId))
+      || socialConfig.platforms?.find(p=>p.id===platform);
+    $(prefix+"PreviewName").textContent=account?.label || state.brand || "Pixel Shroom Studio";
+    $(prefix+"PreviewCaption").textContent=captionFor(platform);
+    $(prefix+"PreviewMedia").hidden=textOnly;
+    const img=$(prefix+"PreviewImage"), src=url || (!rawUrl && stillRevision===renderRevision ? stillUrl : "");
+    img.hidden=textOnly||!src;
+    if (src && img.getAttribute("src")!==src) img.src=src;
+    if (!src) img.removeAttribute("src");
+  }
+  return {url,error,textOnly};
+}
+function updateStaticReadiness(scheduleValid, counts) {
+  const snapshot=staticSnapshot(), {url,error,textOnly}=updateStaticPreviews();
+  const previous=groupSubmissions.get("static");
+  const submitted=previous?.signature===snapshot.signature&&previous.completed;
+  const tooLong=counts.some(c=>snapshot.targets.some(t=>t.platform===c.platform)&&c.limit&&c.count>c.limit);
+  let reason="";
+  if(posting||preparingVideo||capturingStill) reason="Preparing or submitting a post. Please wait.";
+  else if(!socialConfig.configured||socialConfig.accountsError) reason="Connect Buffer and refresh accounts.";
+  else if(!snapshot.targets.length) reason="Select Facebook or LinkedIn in Social accounts.";
+  else if(tooLong) reason="Shorten the selected Facebook or LinkedIn caption.";
+  else if(!scheduleValid) reason="Choose a valid publishing time.";
+  else if(!snapshot.fields.title) reason="Enter a post title in Social post text.";
+  else if(error) reason=error;
+  else if(submitted) reason="Already submitted for this selection and post. Check Buffer submissions.";
+  const verb={shareNow:"Publish post to",customScheduled:"Schedule post for"}[$("bufferMode").value]||"Queue post for";
+  $("sendStaticPost").textContent=verb+" "+groupLabel("other",snapshot.targets);
+  $("sendStaticPost").disabled=Boolean(reason);
+  $("staticPostReady").textContent=reason||(textOnly?"Ready — text-only post, no media hosting needed.":url?"Ready — the public image URL will be attached.":socialConfig.uploadReady?"Ready — the still image will be captured and uploaded automatically.":"Image posts need Cloudinary or a public PNG/JPEG URL. Text-only posts need neither.");
+  $("staticMediaNote").textContent=error||(socialConfig.uploadReady?"Cloudinary will host the still image automatically.":"Use a public PNG/JPEG URL, connect Cloudinary, or choose Text only.");
+  $("captureStill").disabled=posting||preparingVideo||capturingStill;
+  $("downloadStill").disabled=posting||preparingVideo||capturingStill||!stillImage||stillRevision!==renderRevision;
+}
+async function captureCurrentStill() {
+  const revision=renderRevision;
+  const blob=await renderStillImage();
+  if(blob.size>MAX_IMAGE_BYTES) throw Error("The captured PNG exceeds 10 MB.");
+  if(revision!==renderRevision) throw Error("Editor changed while capturing; capture again.");
+  if(stillUrl) URL.revokeObjectURL(stillUrl);
+  stillImage=blob; stillRevision=revision; stillUrl=URL.createObjectURL(blob);
+  $("staticCaptureStatus").textContent="Still artwork captured · "+(blob.size/1024/1024).toFixed(2)+" MB · PNG";
+  updateStaticPreviews();
+  return blob;
+}
+async function refreshStillPreview() {
+  if(posting||preparingVideo||capturingStill||$("staticPostMode").value==="text"||$("staticImageUrl").value.trim()) return;
+  if(stillImage&&stillRevision===renderRevision) {updateStaticPreviews();return;}
+  capturingStill=true;updatePublishSummary();
+  try{await captureCurrentStill();}
+  catch(error){$("staticCaptureStatus").textContent=error.message+" Use Capture current ad to try again.";}
+  finally{capturingStill=false;updatePublishSummary();}
+}
 function updatePublishSummary() {
   updatePostPreview();
   const counts = updateCaptionCount();
@@ -93,7 +169,7 @@ function updatePublishSummary() {
   const stale = preparedVideo && preparedRevision !== renderRevision && !rawUrl;
   $("publishSummary").textContent = chosen.length ? "Destinations: " + chosen.map(t =>
     socialConfig.platforms.find(p => p.accountId === t.accountId)?.label || t.platform).join(", ") : "Select connected Buffer channels above.";
-  const verb = {shareNow: "Publish to", customScheduled: "Schedule for"}[$("bufferMode").value] || "Queue for";
+  const verb = {shareNow: "Publish video to", customScheduled: "Schedule video for"}[$("bufferMode").value] || "Queue video for";
   for (const {key, button, status} of publishGroups) {
     const targets = groupTargets(key, chosen), snapshot = submissionSnapshot(key, targets);
     const over = key === "twitter" ? twitterOver : otherOver.length > 0;
@@ -101,7 +177,7 @@ function updatePublishSummary() {
     const submitted = previous?.signature === snapshot.signature && previous.completed;
     const missingBoard = targets.some(t => t.platform === "pinterest") && !$("pinterestBoard").value.trim();
     let reason = "";
-    if (posting || preparingVideo) reason = "Preparing or submitting a post. Please wait.";
+    if (posting || preparingVideo || capturingStill) reason = "Preparing or submitting a post. Please wait.";
     else if (!socialConfig.configured || socialConfig.accountsError) reason = "Connect Buffer and refresh accounts.";
     else if (!targets.length) reason = key === "twitter" ? "Select a connected X / Twitter channel." : "Select Facebook, LinkedIn or another connected channel.";
     else if (over) reason = key === "twitter" ? "Shorten the X caption to 280 characters." : "Shorten the selected channel captions.";
@@ -116,12 +192,13 @@ function updatePublishSummary() {
       ? readyVideo() ? "Ready to upload and publish." : "Ready — the video will render and upload automatically."
       : "Select to continue. A public MP4/MOV URL or Cloudinary is required.");
   }
-  $("prepareVideo").disabled = posting || preparingVideo;
+  $("prepareVideo").disabled = posting || preparingVideo || capturingStill;
   if (stale) $("videoStatus").textContent = "Editor changed. The next publish will render the current animation.";
   else if (preparedVideo) $("videoStatus").textContent = "Video prepared · " + (preparedVideo.size / 1024 / 1024).toFixed(1) + " MB";
   $("mediaHostingStatus").textContent = urlError || (url ? "Buffer will use the public video URL you entered."
     : socialConfig.uploadReady ? "Cloudinary connected. The current animation renders and uploads automatically when you send."
     : "Configure Cloudinary on the Worker or enter a stable public MP4/MOV URL.");
+  updateStaticReadiness(scheduleValid,counts);
 }
 function showAccounts(){const grid=$('socialAccounts'),checked=new Set(selectedAccounts().map(({accountId})=>accountId));grid.replaceChildren();for(const a of socialConfig.platforms||[]){const label=document.createElement('label');label.className='social-account';const input=document.createElement('input');input.type='checkbox';input.dataset.socialTarget=a.id;input.dataset.accountId=a.accountId;input.disabled=!a.connected;input.checked=a.connected&&checked.has(a.accountId);input.onchange=()=>{renderCaptionOverrides();updatePublishSummary()};const title=document.createElement('b'),detail=document.createElement('small'),text=document.createElement('span');title.textContent=a.name+' · '+a.label;detail.textContent=a.organization+' · '+(a.reauth?'Reconnect in Buffer':a.locked?'Locked in Buffer':!a.connected?'Video posting not enabled':a.paused?'Queue paused':'Connected');text.append(title,detail);label.append(input,text);grid.append(label)}if(!socialConfig.platforms?.length){const p=document.createElement('p');p.className='muted';p.textContent=socialConfig.configured?'No channels found. Connect social accounts in Buffer, then refresh.':'Connect your key to load your Buffer channels.';grid.append(p)}renderCaptionOverrides();updatePublishSummary()}
 function syncConnectionSections() {
@@ -171,6 +248,7 @@ function choosePage() {
     refreshSocialAccounts();
     refreshHistory();
     updatePublishSummary();
+    void refreshStillPreview();
   } else requestPreview();
 }
 
@@ -184,24 +262,24 @@ function setVideo(blob) {
   updatePublishSummary();
 }
 
-async function directUpload(video) {
+async function directUpload(video, kind = "video") {
   if (hostedVideos.has(video)) return hostedVideos.get(video);
-  const signed = await socialApi("upload-ticket", {method: "POST"});
+  const signed = await socialApi("upload-ticket"+(kind==="image"?"?kind=image":""), {method: "POST"});
   const form = new FormData();
   for (const [name, value] of Object.entries(signed.fields)) form.set(name, value);
-  form.set("file", video, "pixel-shroom-ad.mp4");
+  form.set("file", video, kind==="image"?"pixel-shroom-ad.png":"pixel-shroom-ad.mp4");
   const response = await fetch(signed.endpoint, {method: "POST", body: form, redirect: "error",
     signal: AbortSignal.timeout(120000)});
   const result = await response.json().catch(() => null);
   if (!response.ok || !result?.secure_url || result.public_id !== signed.fields.public_id) {
-    throw Error("Cloudinary could not upload this video (HTTP " + response.status + ").");
+    throw Error("Cloudinary could not upload this "+kind+" (HTTP " + response.status + ").");
   }
-  const url = publicMediaUrl(result.secure_url);
+  const url = publicMediaUrl(result.secure_url,kind);
   hostedVideos.set(video, url);
   return url;
 }
 
-function results(data){$('publishStatus').replaceChildren();const p=document.createElement('p');p.textContent=data.message||'Status: '+data.status;$('publishStatus').append(p);for(const r of data.results||[]){const row=document.createElement('p');row.textContent=(SOCIAL_CATALOG.find(p=>p[0]===r.platform)?.[1]||r.platform)+': '+({sent:'Published',scheduled:'Scheduled in Buffer',sending:'Publishing',needs_approval:'Awaiting approval',draft:'Draft in Buffer',error:'Failed',unconfirmed:'Unconfirmed — check Buffer'}[r.status]||r.status)+(r.message?' · '+r.message:'');$('publishStatus').append(row)}}
+function results(data, statusId="publishStatus"){$(statusId).replaceChildren();const p=document.createElement('p');p.textContent=data.message||'Status: '+data.status;$(statusId).append(p);for(const r of data.results||[]){const row=document.createElement('p');row.textContent=(SOCIAL_CATALOG.find(p=>p[0]===r.platform)?.[1]||r.platform)+': '+({sent:'Published',scheduled:'Scheduled in Buffer',sending:'Publishing',needs_approval:'Awaiting approval',draft:'Draft in Buffer',error:'Failed',unconfirmed:'Unconfirmed — check Buffer'}[r.status]||r.status)+(r.message?' · '+r.message:'');$(statusId).append(row)}}
 async function refreshHistory() {
   try {
     ({submissions} = await socialApi("history"));
@@ -218,7 +296,7 @@ function renderHistory() {
     const row = document.createElement("div");
     row.className = "submission-row";
     const label = document.createElement("span");
-    label.textContent = item.title + " · " + item.status + (item.dueAt ? " · " + new Date(item.dueAt).toLocaleString() : "");
+    label.textContent = item.title + " · " + (item.mediaKind==="image"?"Image post":item.mediaKind==="text"?"Text post":"Video") + " · " + item.status + (item.dueAt ? " · " + new Date(item.dueAt).toLocaleString() : "");
     const check = document.createElement("button");
     check.textContent = "Check status";
     check.onclick = async () => {
@@ -257,7 +335,7 @@ async function prepareCurrentVideo() {
 async function sendPost(group) {
   updatePublishSummary();
   const button = publishGroups.find(item => item.key === group)?.button;
-  if (!button || posting || preparingVideo || $(button).disabled) return;
+  if (!button || posting || preparingVideo || capturingStill || $(button).disabled) return;
   const snapshot = submissionSnapshot(group);
   if (!snapshot.media && !socialConfig.uploadReady) {
     $("publishStatus").textContent = "Buffer is connected, but video hosting is not configured. Enter a public HTTPS MP4/MOV URL or configure Cloudinary before publishing. No post was sent.";
@@ -305,11 +383,50 @@ async function sendPost(group) {
   }
 }
 
+async function sendStaticPost() {
+  updatePublishSummary();
+  if(posting||preparingVideo||capturingStill||$("sendStaticPost").disabled)return;
+  const snapshot=staticSnapshot();
+  if(snapshot.mediaKind==="image"&&!snapshot.media&&!socialConfig.uploadReady){
+    $("staticPostStatus").textContent="Image posts need a public PNG/JPEG URL or Cloudinary. Choose Text only to publish without hosting. No post was sent.";
+    $("staticImageUrl").focus();return;
+  }
+  let submission=groupSubmissions.get("static");
+  if(submission?.signature!==snapshot.signature){
+    submission={signature:snapshot.signature,id:crypto.randomUUID(),completed:false};
+    groupSubmissions.set("static",submission);
+  }
+  posting=true;updatePublishSummary();
+  const form=new FormData();
+  let media=snapshot.media,attempted=false;
+  try{
+    for(const [field,value] of Object.entries(snapshot.fields))form.set(field,value);
+    form.set("mediaKind",snapshot.mediaKind);
+    form.set("targets",JSON.stringify(snapshot.targets));
+    form.set("captions",JSON.stringify(snapshot.captions));
+    form.set("aiGenerated",snapshot.aiGenerated);
+    if(snapshot.dueAt)form.set("dueAt",snapshot.dueAt);
+    if(snapshot.mediaKind==="image"&&!media){
+      $("staticPostStatus").textContent="Capturing the still image…";
+      const image=stillImage&&stillRevision===renderRevision?stillImage:await captureCurrentStill();
+      $("staticPostStatus").textContent="Uploading the still image…";
+      try{media=await directUpload(image,"image");}
+      catch(error){if(socialConfig.uploadMode!=="legacy")throw error;form.set("image",image,"pixel-shroom-ad.png");}
+    }
+    if(media)form.set("mediaUrl",media);
+    $("staticPostStatus").textContent="Sending normal feed post to Buffer…";
+    attempted=true;
+    const data=await socialApi("publish",{method:"POST",headers:{"Idempotency-Key":submission.id},body:form});
+    submission.completed=true;results(data,"staticPostStatus");
+  }catch(error){$("staticPostStatus").textContent=error.message+(attempted?" Check Buffer before trying again.":" No post was sent.");}
+  finally{posting=false;await refreshHistory();updatePublishSummary();}
+}
 export function initSocialPublishing() {
   $("editorTab").onclick = () => { location.hash = "editor"; };
   $("publishTab").onclick = () => { location.hash = "publish"; };
   window.addEventListener("hashchange", choosePage);
   $("refreshAccounts").onclick = refreshSocialAccounts;
+  $("jumpStaticPosts").onclick = () => $("static-post-title").scrollIntoView({behavior:"smooth",block:"start"});
   $("editPostDetails").onclick = () => {
     location.hash = "editor";
     choosePage();
@@ -329,7 +446,7 @@ export function initSocialPublishing() {
     finally { $("saveBufferKey").disabled = false; }
   };
   $("prepareVideo").onclick = async () => {
-    if (posting || preparingVideo) return;
+    if (posting || preparingVideo || capturingStill) return;
     preparingVideo = true;
     updatePublishSummary();
     try { await prepareCurrentVideo(); }
@@ -344,6 +461,20 @@ export function initSocialPublishing() {
       updatePublishSummary();
     };
   }
+  $("captureStill").onclick=async()=>{
+    if(posting||preparingVideo||capturingStill)return;
+    $("staticImageUrl").value="";
+    capturingStill=true;updatePublishSummary();
+    try{await captureCurrentStill();}catch(error){$("staticCaptureStatus").textContent=error.message;}
+    finally{capturingStill=false;updatePublishSummary();}
+  };
+  $("downloadStill").onclick=()=>{
+    if(!stillUrl||stillRevision!==renderRevision)return;
+    const a=document.createElement("a");a.href=stillUrl;a.download="pixel-shroom-ad.png";a.click();
+  };
+  $("staticPostMode").oninput=()=>{updatePublishSummary();void refreshStillPreview();};
+  $("staticImageUrl").oninput=()=>{updatePublishSummary();if(!$("staticImageUrl").value.trim())void refreshStillPreview();};
+  $("sendStaticPost").onclick=sendStaticPost;
   $("sendSocialX").onclick = () => sendPost("twitter");
   $("sendSocial").onclick = () => sendPost("other");
   syncSocialCopy();

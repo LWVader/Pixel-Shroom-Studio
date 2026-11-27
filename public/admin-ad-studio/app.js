@@ -602,6 +602,16 @@ $("projectFile").onchange = async (event) => {
   }
 };
 $('snapshot').onclick=()=>{if(!assetsReady())return toast('Wait for your images and selected font to load.');draw();if(captionOverflow)return toast('Shorten the on-image copy before exporting.');canvas.toBlob(b=>download(b,state.layout==='marketing'?'campaign-ad.png':'popout-frame.png'),'image/png')};
+async function renderStillImage() {
+  if (recording) throw Error("Wait for the current video render to finish.");
+  if (!assetsReady()) throw Error("Wait for your images and selected font to load.");
+  await prepareExportSymbols().catch(() => {});
+  if (recording) throw Error("Wait for the current video render to finish.");
+  updateCanvasSize();
+  draw();
+  if (captionOverflow) throw Error("Shorten the on-image copy before capturing the post.");
+  return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(Error("Could not create the still image.")), "image/png"));
+}
 async function renderAnimation(onProgress = () => {}, {publish = false, announce = () => {}} = {}) {
   if (recording) throw Error("Already recording.");
   if (!assetsReady()) throw Error("Wait for your images and selected font to load.");
@@ -800,4 +810,4 @@ sync();
 
 export {$, toast, sync, isCharacterModel, selectGalleryCharacter, BUNDLED_ARTWORK, BUNDLED_LOGO,
   artworkRect, paletteTheme, rounded, text, coverImage, paintArtwork, drawCaption, restoreCustomAssets, restartPreview,
-  requestPreview, prepareExportSymbols, renderAnimation, renderRevision};
+  requestPreview, prepareExportSymbols, renderAnimation, renderStillImage, renderRevision};

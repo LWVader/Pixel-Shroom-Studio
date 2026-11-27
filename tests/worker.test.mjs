@@ -562,3 +562,57 @@ test("monthly admin recovers missing monthly D1 tables and still reports Storage
   assert.equal(partial.inventory.ok,true);
   assert.equal(partial.inventory.files[0].status,"unknown");
 });
+
+test("Facebook and LinkedIn regular feed posts accept text-only or image assets without the video path", async t => {
+  const site = await setup(t);
+  const auth = await login(site);
+  const headers = {Cookie: auth.headers.get("Set-Cookie").split(";")[0]};
+  const base = "/api/ad-studio/social/";
+  site.env.BUFFER_API_KEY = "fixture-worker-buffer-key";
+  const sent = [];
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url,"https://api.buffer.com");
+    const {query,variables}=JSON.parse(options.body);
+    if(query.includes("organizations"))return Response.json({data:{account:{organizations:[{id:"org",name:"Mock"}]}}});
+    if(query.includes("channels("))return Response.json({data:{channels:[{id:"fb",service:"facebook"},{id:"li",service:"linkedin"},{id:"x",service:"twitter"}]}});
+    assert.match(query,/createPost/);
+    sent.push(variables.input);
+    return Response.json({data:{createPost:{post:{id:"post-"+sent.length,status:"scheduled"}}}});
+  };
+  const make = (kind,url="",targets=[{accountId:"fb",platform:"facebook"},{accountId:"li",platform:"linkedin"}]) => {
+    const form=new FormData();
+    form.set("title","Static post");form.set("caption","Feed copy");form.set("mode","addToQueue");
+    form.set("mediaKind",kind);form.set("targets",JSON.stringify(targets));
+    if(url)form.set("mediaUrl",url);
+    form.set("captions",JSON.stringify({linkedin:"LinkedIn override"}));
+    return form;
+  };
+  const publish = (form,id=crypto.randomUUID()) => site.request(new Request(origin+base+"publish",{
+    method:"POST",headers:{Cookie:headers.Cookie,Origin:origin,"Idempotency-Key":id},body:form
+  }));
+  const textId=crypto.randomUUID();
+  assert.equal((await publish(make("text"),textId)).status,202);
+  assert.deepEqual(sent[0].metadata,{facebook:{type:"post"}});
+  assert.deepEqual(sent[0].assets,[]);
+  assert.deepEqual(sent[1].assets,[]);
+  assert.equal(sent[1].text,"LinkedIn override");
+  assert.equal((await publish(make("text"),textId)).status,200);
+  assert.equal(sent.length,2);
+  assert.equal((await publish(make("image","https://media.example.test/ad.png"))).status,202);
+  assert.deepEqual(sent[2].metadata,{facebook:{type:"post"}});
+  assert.deepEqual(sent[2].assets,[{image:{url:"https://media.example.test/ad.png"}}]);
+  assert.deepEqual(sent[3].assets,[{image:{url:"https://media.example.test/ad.png"}}]);
+  assert.equal((await publish(make("image","https://media.example.test/ad.mp4"))).status,400);
+  assert.equal((await publish(make("text","https://media.example.test/ad.png"))).status,400);
+  assert.equal((await publish(make("text","",[{accountId:"x",platform:"twitter"}]))).status,400);
+  assert.equal(sent.length,4);
+  const history=await (await site.call(base+"history",{headers})).json();
+  assert.ok(history.submissions.some(item=>item.mediaKind==="image"));
+  assert.ok(history.submissions.some(item=>item.mediaKind==="text"));
+  site.env.CLOUDINARY_CLOUD_NAME="test-cloud";
+  site.env.CLOUDINARY_API_KEY="1234";
+  site.env.CLOUDINARY_API_SECRET="synthetic-signing-secret";
+  const ticket=await (await site.call(base+"upload-ticket?kind=image",{headers,body:{}})).json();
+  assert.equal(ticket.endpoint,"https://api.cloudinary.com/v1_1/test-cloud/image/upload");
+  assert.doesNotMatch(JSON.stringify(ticket),/synthetic-signing-secret/);
+});

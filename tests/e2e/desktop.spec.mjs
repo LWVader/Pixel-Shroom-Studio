@@ -531,3 +531,84 @@ test("X and Facebook/LinkedIn publish independently and reuse the same video", a
   expect(requests[1].id).not.toBe(requests[0].id);
   expect(errors).toEqual([]);
 });
+
+test("static feed previews and dedicated post button keep video publishing separate", async ({page}) => {
+  const errors=[], requests=[], uploads=[];
+  let uploadReady=false;
+  page.on("pageerror",e=>errors.push(e.message));
+  await page.goto("/admin.html");
+  await page.getByLabel("Administrator password").fill(testPassword);
+  await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await page.getByRole("link",{name:"Open AD Studio"}).click();
+  await page.route("**/api/ad-studio/social/config",route=>route.fulfill({json:{
+    configured:true,bufferSource:"worker",secureStorage:false,uploadReady,uploadMode:uploadReady?"direct":null,
+    platforms:[{id:"facebook",accountId:"fb",name:"Facebook",label:"Studio FB",connected:true},
+      {id:"linkedin",accountId:"li",name:"LinkedIn",label:"Studio LI",connected:true},
+      {id:"twitter",accountId:"x",name:"X",label:"Studio X",connected:true}]
+  }}));
+  await page.route("**/api/ad-studio/social/upload-ticket?kind=image",route=>route.fulfill({json:{
+    endpoint:"https://api.cloudinary.com/v1_1/test-cloud/image/upload",fields:{public_id:"static-image-fixture",signature:"fixture"}
+  }}));
+  await page.route("https://api.cloudinary.com/v1_1/test-cloud/image/upload",async route=>{
+    const request=route.request();
+    const body=await new Response(request.postDataBuffer(),{headers:{"Content-Type":request.headers()["content-type"]}}).formData();
+    uploads.push({type:body.get("file").type,size:body.get("file").size});
+    await route.fulfill({json:{public_id:"static-image-fixture",secure_url:"https://res.cloudinary.com/test-cloud/image/upload/static-image-fixture.png"}});
+  });
+  await page.route("**/api/ad-studio/social/publish",async route=>{
+    const request=route.request();
+    const form=await new Response(request.postDataBuffer(),{headers:{"Content-Type":request.headers()["content-type"]}}).formData();
+    const targets=JSON.parse(form.get("targets"));
+    requests.push({kind:form.get("mediaKind"),media:form.get("mediaUrl"),targets});
+    await route.fulfill({json:{status:"submitted",message:"Mock static post",results:targets.map(t=>({platform:t.platform,status:"scheduled"}))}});
+  });
+  await page.getByRole("button",{name:"Publish to social"}).click();
+  await expect(page.locator("#publishPreview")).toBeVisible();
+  await expect(page.locator("#static-post-title")).toBeVisible();
+  await expect(page.locator("#staticCaptureStatus")).toContainText("PNG");
+  await expect(page.locator("#fbPreviewImage")).toBeVisible();
+  await expect(page.locator("#liPreviewImage")).toBeVisible();
+  await expect(page.locator("#downloadStill")).toBeEnabled();
+  expect((await page.locator(".feed-viewer").first().boundingBox()).width).toBeGreaterThan(300);
+  const staticButton=page.locator("#sendStaticPost");
+  await expect(staticButton).toBeDisabled();
+  await page.getByRole("checkbox",{name:/Facebook/}).check();
+  await page.getByRole("checkbox",{name:/LinkedIn/}).check();
+  await page.getByRole("checkbox",{name:/X · Studio X/}).check();
+  await expect(staticButton).toBeEnabled();
+  await expect(page.locator("#fbPreviewName")).toHaveText("Studio FB");
+  await expect(page.locator("#liPreviewName")).toHaveText("Studio LI");
+  await staticButton.click();
+  await expect(page.locator("#staticPostStatus")).toContainText("No post was sent");
+  expect(requests).toHaveLength(0);
+  await page.locator("#staticPostMode").selectOption("text");
+  await expect(page.locator("#fbPreviewImage")).toBeHidden();
+  await expect(page.locator("#staticPostReady")).toContainText("no media hosting needed");
+  await staticButton.click();
+  await expect(page.locator("#staticPostStatus")).toContainText("Mock static post");
+  expect(requests[0]).toEqual({kind:"text",media:null,targets:[{platform:"facebook",accountId:"fb"},{platform:"linkedin",accountId:"li"}]});
+  await page.locator("#staticPostMode").selectOption("image");
+  await page.locator("#staticImageUrl").fill("https://media.example.test/ad.mp4");
+  await expect(staticButton).toBeDisabled();
+  await page.locator("#staticImageUrl").fill("https://media.example.test/ad.png");
+  await expect(staticButton).toBeEnabled();
+  await staticButton.click();
+  await expect(page.locator("#staticPostStatus")).toContainText("Mock static post");
+  expect(requests[1].kind).toBe("image");
+  expect(requests[1].media).toBe("https://media.example.test/ad.png");
+  uploadReady=true;
+  await page.locator("#refreshAccounts").click();
+  await expect(page.locator("#mediaSetupSummary")).toContainText("connected");
+  await page.locator("#staticImageUrl").fill("");
+  await expect(page.locator("#staticPostReady")).toContainText("automatically");
+  await staticButton.click();
+  await expect.poll(()=>requests.length).toBe(3);
+  expect(uploads).toHaveLength(1);
+  expect(uploads[0].type).toBe("image/png");
+  expect(uploads[0].size).toBeGreaterThan(1000);
+  expect(requests[2].kind).toBe("image");
+  expect(requests[2].media).toContain("/image/upload/static-image-fixture.png");
+  await expect(page.locator("#sendSocialX")).toBeEnabled();
+  await expect(page.locator("#sendSocial")).toBeEnabled();
+  expect(errors).toEqual([]);
+});
