@@ -1,11 +1,13 @@
 const catalog = Object.freeze({
-  attention: {name: "Pixel Shroom Studio · Attention Pack", amount: 19900, mode: "payment"},
+  attention: {name: "Pixel Shroom Studio · Attention Pack", amount: 7900, mode: "payment"},
   landing: {name: "Pixel Shroom Studio · One-page Landing Page", amount: 19900, mode: "payment"},
   monthly: {name: "Pixel Shroom Studio · Monthly Asset Pack", amount: 4900, mode: "subscription"}
 });
 const sessionPattern = /^cs_(test|live)_[A-Za-z0-9]{12,200}$/;
 const requestPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const kind = "studio-campaign-v1";
+// Keep previously issued $199 Attention Pack sessions valid for order fulfillment.
+const legacyAttentionAmount = 19900;
 const error = (message, status) => ({error: message, status});
 
 function clean(value, max) {
@@ -46,8 +48,10 @@ export function createCampaignOrders({stripe, store, options, notify}) {
     }
     const offer = session.metadata?.campaign_offer;
     const item = Object.hasOwn(catalog, offer) && catalog[offer];
+    const amountMatches = item && (session.amount_total === item.amount ||
+      (offer === "attention" && session.amount_total === legacyAttentionAmount));
     if (session.metadata?.kind !== kind || !item || session.mode !== item.mode ||
-        session.currency !== "usd" || session.amount_total !== item.amount) {
+        session.currency !== "usd" || !amountMatches) {
       throw error("This checkout could not be verified for a campaign order.", 404);
     }
     if (session.status !== "complete" || session.payment_status !== "paid") {
@@ -62,7 +66,7 @@ export function createCampaignOrders({stripe, store, options, notify}) {
     if (!requestPattern.test(input.requestId ?? "")) throw error("Refresh the page and try again.", 400);
     const item = catalog[offer];
     let parent;
-    let idempotencyKey = `campaign:${offer}:${input.requestId}`;
+    let idempotencyKey = offer === "attention" ? `campaign:attention:${item.amount}:${input.requestId}` : `campaign:${offer}:${input.requestId}`;
     if (offer === "landing") {
       const verified = await paid(input.parentSession);
       if (verified.offer !== "attention") throw error("The add-on is available with an Attention Pack.", 422);

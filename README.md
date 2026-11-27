@@ -1,6 +1,6 @@
 # Pixel Shroom Studio · Attention Pack storefront
 
-The storefront sells a $199 USD Attention Pack with five coordinated campaign images. It uses Stripe Checkout for payments, Cloudflare D1 for briefs and delivery status, a Worker password for administrator sign-in, and Gmail for manual ZIP delivery.
+The storefront sells a $79 USD Attention Pack with five coordinated campaign images. It uses Stripe Checkout for payments, Cloudflare D1 for briefs and delivery status, a Worker password for administrator sign-in, and Gmail for manual ZIP delivery.
 
 ## Preview the storefront
 
@@ -43,7 +43,7 @@ The suite starts a local test site on port 4173 with an in-memory SQLite databas
    npm.cmd run wrangler -- secret put STRIPE_SECRET_KEY
    ```
 
-   Sign in to Campaign Admin and choose **Check Stripe connection** to confirm the API responds and shows the expected test or live mode. An existing one-time $199 USD Stripe Price can be linked with `CAMPAIGN_ATTENTION_PRICE_ID`. Without that setting, the Worker uses the old checkout pattern of creating the line item from the offer price on the server. It verifies the paid Checkout Session before accepting a brief.
+   Sign in to Campaign Admin and choose **Check Stripe connection** to confirm the API responds and shows the expected test or live mode. An existing active one-time $79 USD Stripe Price can be linked with `CAMPAIGN_ATTENTION_PRICE_ID`. If the setting is absent or still references the previous one-time $199 USD Price, the Worker creates the line item at the server-owned $79 price instead. It verifies paid Checkout Sessions at $79 and preserves fulfillment of previously issued $199 Attention Pack sessions. The landing page add-on remains $199.
 4. Run `npm.cmd run deploy` in PowerShell. This applies pending D1 migrations before deploying the Worker to its existing route or domain. For a Git-connected Cloudflare Worker, commit the updated `wrangler.jsonc` and `package.json` to the branch Cloudflare deploys. Set its deploy command to `npm run deploy` and give the build token permission to run D1 migrations, or run `npm.cmd run db:migrate` locally before the Git deployment.
 
    Verify the public homepage, footer sign-in, a test Stripe purchase and return to the campaign brief, and AD Studio. Set `CAMPAIGN_SITE_URL` if checkout should return to a specific origin. Optionally set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `ADMIN_ALERT_EMAIL` for notifications about submitted briefs.

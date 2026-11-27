@@ -95,7 +95,7 @@ test("password attempts are rate limited and other origins cannot sign in", asyn
   assert.equal((await login(site)).status, 429);
 });
 
-test("Stripe creates a $199 session and only a paid session can save a brief", async (t) => {
+test("Stripe creates a $79 session and only a paid session can save a brief", async (t) => {
   const site = await setup(t);
   const campaign = (body) => site.call("/api/campaign-orders", {body});
   const offers = await (await campaign({action: "offers"})).json();
@@ -110,7 +110,7 @@ test("Stripe creates a $199 session and only a paid session can save a brief", a
   assert.equal((await (await campaign(checkout)).json()).url, url);
   assert.match(url, /^https:\/\/checkout\.stripe\.com\//);
   const form = site.requests.find((request) => request.method === "POST").form;
-  assert.equal(form.get("line_items[0][price_data][unit_amount]"), "19900");
+  assert.equal(form.get("line_items[0][price_data][unit_amount]"), "7900");
   assert.equal(form.get("success_url"), origin + "/brief.html?session_id={CHECKOUT_SESSION_ID}");
 
   const sessionId = url.split("/").at(-1);
@@ -134,6 +134,32 @@ test("Stripe creates a $199 session and only a paid session can save a brief", a
   assert.ok(Date.parse(sent.email_delivered_at));
   const retry = await (await site.call(adminApi, {body: delivery, headers})).json();
   assert.deepEqual(retry, sent);
+});
+
+test("Attention Pack creates new $79 checkouts with legacy or new Stripe Price settings and honors old paid orders", async (t) => {
+  const site = await setup(t);
+  const campaign = (body) => site.call("/api/campaign-orders", {body});
+  const checkout = () => campaign({action: "checkout", offer: "attention", requestId: crypto.randomUUID()});
+  site.env.CAMPAIGN_ATTENTION_PRICE_ID = "price_fixture_attention_legacy";
+  const stale = await checkout();
+  assert.equal(stale.status, 200);
+  const oldSessionId = (await stale.json()).url.split("/").at(-1);
+  const staleForm = site.requests.filter(r => r.method === "POST").at(-1).form;
+  assert.equal(staleForm.get("line_items[0][price]"), null);
+  assert.equal(staleForm.get("line_items[0][price_data][unit_amount]"), "7900");
+  // Simulate a session issued before the price change.
+  site.completePayment(oldSessionId, 19900);
+  const brief = {business: "Legacy Order", industry: "Art", vibe: "Bright bold wild", goal: "Launch"};
+  assert.equal((await campaign({action: "brief", sessionId: oldSessionId, brief})).status, 200);
+  site.env.CAMPAIGN_ATTENTION_PRICE_ID = "price_fixture_attention_79";
+  const current = await checkout();
+  assert.equal(current.status, 200);
+  const sessionId = (await current.json()).url.split("/").at(-1);
+  assert.equal(site.requests.filter(r => r.method === "POST").at(-1).form.get("line_items[0][price]"), "price_fixture_attention_79");
+  site.completePayment(sessionId);
+  assert.equal((await campaign({action: "brief", sessionId, brief})).status, 200);
+  site.completePayment(sessionId, 7800);
+  assert.equal((await campaign({action: "order", sessionId})).status, 404);
 });
 
 test("configured monthly subscription and $199 landing add-on use the correct checkout", async (t) => {

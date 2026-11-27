@@ -33,6 +33,8 @@ test("homepage shows both service offers and independent fictional examples", as
   await page.goto("/");
   await expect(page.getByRole("heading", {name: "One-page landing page"})).toBeVisible();
   await expect(page.getByRole("heading", {name: "Keep your feed fresh."})).toBeVisible();
+  await expect(page.locator("#pack .price")).toContainText("$79");
+  await expect(page.locator("#landing .price")).toContainText("$199");
   await expect(page.locator("#monthly .price")).toContainText("$49");
   await expect(page.getByRole("link", {name: "Ask about subscribing"})).toBeVisible();
   await expect(page.locator("[data-checkout=monthly]")).toBeHidden();

@@ -125,6 +125,11 @@ export async function createFixture() {
       return Response.json({id: "price_fixture_monthly", active: true, currency: "usd", unit_amount: 4900,
         recurring: {interval: "month", interval_count: 1, usage_type: "licensed"}, billing_scheme: "per_unit"});
     }
+    if (["/v1/prices/price_fixture_attention_legacy", "/v1/prices/price_fixture_attention_79"].includes(url.pathname) && options.method === "GET") {
+      const id = url.pathname.split("/").at(-1);
+      return Response.json({id, active: true, currency: "usd", unit_amount: id.endsWith("_79") ? 7900 : 19900,
+        type: "one_time", billing_scheme: "per_unit"});
+    }
     if (url.pathname === "/v1/checkout/sessions" && options.method === "POST") {
       const idempotencyKey = options.headers.get("Idempotency-Key");
       const existing = checkoutKeys.get(idempotencyKey);
@@ -135,10 +140,12 @@ export async function createFixture() {
         if (form.has(`metadata[${field}]`)) metadata[field] = form.get(`metadata[${field}]`);
       }
       const id = `cs_test_fixturecampaign${sessions.size + 1}`;
+      const fixedPrices = {price_fixture_monthly: 4900, price_fixture_attention_79: 7900, price_fixture_attention_legacy: 19900};
+      const fixedAmount = fixedPrices[form.get("line_items[0][price]")];
       const session = {
         id, metadata, mode: form.get("mode"),
-        currency: form.get("line_items[0][price_data][currency]") || (form.get("line_items[0][price]") === "price_fixture_monthly" ? "usd" : null),
-        amount_total: form.get("line_items[0][price]") === "price_fixture_monthly" ? 4900 : Number(form.get("line_items[0][price_data][unit_amount]")),
+        currency: form.get("line_items[0][price_data][currency]") || (fixedAmount === undefined ? null : "usd"),
+        amount_total: fixedAmount ?? Number(form.get("line_items[0][price_data][unit_amount]")),
         status: "open", payment_status: "unpaid",
         customer_details: {email: testBuyer},
         success_url: form.get("success_url"),
@@ -155,9 +162,10 @@ export async function createFixture() {
   return {
     env, requests, monthly,
     request: (request) => worker.fetch(request, env),
-    completePayment(id) {
+    completePayment(id, fixtureAmount) {
       const session = sessions.get(id);
       if (!session) return null;
+      if (fixtureAmount !== undefined) session.amount_total = fixtureAmount;
       session.status = "complete";
       session.payment_status = "paid";
       return session.success_url.replace("{CHECKOUT_SESSION_ID}", id);

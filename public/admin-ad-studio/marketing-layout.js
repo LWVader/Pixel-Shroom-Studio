@@ -70,14 +70,14 @@ function applyMarketingAd(kind, campaign, artwork) {
   state.headline = kind === "spotlight" && campaign
     ? `${campaign.name}\n${campaign.tagline}`
     : kind === "portfolio" ? "Good ads. Weird worlds." : "Five campaign visuals for your next launch.";
-  state.cta = kind === "offer" ? "Get the $199 Attention Pack" : "Explore the campaign work";
+  state.cta = kind === "offer" ? "Get the $79 Attention Pack" : "Explore the campaign work";
   state.website = studioDomain;
   state.socialTitle = campaign?.name || "Pixel Shroom Studio";
   const destination = campaign ? `https://www.${studioDomain}${campaign.sharePath || `/campaigns/${campaign.id}`}` :
     `https://www.${studioDomain}/#${kind === "offer" ? "pack" : "work"}`;
   const body = kind === "spotlight" && campaign ? `${campaign.name} · ${campaign.tagline}` :
     kind === "portfolio" ? "Surreal campaigns for independent brands with a strange streak." :
-      "Launching something new? Get five coordinated campaign visuals in the $199 Attention Pack.";
+      "Launching something new? Get five coordinated campaign visuals in the $79 Attention Pack.";
   state.socialCaption = `${body}\n\n${destination}`;
   state.captionFontSize = 40;
   state.captionAlign = "left";
