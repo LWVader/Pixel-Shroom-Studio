@@ -604,6 +604,10 @@ $("projectFile").onchange = async (event) => {
 $('snapshot').onclick=()=>{if(!assetsReady())return toast('Wait for your images and selected font to load.');draw();if(captionOverflow)return toast('Shorten the on-image copy before exporting.');canvas.toBlob(b=>download(b,state.layout==='marketing'?'campaign-ad.png':'popout-frame.png'),'image/png')};
 async function renderStillImage() {
   if (recording) throw Error("Wait for the current video render to finish.");
+  // Direct navigation to #publish starts before the bundled artwork loads.
+  // Wait briefly for the assets instead of showing an empty preview.
+  const deadline = Date.now() + 5000;
+  while (!assetsReady() && Date.now() < deadline && !recording) await new Promise(resolve => setTimeout(resolve, 100));
   if (!assetsReady()) throw Error("Wait for your images and selected font to load.");
   await prepareExportSymbols().catch(() => {});
   if (recording) throw Error("Wait for the current video render to finish.");

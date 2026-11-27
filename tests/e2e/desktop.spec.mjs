@@ -610,5 +610,8 @@ test("static feed previews and dedicated post button keep video publishing separ
   expect(requests[2].media).toContain("/image/upload/static-image-fixture.png");
   await expect(page.locator("#sendSocialX")).toBeEnabled();
   await expect(page.locator("#sendSocial")).toBeEnabled();
+  await page.reload();
+  await expect(page.locator("#staticCaptureStatus")).toContainText("PNG");
+  await expect(page.locator("#fbPreviewImage")).toBeVisible();
   expect(errors).toEqual([]);
 });
