@@ -397,6 +397,16 @@ test("AD publishing signs uploads and records account history with caption overr
   }));
   const get = path => site.request(new Request(base + path, {headers: {Cookie: cookie}}));
   assert.equal((await post("connect", JSON.stringify({bufferKey: "buffer-fixture-key"}), {"Content-Type": "application/json"})).status, 200);
+  const configured = await (await get("config")).json();
+  assert.equal(configured.uploadReady, true);
+  assert.deepEqual(configured.cloudinaryMissing, []);
+  assert.deepEqual(configured.cloudinaryInvalid, []);
+  delete site.env.CLOUDINARY_CLOUD_NAME;
+  const missing = await (await get("config")).json();
+  assert.equal(missing.uploadReady, false);
+  assert.deepEqual(missing.cloudinaryMissing, ["CLOUDINARY_CLOUD_NAME"]);
+  assert.doesNotMatch(JSON.stringify(missing), /synthetic-signing-secret/);
+  site.env.CLOUDINARY_CLOUD_NAME = "test-cloud";
   const ticket = await (await post("upload-ticket")).json();
   assert.equal(ticket.endpoint, "https://api.cloudinary.com/v1_1/test-cloud/video/upload");
   assert.match(ticket.fields.public_id, /^pss-ad-/);

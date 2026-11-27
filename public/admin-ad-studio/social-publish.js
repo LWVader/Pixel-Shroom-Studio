@@ -71,9 +71,34 @@ function readyVideo() {
   return preparedVideo && preparedRevision === renderRevision &&
     preparedVideo.size <= MAX_VIDEO_BYTES && BUFFER_VIDEO_TYPES.includes(preparedVideo.type.split(";")[0]);
 }
+const isStaticChannel = platform => platform === "facebook" || platform === "linkedin";
 function staticTargets(chosen = selectedAccounts()) {
-  return chosen.filter(t => t.platform === "facebook" || t.platform === "linkedin");
+  return chosen.filter(t => isStaticChannel(t.platform) && t.accountId === $("staticDestination").value);
 }
+function syncStaticDestination() {
+  const select = $("staticDestination"), previous=select.value;
+  const chosen = selectedAccounts().filter(t=>isStaticChannel(t.platform));
+  const connected = (socialConfig.platforms||[]).filter(p=>isStaticChannel(p.id)&&p.connected);
+  const available = chosen.length ? connected.filter(p=>chosen.some(t=>t.accountId===p.accountId)) : connected;
+  const signature = JSON.stringify(available.map(p=>[p.accountId,p.name,p.label]));
+  if(select.dataset.options!==signature){
+    select.replaceChildren();
+    for(const p of available) select.add(new Option(p.name+" · "+p.label,p.accountId));
+    if(!available.length) select.add(new Option("No connected Facebook or LinkedIn account",""));
+    select.value=available.some(p=>p.accountId===previous)?previous:available[0]?.accountId||"";
+    select.dataset.options=signature;
+  }
+  select.disabled=available.length<2||posting;
+  const account=connected.find(p=>p.accountId===select.value);
+  const active=account?.id||"facebook";
+  $("fbFeedViewer").hidden=active!=="facebook";
+  $("liFeedViewer").hidden=active!=="linkedin";
+  const ready=socialConfig.configured&&!socialConfig.accountsError&&chosen.some(t=>t.accountId===select.value);
+  $("staticBufferStatus").classList.toggle("ready",!!ready);
+  $("staticBufferStatus").textContent=!socialConfig.configured||socialConfig.accountsError?"Buffer not connected. Check Social accounts.":ready?"Buffer · "+account.name+" · "+account.label+" · "+(account.paused?"Queue paused":"Connected"):account?"Buffer connected · select "+account.name+" in Social accounts to publish.":"Buffer connected · no Facebook or LinkedIn channel.";
+  return account;
+}
+function staticSubmissionKey(snapshot){return "static:"+snapshot.targets[0]?.accountId;}
 function staticSnapshot() {
   const snapshot = submissionSnapshot("other", staticTargets());
   const mediaKind = $("staticPostMode").value;
@@ -93,7 +118,7 @@ function updateStaticPreviews() {
   $("staticImageUrl").setCustomValidity(error);
   $("staticImageUrl").setAttribute("aria-invalid", String(Boolean(error)));
   for (const [platform,prefix] of [["facebook","fb"],["linkedin","li"]]) {
-    const account = socialConfig.platforms?.find(p=>p.id===platform && selectedAccounts().some(t=>t.accountId===p.accountId))
+    const account = socialConfig.platforms?.find(p=>p.id===platform && p.accountId===$("staticDestination").value)
       || socialConfig.platforms?.find(p=>p.id===platform);
     $(prefix+"PreviewName").textContent=account?.label || state.brand || "Pixel Shroom Studio";
     $(prefix+"PreviewCaption").textContent=captionFor(platform);
@@ -106,8 +131,9 @@ function updateStaticPreviews() {
   return {url,error,textOnly};
 }
 function updateStaticReadiness(scheduleValid, counts) {
+  syncStaticDestination();
   const snapshot=staticSnapshot(), {url,error,textOnly}=updateStaticPreviews();
-  const previous=groupSubmissions.get("static");
+  const previous=groupSubmissions.get(staticSubmissionKey(snapshot));
   const submitted=previous?.signature===snapshot.signature&&previous.completed;
   const tooLong=counts.some(c=>snapshot.targets.some(t=>t.platform===c.platform)&&c.limit&&c.count>c.limit);
   let reason="";
@@ -210,7 +236,9 @@ function syncConnectionSections() {
   $("bufferSetupSummary").textContent = connected
     ? managed ? "Buffer connected · Worker-managed key" : "Buffer connected · update API key"
     : managed ? "Buffer connection · check Worker key" : "Connect your personal Buffer API key";
-  $("mediaSetupSummary").textContent = socialConfig.uploadReady ? "Cloudinary video hosting connected" : "Cloudinary video hosting setup";
+  $("mediaSetupSummary").textContent = socialConfig.uploadReady ? "Cloudinary media hosting connected" : "Cloudinary media hosting setup";
+  const missing=socialConfig.cloudinaryMissing||[], invalid=socialConfig.cloudinaryInvalid||[];
+  $("cloudinaryDiagnostics").textContent=socialConfig.uploadReady?"Hosting configuration present.":(missing.length?"Missing Worker settings: "+missing.join(", ")+". ":"")+(invalid.length?"Check format of: "+invalid.join(", ")+".":"");
   $("bufferConnectForm").hidden = managed || !storageReady;
   $("bufferManagedNotice").hidden = !managed;
   $("bufferManagedNotice").textContent = managed ? "This connection uses the Worker secret BUFFER_API_KEY. Update it in Cloudflare if needed, then refresh accounts." : "";
@@ -301,7 +329,9 @@ function renderHistory() {
     check.textContent = "Check status";
     check.onclick = async () => {
       try {
-        results(await socialApi("status?id=" + encodeURIComponent(item.id)));
+        const data=await socialApi("status?id=" + encodeURIComponent(item.id));
+        results(data);
+        if(item.mediaKind==="image"||item.mediaKind==="text") results(data,"staticPostStatus");
         await refreshHistory();
       } catch (error) { $("publishStatus").textContent = error.message; }
     };
@@ -391,10 +421,11 @@ async function sendStaticPost() {
     $("staticPostStatus").textContent="Image posts need a public PNG/JPEG URL or Cloudinary. Choose Text only to publish without hosting. No post was sent.";
     $("staticImageUrl").focus();return;
   }
-  let submission=groupSubmissions.get("static");
+  const key=staticSubmissionKey(snapshot);
+  let submission=groupSubmissions.get(key);
   if(submission?.signature!==snapshot.signature){
     submission={signature:snapshot.signature,id:crypto.randomUUID(),completed:false};
-    groupSubmissions.set("static",submission);
+    groupSubmissions.set(key,submission);
   }
   posting=true;updatePublishSummary();
   const form=new FormData();
@@ -417,7 +448,7 @@ async function sendStaticPost() {
     $("staticPostStatus").textContent="Sending normal feed post to Buffer…";
     attempted=true;
     const data=await socialApi("publish",{method:"POST",headers:{"Idempotency-Key":submission.id},body:form});
-    submission.completed=true;results(data,"staticPostStatus");
+    submission.completed=true;results(data,"staticPostStatus");results(data);
   }catch(error){$("staticPostStatus").textContent=error.message+(attempted?" Check Buffer before trying again.":" No post was sent.");}
   finally{posting=false;await refreshHistory();updatePublishSummary();}
 }
@@ -472,6 +503,7 @@ export function initSocialPublishing() {
     if(!stillUrl||stillRevision!==renderRevision)return;
     const a=document.createElement("a");a.href=stillUrl;a.download="pixel-shroom-ad.png";a.click();
   };
+  $("staticDestination").onchange=()=>updatePublishSummary();
   $("staticPostMode").oninput=()=>{updatePublishSummary();void refreshStillPreview();};
   $("staticImageUrl").oninput=()=>{updatePublishSummary();if(!$("staticImageUrl").value.trim())void refreshStillPreview();};
   $("sendStaticPost").onclick=sendStaticPost;

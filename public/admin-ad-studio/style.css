@@ -114,8 +114,8 @@ header .brand h1{margin:0;line-height:1.3;letter-spacing:1px}
 .publish-media-column{min-width:0;display:grid;gap:18px;align-content:start}
 .static-post-workspace h2{font-size:20px;margin:8px 0}
 .still-actions{display:flex;gap:8px;flex-wrap:wrap}
-.feed-previews{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:900px;margin:18px auto;align-items:start}
-.feed-viewer{min-width:0;background:#191b1d;border:1px solid #393d3e;border-radius:12px;padding:12px}
+.feed-previews{display:block;width:100%;margin:16px 0;align-items:start}
+.feed-viewer{min-width:0;background:#191b1d;border:1px solid #393d3e;border-radius:8px;padding:8px}
 .feed-viewer h3{font-size:13px;margin:0 0 12px;color:#d9e2dc}
 .feed-card{border:1px solid #383c3d;border-radius:10px;overflow:hidden;background:#212425}
 .feed-card header{height:auto;display:flex;gap:9px;align-items:center;padding:12px;border:0;min-width:0}
@@ -134,4 +134,7 @@ header .brand h1{margin:0;line-height:1.3;letter-spacing:1px}
 #sendStaticPost{width:100%;min-height:44px}
 @media(max-width:760px){.feed-previews{grid-template-columns:1fr;max-width:440px}}
 
-.publish-heading-actions{display:flex;gap:8px;flex-wrap:wrap}.static-post-workspace{margin-top:24px;scroll-margin-top:16px}.feed-card header strong{word-break:normal}.static-post-workspace #staticImageUrl{width:100%}
+.publish-heading-actions{display:flex;gap:8px;flex-wrap:wrap}.static-post-workspace{margin:0;scroll-margin-top:16px;min-width:0}.feed-card header strong{word-break:normal}.static-post-workspace #staticImageUrl{width:100%}
+
+.static-post-workspace select{width:100%}.static-post-workspace .still-actions{margin:8px 0}.static-post-workspace .feed-card header{padding:9px;flex-wrap:nowrap;min-height:0}.static-post-workspace .feed-caption{padding:0 9px 12px}.static-post-workspace .feed-card footer{font-size:10px}.static-post-workspace #staticBufferStatus.ready{color:#b8df9b}.static-post-workspace #staticBufferStatus{overflow-wrap:anywhere}.static-post-workspace #staticPostMode{margin-bottom:0}
+@media(max-width:950px){.static-post-workspace .feed-previews{max-width:330px;margin:16px auto}}
