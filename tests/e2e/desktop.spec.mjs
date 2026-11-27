@@ -280,6 +280,10 @@ test("AD Studio export and publishing validation share the editor state", async 
     json: {configured: true, platforms: [{id: "bluesky", accountId: "fixture", name: "Bluesky", label: "Studio", connected: true}]}
   }));
   await page.getByRole("button", {name: "Publish to social"}).click();
+  await expect(page.locator("#serviceNotice")).toContainText("Buffer connected");
+  await expect(page.locator("#bufferSetup")).not.toHaveAttribute("open", "");
+  await expect(page.locator("#bufferConnectForm")).toHaveCount(1);
+  await expect(page.locator("#connectSocial")).toHaveCount(0);
   await page.getByRole("checkbox", {name: /Bluesky/}).check();
   await page.locator("#captionOverridesSection > summary").click();
   const url = page.locator("#publicMediaUrl");

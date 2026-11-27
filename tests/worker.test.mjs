@@ -317,6 +317,62 @@ test("AD publishing requires admin authentication and same-origin writes", async
   assert.deepEqual(await (await site.call(base + "history", {headers})).json(), {submissions: []});
 });
 
+test("Buffer reconnect recovers missing publishing tables, uses the proper token, and preserves history", async t => {
+  const site = await setup(t);
+  const auth = await login(site);
+  const headers = {Cookie: auth.headers.get("Set-Cookie").split(";")[0]};
+  const base = "/api/ad-studio/social/";
+  delete site.env.AD_STUDIO_DB;
+  await site.env.CAMPAIGN_DB.prepare("DROP TABLE publishing_credentials").bind().run();
+  await site.env.CAMPAIGN_DB.prepare("DROP TABLE publishing_submissions").bind().run();
+  const received = [];
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "https://api.buffer.com");
+    received.push(options.headers.Authorization);
+    const {query} = JSON.parse(options.body);
+    if (query.includes("organizations")) return Response.json({data: {account: {organizations: [{id:"org",name:"Mock"}]}}});
+    if (query.includes("channels(")) return Response.json({data: {channels: [{id:"fb",service:"facebook",displayName:"Studio"}]}});
+    throw Error("No social post should be sent during reconnect");
+  };
+  const config = async () => (await (await site.call(base + "config", {headers})).json());
+  const connect = token => site.call(base + "connect", {headers, body:{bufferKey:token}});
+  site.env.BUFFER_CREDENTIAL_ENCRYPTION_KEY = "not-an-encryption-key";
+  let info = await config();
+  assert.equal(info.configured, false);
+  assert.equal(info.secureStorage, false);
+  assert.equal((await connect("fixture-buffer-key")).status, 503);
+  assert.deepEqual(received, []);
+  site.env.BUFFER_API_KEY = "fixture-worker-buffer-key";
+  info = await config();
+  assert.equal(info.configured, true);
+  assert.equal(info.bufferSource, "worker");
+  assert.equal(info.platforms[0].accountId, "fb");
+  assert.equal((await connect("fixture-other-buffer-key")).status, 409);
+  assert.ok(received.every(v => v === "Bearer fixture-worker-buffer-key"));
+  assert.doesNotMatch(JSON.stringify(info), /fixture-worker-buffer-key/);
+
+  delete site.env.BUFFER_API_KEY;
+  site.env.BUFFER_CREDENTIAL_ENCRYPTION_KEY = "ab".repeat(32);
+  assert.equal((await connect("fixture-saved-buffer-key")).status, 200);
+  info = await config();
+  assert.equal(info.bufferSource, "saved");
+  assert.equal(info.configured, true);
+  const row = await site.env.CAMPAIGN_DB.prepare("SELECT encrypted FROM publishing_credentials LIMIT 1").bind().first();
+  assert.doesNotMatch(row.encrypted, /fixture-saved-buffer-key/);
+  site.env.BUFFER_CREDENTIAL_ENCRYPTION_KEY = "cd".repeat(32);
+  info = await config();
+  assert.equal(info.configured, false);
+  assert.equal(info.bufferNeedsUpdate, true);
+  assert.match(info.accountsError, /could not be unlocked/);
+  assert.equal((await connect("fixture-new-buffer-key")).status, 200);
+  info = await config();
+  assert.equal(info.configured, true);
+  assert.equal(info.bufferSource, "saved");
+  assert.equal(info.platforms[0].accountId, "fb");
+  assert.deepEqual(await (await site.call(base + "history", {headers})).json(), {submissions: []});
+  assert.ok(received.every(v => !v.includes("ab".repeat(32)) && !v.includes("cd".repeat(32))));
+});
+
 test("AD publishing signs uploads and records account history with caption overrides", async t => {
   const site = await setup(t);
   const auth = await login(site);

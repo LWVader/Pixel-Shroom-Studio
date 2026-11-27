@@ -307,11 +307,12 @@ async function socialRoute(request, env, url, user) {
   if (request.method === "POST" && request.headers.get("Origin") !== url.origin) {
     return apiError("Same-origin requests required.", 403);
   }
-  if (!env.AD_STUDIO_DB) return apiError("Connect the AD Studio database to enable social publishing.", 503);
+  const publishingDB = env.AD_STUDIO_DB || env.CAMPAIGN_DB;
+  if (!publishingDB) return apiError("Connect the AD Studio or campaign database to enable social publishing.", 503);
   const headers = new Headers(request.headers);
   headers.set("oai-authenticated-user-id", env.AD_STUDIO_LEGACY_USER_ID || user.id);
   headers.set("oai-authenticated-user-email", user.email);
-  return handleSocial(new Request(request, {headers}), {...env, DB: env.AD_STUDIO_DB}, action);
+  return handleSocial(new Request(request, {headers}), {...env, DB: publishingDB}, action);
 }
 
 function adminResponse(response, isEditor) {

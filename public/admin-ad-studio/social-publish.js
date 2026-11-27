@@ -71,7 +71,7 @@ function updatePublishSummary() {
   $("publishSummary").textContent = chosen.length ? "Destinations: " + chosen.map(t =>
     socialConfig.platforms.find(p => p.accountId === t.accountId)?.label || t.platform).join(", ") : "Select connected Buffer channels above.";
   $("sendSocial").textContent = {shareNow: "Publish now via Buffer", customScheduled: "Schedule via Buffer"}[$("bufferMode").value] || "Add to Buffer queue";
-  $("sendSocial").disabled = !!(tooLong.length || posting || !scheduleValid || !socialConfig.configured ||
+  $("sendSocial").disabled = !!(tooLong.length || posting || !scheduleValid || !socialConfig.configured || !!socialConfig.accountsError ||
     !chosen.length || urlError || !(url || ready) || stale);
   if (stale) $("videoStatus").textContent = "Editor changed. Render the current animation again.";
   else if (preparedVideo) $("videoStatus").textContent = "Video prepared · MP4 · " + (preparedVideo.size / 1024 / 1024).toFixed(1) + " MB";
@@ -80,16 +80,39 @@ function updatePublishSummary() {
     : "Configure Cloudinary on the Worker or enter a stable public MP4/MOV URL.");
 }
 function showAccounts(){const grid=$('socialAccounts'),checked=new Set(selectedAccounts().map(({accountId})=>accountId));grid.replaceChildren();for(const a of socialConfig.platforms||[]){const label=document.createElement('label');label.className='social-account';const input=document.createElement('input');input.type='checkbox';input.dataset.socialTarget=a.id;input.dataset.accountId=a.accountId;input.disabled=!a.connected;input.checked=a.connected&&checked.has(a.accountId);input.onchange=()=>{submissionId=null;renderCaptionOverrides();updatePublishSummary()};const title=document.createElement('b'),detail=document.createElement('small'),text=document.createElement('span');title.textContent=a.name+' · '+a.label;detail.textContent=a.organization+' · '+(a.reauth?'Reconnect in Buffer':a.locked?'Locked in Buffer':!a.connected?'Video posting not enabled':a.paused?'Queue paused':'Connected');text.append(title,detail);label.append(input,text);grid.append(label)}if(!socialConfig.platforms?.length){const p=document.createElement('p');p.className='muted';p.textContent=socialConfig.configured?'No channels found. Connect social accounts in Buffer, then refresh.':'Connect your key to load your Buffer channels.';grid.append(p)}renderCaptionOverrides();updatePublishSummary()}
-function syncConnectionSections(){
-$('bufferSetup').open=!socialConfig.configured||!!socialConfig.bufferNeedsUpdate;
-$('mediaSetup').open=!socialConfig.uploadReady;
-$('bufferSetupSummary').textContent=socialConfig.configured?(socialConfig.bufferNeedsUpdate?'Buffer connection · update required':'Buffer connected · update API key'):'Connect your personal Buffer API key';
-$('mediaSetupSummary').textContent=socialConfig.uploadReady?'Cloudinary video hosting connected':'Cloudinary video hosting setup';
-$('connectSocial').textContent=socialConfig.configured?'Update Buffer key':'Connect Buffer';
-$('connectionStatus').textContent=socialConfig.configured?'Your API key is saved securely. No need to enter it again.':'';
-$('mediaConnectionStatus').textContent=socialConfig.uploadReady?'Credentials remain on the Worker.':'';
+function syncConnectionSections() {
+  const managed = socialConfig.bufferSource === "worker";
+  const storageReady = socialConfig.secureStorage !== false;
+  const connected = socialConfig.configured && !socialConfig.accountsError;
+  $("bufferSetup").open = !connected;
+  $("mediaSetup").open = !socialConfig.uploadReady;
+  $("bufferSetupSummary").textContent = connected
+    ? managed ? "Buffer connected · Worker-managed key" : "Buffer connected · update API key"
+    : managed ? "Buffer connection · check Worker key" : "Connect your personal Buffer API key";
+  $("mediaSetupSummary").textContent = socialConfig.uploadReady ? "Cloudinary video hosting connected" : "Cloudinary video hosting setup";
+  $("bufferConnectForm").hidden = managed || !storageReady;
+  $("bufferManagedNotice").hidden = !managed;
+  $("bufferManagedNotice").textContent = managed ? "This connection uses the Worker secret BUFFER_API_KEY. Update it in Cloudflare if needed, then refresh accounts." : "";
+  $("bufferStorageNotice").hidden = managed || storageReady;
+  $("bufferStorageNotice").textContent = storageReady ? "" : "Configure BUFFER_API_KEY on the Worker, or set BUFFER_CREDENTIAL_ENCRYPTION_KEY to a 64-character hexadecimal encryption key and enter your personal Buffer API key below.";
+  $("connectionStatus").textContent = connected && !managed ? "Your API key is saved securely. No need to enter it again." : "";
 }
-async function refreshSocialAccounts(){try{socialConfig=await socialApi('config');syncConnectionSections();$('serviceNotice').textContent=socialConfig.accountsError?(socialConfig.bufferNeedsUpdate?socialConfig.accountsError:'Your Buffer key is saved. Channels could not be refreshed: '+socialConfig.accountsError):socialConfig.configured?'Buffer connected. Your API key is saved; select channels below.':'Connect the personal API key you created to load your Buffer channels.';$('serviceNotice').classList.toggle('ready',socialConfig.configured&&!socialConfig.accountsError)}catch(error){$('serviceNotice').textContent='Could not check saved connections. '+error.message}showAccounts()}
+async function refreshSocialAccounts() {
+  try {
+    socialConfig = await socialApi("config");
+    syncConnectionSections();
+    $("serviceNotice").textContent = socialConfig.accountsError || (socialConfig.configured
+      ? "Buffer connected. Select channels below."
+      : "Connect your personal Buffer API key to load your channels.");
+    $("serviceNotice").classList.toggle("ready", socialConfig.configured && !socialConfig.accountsError);
+  } catch (error) {
+    socialConfig = {configured: false, platforms: []};
+    $("serviceNotice").textContent = "Could not check saved connections. " + error.message;
+    $("serviceNotice").classList.remove("ready");
+    syncConnectionSections();
+  }
+  showAccounts();
+}
 
 function choosePage() {
   const publish = location.hash === "#publish";
@@ -232,7 +255,6 @@ export function initSocialPublishing() {
     $("socialCopySettings").open = true;
     $("publishCaption").focus();
   };
-  $("connectSocial").onclick = () => { $("bufferSetup").open = true; $("bufferApiKey").focus(); };
   $("bufferConnectForm").onsubmit = async event => {
     event.preventDefault();
     const key = $("bufferApiKey").value.trim();
