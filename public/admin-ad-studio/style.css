@@ -107,3 +107,5 @@ header .brand h1{margin:0;line-height:1.3;letter-spacing:1px}
 
 #fit-status { color: #ffca86; font-size: 12px; line-height: 1.5; margin: 10px 0 0; }
 #fit-status:empty { display: none; }
+
+.publishing-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}.publishing-buttons button{width:100%;min-height:44px}.publishing-buttons p{margin:7px 0 0}@media(max-width:800px){.publishing-buttons{grid-template-columns:1fr}}

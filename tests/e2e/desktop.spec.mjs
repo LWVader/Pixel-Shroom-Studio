@@ -471,3 +471,63 @@ test("social formats balance long copy and portrait artwork without changing exp
   await page.getByRole("button",{name:"Download PNG frame"}).click();
   await expect(page.locator("#toast")).toContainText("Shorten the on-image copy before exporting");
 });
+
+test("X and Facebook/LinkedIn publish independently and reuse the same video", async ({page}) => {
+  const errors = [], requests = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/admin.html");
+  await page.getByLabel("Administrator password").fill(testPassword);
+  await page.getByRole("button", {name: "Sign in", exact: true}).click();
+  await page.getByRole("link", {name: "Open AD Studio"}).click();
+  await page.route("**/api/ad-studio/social/config", route => route.fulfill({json: {
+    configured: true, bufferSource: "worker", secureStorage: false, uploadReady: false,
+    platforms: [
+      {id:"twitter",accountId:"x",name:"X",label:"Studio X",connected:true},
+      {id:"facebook",accountId:"fb",name:"Facebook",label:"Studio FB",connected:true},
+      {id:"linkedin",accountId:"li",name:"LinkedIn",label:"Studio LI",connected:true}
+    ]
+  }}));
+  await page.route("**/api/ad-studio/social/publish", async route => {
+    const request = route.request();
+    const form = await new Response(request.postDataBuffer(), {headers: {"Content-Type": request.headers()["content-type"]}}).formData();
+    const targets = JSON.parse(form.get("targets"));
+    requests.push({id:request.headers()["idempotency-key"],targets,media:form.get("mediaUrl"),captions:JSON.parse(form.get("captions"))});
+    await route.fulfill({json:{status:"submitted",message:"Mock queued",results:targets.map(t=>({platform:t.platform,status:"scheduled"}))}});
+  });
+  await page.getByRole("button", {name:"Publish to social"}).click();
+  const x=page.locator("#sendSocialX"), other=page.locator("#sendSocial"), url=page.locator("#publicMediaUrl");
+  await expect(x).toBeDisabled();
+  await expect(other).toBeDisabled();
+  await page.getByRole("checkbox",{name:/Facebook/}).check();
+  await expect(other).toBeEnabled();
+  await expect(x).toBeDisabled();
+  await other.click();
+  await expect(page.locator("#publishStatus")).toContainText("video hosting is not configured");
+  expect(requests).toHaveLength(0);
+  await page.getByRole("checkbox",{name:/LinkedIn/}).check();
+  await page.getByRole("checkbox",{name:/X · Studio X/}).check();
+  await expect(x).toBeEnabled();
+  await expect(other).toBeEnabled();
+  await url.fill("https://media.example.test/ad.mp4");
+  await page.locator("#captionOverridesSection > summary").click();
+  await page.getByLabel("X caption").fill("a".repeat(281));
+  await expect(x).toBeDisabled();
+  await expect(other).toBeEnabled();
+  await other.click();
+  await expect(page.locator("#publishStatus")).toContainText("Mock queued");
+  expect(requests[0].targets.map(t=>t.platform)).toEqual(["facebook","linkedin"]);
+  await expect(other).toBeDisabled();
+  await expect(url).toHaveValue("https://media.example.test/ad.mp4");
+  await page.getByLabel("X caption").fill("Short X caption");
+  await expect(x).toBeEnabled();
+  await expect(other).toBeDisabled();
+  await x.click();
+  await expect(x).toBeDisabled();
+  await expect(page.locator("#xPublishReady")).toContainText("Already submitted");
+  expect(requests).toHaveLength(2);
+  expect(requests[1].targets.map(t=>t.platform)).toEqual(["twitter"]);
+  expect(requests[1].captions).toEqual({twitter:"Short X caption"});
+  expect(requests[1].media).toBe(requests[0].media);
+  expect(requests[1].id).not.toBe(requests[0].id);
+  expect(errors).toEqual([]);
+});

@@ -4,7 +4,9 @@ import {BUFFER_VIDEO_TYPES, MAX_VIDEO_BYTES, captionLength, publicMediaUrl} from
 const SOCIAL_CATALOG=[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['youtube','YouTube'],['linkedin','LinkedIn'],['twitter','X'],['threads','Threads'],['pinterest','Pinterest'],['bluesky','Bluesky'],['mastodon','Mastodon'],['googlebusiness','Google Business']];
 let socialConfig = {configured: false, platforms: []};
 const hostedVideos = new WeakMap();
-let preparedVideo = null, preparedRevision = null, videoUrl = null, posting = false, submissionId = null, submissions = [];
+let preparedVideo = null, preparedRevision = null, videoUrl = null, posting = false, preparingVideo = false, submissions = [];
+const groupSubmissions = new Map();
+const publishGroups = [{key:"twitter", button:"sendSocialX", status:"xPublishReady"}, {key:"other", button:"sendSocial", status:"otherPublishReady"}];
 const platformName = platform => SOCIAL_CATALOG.find(([id]) => id === platform)?.[1] || platform;
 const selectedPlatforms = () => [...new Set(selectedAccounts().map(({platform}) => platform))];
 const defaultCaption = () => $("publishCaption").value.trim() || $("publishTitle").value.trim();
@@ -36,7 +38,6 @@ function renderCaptionOverrides() {
     input.value = state.channelCaptions[platform] || "";
     input.oninput = () => {
       state.channelCaptions[platform] = input.value;
-      submissionId = null;
       updatePublishSummary();
     };
     label.append(input);
@@ -45,11 +46,35 @@ function renderCaptionOverrides() {
 }
 export function syncSocialCopy(){$('publishTitle').value=state.socialTitle||String(state.headline).slice(0,100);$('publishCaption').value=state.socialCaption||state.headline+'\n'+state.website;$('youtubePrivacy').value=state.youtubePrivacy||'public';$('pinterestBoard').value=state.pinterestBoard||'';$('aiGenerated').checked=state.aiGenerated!==false;updatePostPreview()}
 function updatePostPreview(){$('postTitlePreview').textContent=$('publishTitle').value.trim()||state.headline;$('postCaptionPreview').textContent=$('publishCaption').value.trim()||state.headline+'\n'+state.website;$('postSettingsPreview').textContent='YouTube: '+$('youtubePrivacy').value+' · '+($('aiGenerated').checked?'AI imagery disclosed':'AI imagery disclosure off')+($('pinterestBoard').value?' · Pinterest board: '+$('pinterestBoard').value:'')}
+function groupTargets(group, chosen = selectedAccounts()) {
+  return chosen.filter(({platform}) => group === "twitter" ? platform === "twitter" : platform !== "twitter");
+}
+function submissionSnapshot(group, targets = groupTargets(group)) {
+  // Capture only this group's destinations and effective caption overrides.
+  const fields = Object.fromEntries(Object.entries({title: "publishTitle", caption: "publishCaption", mode: "bufferMode",
+    youtubePrivacy: "youtubePrivacy", pinterestBoard: "pinterestBoard"}).map(([field, input]) => [field, $(input).value.trim()]));
+  const captions = Object.fromEntries(targets.filter(({platform}) => state.channelCaptions[platform]?.trim())
+    .map(({platform}) => [platform, state.channelCaptions[platform].trim()]));
+  const dueAt = fields.mode === "customScheduled" ? scheduledDate()?.toISOString() || "" : "";
+  const media = $("publicMediaUrl").value.trim();
+  const aiGenerated = String($("aiGenerated").checked);
+  const signature = JSON.stringify({targets, fields, captions, dueAt, media, aiGenerated, revision: media ? null : renderRevision});
+  return {targets, fields, captions, dueAt, media, aiGenerated, signature};
+}
+function groupLabel(group, targets) {
+  if (group === "twitter") return "X / Twitter";
+  const names = [...new Set(targets.map(t => platformName(t.platform)))];
+  return names.length ? names.join(" / ") : "Facebook / LinkedIn";
+}
+function readyVideo() {
+  return preparedVideo && preparedRevision === renderRevision &&
+    preparedVideo.size <= MAX_VIDEO_BYTES && BUFFER_VIDEO_TYPES.includes(preparedVideo.type.split(";")[0]);
+}
 function updatePublishSummary() {
   updatePostPreview();
   const counts = updateCaptionCount();
   const notes = counts.map(({platform, count, limit}) =>
-    platformName(platform) + (limit ? ": " + count.toLocaleString() + " / " + limit.toLocaleString() : ": Buffer checks the server limit"));
+    platformName(platform) + (limit ? ": " + count.toLocaleString() + " / " + limit.toLocaleString() : "Buffer checks the server limit"));
   $("captionLimits").textContent = notes.length ? notes.join(" · ") : "Select channels to see their caption limits.";
   const tooLong = counts.filter(({count, limit}) => limit && count > limit);
   const twitterOver = tooLong.some(({platform}) => platform === "twitter");
@@ -66,20 +91,39 @@ function updatePublishSummary() {
   $("publicMediaUrl").setCustomValidity(urlError);
   $("publicMediaUrl").setAttribute("aria-invalid", String(Boolean(urlError)));
   const stale = preparedVideo && preparedRevision !== renderRevision && !rawUrl;
-  const ready = preparedVideo && preparedVideo.size <= MAX_VIDEO_BYTES && socialConfig.uploadReady &&
-    BUFFER_VIDEO_TYPES.includes(preparedVideo.type.split(";")[0]);
   $("publishSummary").textContent = chosen.length ? "Destinations: " + chosen.map(t =>
     socialConfig.platforms.find(p => p.accountId === t.accountId)?.label || t.platform).join(", ") : "Select connected Buffer channels above.";
-  $("sendSocial").textContent = {shareNow: "Publish now via Buffer", customScheduled: "Schedule via Buffer"}[$("bufferMode").value] || "Add to Buffer queue";
-  $("sendSocial").disabled = !!(tooLong.length || posting || !scheduleValid || !socialConfig.configured || !!socialConfig.accountsError ||
-    !chosen.length || urlError || !(url || ready) || stale);
-  if (stale) $("videoStatus").textContent = "Editor changed. Render the current animation again.";
-  else if (preparedVideo) $("videoStatus").textContent = "Video prepared · MP4 · " + (preparedVideo.size / 1024 / 1024).toFixed(1) + " MB";
+  const verb = {shareNow: "Publish to", customScheduled: "Schedule for"}[$("bufferMode").value] || "Queue for";
+  for (const {key, button, status} of publishGroups) {
+    const targets = groupTargets(key, chosen), snapshot = submissionSnapshot(key, targets);
+    const over = key === "twitter" ? twitterOver : otherOver.length > 0;
+    const previous = groupSubmissions.get(key);
+    const submitted = previous?.signature === snapshot.signature && previous.completed;
+    const missingBoard = targets.some(t => t.platform === "pinterest") && !$("pinterestBoard").value.trim();
+    let reason = "";
+    if (posting || preparingVideo) reason = "Preparing or submitting a post. Please wait.";
+    else if (!socialConfig.configured || socialConfig.accountsError) reason = "Connect Buffer and refresh accounts.";
+    else if (!targets.length) reason = key === "twitter" ? "Select a connected X / Twitter channel." : "Select Facebook, LinkedIn or another connected channel.";
+    else if (over) reason = key === "twitter" ? "Shorten the X caption to 280 characters." : "Shorten the selected channel captions.";
+    else if (!scheduleValid) reason = "Choose a valid publishing time.";
+    else if (!snapshot.fields.title) reason = "Enter a post title in Social post text.";
+    else if (missingBoard) reason = "Choose a Pinterest board for this group.";
+    else if (urlError) reason = urlError;
+    else if (submitted) reason = "Already submitted for this selection and post. Check Buffer submissions.";
+    $(button).textContent = verb + " " + groupLabel(key, targets);
+    $(button).disabled = !!reason;
+    $(status).textContent = reason || (url ? "Ready to send the public video URL." : socialConfig.uploadReady
+      ? readyVideo() ? "Ready to upload and publish." : "Ready — the video will render and upload automatically."
+      : "Select to continue. A public MP4/MOV URL or Cloudinary is required.");
+  }
+  $("prepareVideo").disabled = posting || preparingVideo;
+  if (stale) $("videoStatus").textContent = "Editor changed. The next publish will render the current animation.";
+  else if (preparedVideo) $("videoStatus").textContent = "Video prepared · " + (preparedVideo.size / 1024 / 1024).toFixed(1) + " MB";
   $("mediaHostingStatus").textContent = urlError || (url ? "Buffer will use the public video URL you entered."
-    : socialConfig.uploadReady ? "Cloudinary connected. Your video uploads directly when you send."
+    : socialConfig.uploadReady ? "Cloudinary connected. The current animation renders and uploads automatically when you send."
     : "Configure Cloudinary on the Worker or enter a stable public MP4/MOV URL.");
 }
-function showAccounts(){const grid=$('socialAccounts'),checked=new Set(selectedAccounts().map(({accountId})=>accountId));grid.replaceChildren();for(const a of socialConfig.platforms||[]){const label=document.createElement('label');label.className='social-account';const input=document.createElement('input');input.type='checkbox';input.dataset.socialTarget=a.id;input.dataset.accountId=a.accountId;input.disabled=!a.connected;input.checked=a.connected&&checked.has(a.accountId);input.onchange=()=>{submissionId=null;renderCaptionOverrides();updatePublishSummary()};const title=document.createElement('b'),detail=document.createElement('small'),text=document.createElement('span');title.textContent=a.name+' · '+a.label;detail.textContent=a.organization+' · '+(a.reauth?'Reconnect in Buffer':a.locked?'Locked in Buffer':!a.connected?'Video posting not enabled':a.paused?'Queue paused':'Connected');text.append(title,detail);label.append(input,text);grid.append(label)}if(!socialConfig.platforms?.length){const p=document.createElement('p');p.className='muted';p.textContent=socialConfig.configured?'No channels found. Connect social accounts in Buffer, then refresh.':'Connect your key to load your Buffer channels.';grid.append(p)}renderCaptionOverrides();updatePublishSummary()}
+function showAccounts(){const grid=$('socialAccounts'),checked=new Set(selectedAccounts().map(({accountId})=>accountId));grid.replaceChildren();for(const a of socialConfig.platforms||[]){const label=document.createElement('label');label.className='social-account';const input=document.createElement('input');input.type='checkbox';input.dataset.socialTarget=a.id;input.dataset.accountId=a.accountId;input.disabled=!a.connected;input.checked=a.connected&&checked.has(a.accountId);input.onchange=()=>{renderCaptionOverrides();updatePublishSummary()};const title=document.createElement('b'),detail=document.createElement('small'),text=document.createElement('span');title.textContent=a.name+' · '+a.label;detail.textContent=a.organization+' · '+(a.reauth?'Reconnect in Buffer':a.locked?'Locked in Buffer':!a.connected?'Video posting not enabled':a.paused?'Queue paused':'Connected');text.append(title,detail);label.append(input,text);grid.append(label)}if(!socialConfig.platforms?.length){const p=document.createElement('p');p.className='muted';p.textContent=socialConfig.configured?'No channels found. Connect social accounts in Buffer, then refresh.':'Connect your key to load your Buffer channels.';grid.append(p)}renderCaptionOverrides();updatePublishSummary()}
 function syncConnectionSections() {
   const managed = socialConfig.bufferSource === "worker";
   const storageReady = socialConfig.secureStorage !== false;
@@ -133,7 +177,6 @@ function choosePage() {
 function setVideo(blob) {
   preparedVideo = blob;
   preparedRevision = renderRevision;
-  submissionId = null;
   $("publicMediaUrl").value = "";
   if (videoUrl) URL.revokeObjectURL(videoUrl);
   videoUrl = URL.createObjectURL(blob);
@@ -204,25 +247,42 @@ function renderHistory() {
   if (!submissions.length) el.textContent = "No Buffer submissions yet.";
 }
 
-async function sendPost() {
+async function prepareCurrentVideo() {
+  const announce = message => { $("videoStatus").textContent = message; };
+  setVideo(await renderAnimation(progress => announce("Rendering " + Math.round(progress * 100) + "%"),
+    {publish: true, announce}));
+  if (!readyVideo()) throw Error("The rendered video is not an accepted MP4/MOV under 16 MB.");
+  return preparedVideo;
+}
+async function sendPost(group) {
   updatePublishSummary();
-  if (posting || $("sendSocial").disabled) return;
+  const button = publishGroups.find(item => item.key === group)?.button;
+  if (!button || posting || preparingVideo || $(button).disabled) return;
+  const snapshot = submissionSnapshot(group);
+  if (!snapshot.media && !socialConfig.uploadReady) {
+    $("publishStatus").textContent = "Buffer is connected, but video hosting is not configured. Enter a public HTTPS MP4/MOV URL or configure Cloudinary before publishing. No post was sent.";
+    $("mediaSetup").open = true;
+    $("publicMediaUrl").focus();
+    return;
+  }
+  let submission = groupSubmissions.get(group);
+  if (submission?.signature !== snapshot.signature) {
+    submission = {signature: snapshot.signature, id: crypto.randomUUID(), completed: false};
+    groupSubmissions.set(group, submission);
+  }
   posting = true;
-  submissionId ||= crypto.randomUUID();
-  const id = submissionId, targets = selectedAccounts(), form = new FormData(), video = preparedVideo;
-  let media = $("publicMediaUrl").value.trim();
-  let attemptedSubmission = false;
+  updatePublishSummary();
+  const form = new FormData();
+  let media = snapshot.media, attemptedSubmission = false;
   try {
-    for (const [field, input] of Object.entries({title: "publishTitle", caption: "publishCaption", mode: "bufferMode",
-      youtubePrivacy: "youtubePrivacy", pinterestBoard: "pinterestBoard"})) form.set(field, $(input).value.trim());
-    form.set("targets", JSON.stringify(targets));
-    form.set("captions", JSON.stringify(Object.fromEntries(targets
-      .filter(({platform}) => state.channelCaptions[platform]?.trim())
-      .map(({platform}) => [platform, state.channelCaptions[platform].trim()]))));
-    if (form.get("mode") === "customScheduled") form.set("dueAt", scheduledDate().toISOString());
-    form.set("aiGenerated", String($("aiGenerated").checked));
-    updatePublishSummary();
+    for (const [field, value] of Object.entries(snapshot.fields)) form.set(field, value);
+    form.set("targets", JSON.stringify(snapshot.targets));
+    form.set("captions", JSON.stringify(snapshot.captions));
+    if (snapshot.dueAt) form.set("dueAt", snapshot.dueAt);
+    form.set("aiGenerated", snapshot.aiGenerated);
     if (!media) {
+      $("publishStatus").textContent = readyVideo() ? "Preparing upload…" : "Rendering the current ad for " + groupLabel(group, snapshot.targets) + "…";
+      const video = readyVideo() ? preparedVideo : await prepareCurrentVideo();
       $("publishStatus").textContent = "Uploading the video to Cloudinary…";
       try { media = await directUpload(video); } catch (error) {
         if (socialConfig.uploadMode !== "legacy") throw error;
@@ -230,11 +290,12 @@ async function sendPost() {
       }
     }
     if (media) form.set("mediaUrl", media);
-    $("publishStatus").textContent = "Sending to Buffer…";
+    $("publishStatus").textContent = "Sending to " + groupLabel(group, snapshot.targets) + " via Buffer…";
     attemptedSubmission = true;
-    results(await socialApi("publish", {method: "POST", headers: {"Idempotency-Key": id}, body: form}));
-    preparedVideo = null;
-    $("publicMediaUrl").value = "";
+    const data = await socialApi("publish", {method: "POST", headers: {"Idempotency-Key": submission.id}, body: form});
+    submission.completed = true;
+    results(data);
+    // Keep the rendered video/public URL for the other destination group.
   } catch (error) {
     $("publishStatus").textContent = error.message + (attemptedSubmission ? " Check Buffer before creating another submission." : " No post was sent to Buffer.");
   } finally {
@@ -268,24 +329,23 @@ export function initSocialPublishing() {
     finally { $("saveBufferKey").disabled = false; }
   };
   $("prepareVideo").onclick = async () => {
-    $("prepareVideo").disabled = true;
-    try {
-      const announce = message => { $("videoStatus").textContent = message; };
-      setVideo(await renderAnimation(progress => announce("Rendering " + Math.round(progress * 100) + "%"),
-        {publish: true, announce}));
-    } catch (error) { $("videoStatus").textContent = error.message; }
-    finally { $("prepareVideo").disabled = false; }
+    if (posting || preparingVideo) return;
+    preparingVideo = true;
+    updatePublishSummary();
+    try { await prepareCurrentVideo(); }
+    catch (error) { $("videoStatus").textContent = error.message; }
+    finally { preparingVideo = false; updatePublishSummary(); }
   };
   for (const id of ["publishTitle", "publishCaption", "youtubePrivacy", "pinterestBoard", "aiGenerated", "bufferMode", "scheduledAt", "publicMediaUrl"]) {
     $(id).oninput = () => {
       const key = {publishTitle: "socialTitle", publishCaption: "socialCaption", youtubePrivacy: "youtubePrivacy",
         pinterestBoard: "pinterestBoard", aiGenerated: "aiGenerated"}[id];
       if (key) state[key] = id === "aiGenerated" ? $(id).checked : $(id).value;
-      submissionId = null;
       updatePublishSummary();
     };
   }
-  $("sendSocial").onclick = sendPost;
+  $("sendSocialX").onclick = () => sendPost("twitter");
+  $("sendSocial").onclick = () => sendPost("other");
   syncSocialCopy();
   choosePage();
 }
