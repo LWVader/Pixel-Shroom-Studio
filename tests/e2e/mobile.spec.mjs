@@ -16,6 +16,7 @@ test("mobile homepage fits the viewport and the footer login opens", async ({pag
 });
 
 test("AD Studio design layers fit a small viewport and can be edited without dragging", async ({page}) => {
+  await page.context().setExtraHTTPHeaders({"CF-Connecting-IP":"192.0.2.122"});
   const {testPassword}=await import("../fixture.mjs");
   await page.setViewportSize({width:375,height:812});
   await page.goto("/admin.html");

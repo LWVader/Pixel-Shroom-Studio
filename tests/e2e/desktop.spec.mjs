@@ -672,6 +672,8 @@ test("Canvix layers use the existing canvas, project files and publish preview",
 });
 
 test("full template browser loads editable slides and AI tools can apply reviewed output",async({page})=>{
+  // Isolate this fixture sign-in from the other scenarios' rolling login-attempt bucket.
+  await page.context().setExtraHTTPHeaders({"CF-Connecting-IP":"192.0.2.121"});
   const errors=[];page.on("pageerror",e=>errors.push(e.message));
   await page.goto("/admin.html");
   await page.getByLabel("Administrator password").fill(testPassword);
