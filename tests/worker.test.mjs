@@ -626,3 +626,70 @@ test("Facebook and LinkedIn regular feed posts accept text-only or image assets 
   assert.equal(ticket.endpoint,"https://api.cloudinary.com/v1_1/test-cloud/image/upload");
   assert.doesNotMatch(JSON.stringify(ticket),/synthetic-signing-secret/);
 });
+
+test("AI tools require authenticated same-origin requests, advertise configuration without credentials, and validate provider output",async t=>{
+  const site=await setup(t),base="/api/ad-studio/ai/";
+  assert.equal((await site.call(base+"config")).status,401);
+  const cookie=(await login(site)).headers.get("Set-Cookie").split(";")[0];
+  const headers={Cookie:cookie};
+  const off=await (await site.call(base+"config",{headers})).json();
+  assert.equal(off.configured,false);
+  assert.equal((await site.call(base+"write",{headers,body:{prompt:"Create ad copy"}})).status,503);
+  assert.equal((await site.call(base+"write",{headers,body:{prompt:"Create ad copy"},requestOrigin:"https://other.example"})).status,403);
+  site.env.AD_STUDIO_AI_KEY="fixture-ai-secret";site.env.AD_STUDIO_AI_TEXT_MODEL="fixture-text";site.env.AD_STUDIO_AI_BASE_URL="https://ai.example.test/v1";
+  const nextFetch=globalThis.fetch;
+  globalThis.fetch=async(input,options)=>{
+    if(String(input)==="https://ai.example.test/v1/chat/completions"){
+      assert.equal(options.headers.get("Authorization"),"Bearer fixture-ai-secret");
+      const request=JSON.parse(options.body);
+      assert.equal(request.model,"fixture-text");
+      if(request.messages[0].content.includes("editable advertising"))return Response.json({choices:[{message:{content:JSON.stringify({name:"Design test",background:"#334455",layers:[{type:"text",text:"Editable copy",x:0.1,y:.1,w:.8,h:.2,fontSize:50,color:"#ffffff"},{type:"image",src:"https://untrusted.example/x"}]})}}]});
+      return Response.json({choices:[{message:{content:"A great new headline"}}]});
+    }
+    return nextFetch(input,options);
+  };
+  const config=await (await site.call(base+"config",{headers})).json();
+  assert.equal(config.tools.write,true);assert.equal(config.tools.image,false);
+  assert.ok(!JSON.stringify(config).includes("fixture-ai-secret"));
+  const write=await site.call(base+"write",{headers,body:{prompt:"Write an ad"}});
+  assert.equal(write.status,200);assert.equal((await write.json()).text,"A great new headline");
+  const design=await site.call(base+"design",{headers,body:{prompt:"Design an ad"}});
+  assert.equal(design.status,200);const result=await design.json();assert.equal(result.design.layers.length,1);assert.equal(result.design.layers[0].text,"Editable copy");
+});
+
+test("AI image, vision, palette and optional video tools forward only validated provider requests",async t=>{
+  const site=await setup(t),base="/api/ad-studio/ai/";
+  const cookie=(await login(site)).headers.get("Set-Cookie").split(";")[0],headers={Cookie:cookie};
+  Object.assign(site.env,{AD_STUDIO_AI_KEY:"fixture-key",AD_STUDIO_AI_BASE_URL:"https://provider.example.test/v1",AD_STUDIO_AI_TEXT_MODEL:"text",AD_STUDIO_AI_VISION_MODEL:"vision",AD_STUDIO_AI_IMAGE_MODEL:"image",AD_STUDIO_AI_VIDEO_MODEL:"video"});
+  const source="data:image/png;base64,YWJj",calls=[],nextFetch=globalThis.fetch;
+  globalThis.fetch=async(input,options)=>{
+    const url=new URL(input);
+    if(url.origin!=="https://provider.example.test")return nextFetch(input,options);
+    assert.equal(options.headers.get("Authorization"),"Bearer fixture-key");
+    calls.push(url.pathname);
+    if(url.pathname.endsWith("/images/generations")){assert.equal(JSON.parse(options.body).model,"image");return Response.json({data:[{b64_json:"YWJj"}]});}
+    if(url.pathname.endsWith("/images/edits")){assert.equal(options.body.get("model"),"image");assert.equal(options.body.get("image").type,"image/png");return Response.json({data:[{b64_json:"YWJj"}]});}
+    if(url.pathname.endsWith("/chat/completions")){
+      const data=JSON.parse(options.body);const prompt=data.messages[0].content;
+      if(prompt.includes("palette"))return Response.json({choices:[{message:{content:JSON.stringify({colors:["#112233","#445566","#778899"],name:"Brand test"})}}]});
+      if(prompt.includes("visually distinct")){assert.equal(data.model,"vision");assert.equal(data.messages[1].content[1].image_url.url,source);return Response.json({choices:[{message:{content:JSON.stringify({name:"Recovered",background:"#ffffff",layers:[{type:"image",x:.1,y:.1,w:.4,h:.5,confidence:.91}]})}}]});}
+      return Response.json({choices:[{message:{content:"Artwork description"}}]});
+    }
+    if(url.pathname.endsWith("/videos"))return Response.json({id:"video_fixture",status:"queued"});
+    if(url.pathname.endsWith("/content"))return new Response("video-fixture",{headers:{"Content-Type":"video/mp4"}});
+    return Response.json({id:"video_fixture",status:"completed",progress:100});
+  };
+  const call=async(action,body)=>{const r=await site.call(base+action,{headers,body});assert.equal(r.status,200,action);return r.json();};
+  assert.equal((await call("image",{prompt:"A mushroom mascot"})).image,source);
+  assert.equal((await call("imageEdit",{prompt:"Add purple trim",image:source})).image,source);
+  assert.equal((await call("removeBackground",{image:source})).image,source);
+  assert.equal((await call("altText",{image:source})).text,"Artwork description");
+  assert.equal((await call("magicLayers",{image:source})).design.layers[0].type,"image");
+  assert.equal((await call("theme",{prompt:"Studio palette"})).colors.length,3);
+  assert.equal((await call("video",{prompt:"An animated logo"})).id,"video_fixture");
+  assert.equal((await call("videoStatus",{id:"video_fixture"})).status,"completed");
+  const content=await site.call(base+"videoContent",{headers,body:{id:"video_fixture"}});
+  assert.equal(content.headers.get("Content-Type"),"video/mp4");
+  assert.equal(await content.text(),"video-fixture");
+  assert.ok(calls.length>=9);
+});

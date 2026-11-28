@@ -280,6 +280,11 @@ function choosePage() {
   } else requestPreview();
 }
 
+export function useGeneratedVideo(blob) {
+  if(posting||preparingVideo||capturingStill)throw Error("Wait for the current render or publication to finish.");
+  if(!blob||blob.size>MAX_VIDEO_BYTES||!BUFFER_VIDEO_TYPES.includes(blob.type.split(";")[0]))throw Error("Generated video must be MP4/MOV under 16 MB. Download it and resize if needed.");
+  setVideo(blob);location.hash="publish";choosePage();
+}
 function setVideo(blob) {
   preparedVideo = blob;
   preparedRevision = renderRevision;
