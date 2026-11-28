@@ -23,3 +23,28 @@ test("upstream Canvix geometry, auto-fit and animation are available in the adap
   assert.equal(animateElementAt(element,0.5).opacity,.5);
   assert.equal(animateElementAt(element,1).opacity,1);
 });
+
+test("every Canvix template and every page imports without losing elements",async()=>{
+  const {readFile}=await import("node:fs/promises");
+  const {cleanDocument}=await import("../public/admin-ad-studio/template-library.js");
+  const dir=new URL("../public/admin-ad-studio/canvix/templates/",import.meta.url);
+  const json=async name=>JSON.parse(await readFile(new URL(name,dir),"utf8"));
+  const index=await json("index.json"),packs=new Map();
+  assert.equal(index.length,366);
+  assert.equal(new Set(index.map(t=>t.slug)).size,366);
+  let pages=0,elementCount=0;
+  for(const entry of index){
+    if(!packs.has(entry.file))packs.set(entry.file,await json(entry.file));
+    const raw=packs.get(entry.file)[entry.slug],doc=cleanDocument(raw);
+    assert.ok(doc,entry.slug);
+    assert.equal(doc.pages.length,raw.pages.length,entry.slug);
+    for(let i=0;i<doc.pages.length;i++){
+      assert.equal(doc.pages[i].layers.length,raw.pages[i].layers.length,entry.slug+" page "+i);
+      assert.equal(doc.pages[i].background.type,raw.pages[i].background.type);
+      elementCount+=doc.pages[i].layers.length;
+    }
+    pages+=doc.pages.length;
+  }
+  assert.equal(pages,426);
+  assert.equal(elementCount,5097);
+});

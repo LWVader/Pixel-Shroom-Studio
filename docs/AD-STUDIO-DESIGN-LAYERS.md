@@ -9,7 +9,7 @@ The existing admin-protected `/admin-ad-studio/` route now includes a three-pane
 - Layer-only undo/redo, duplication, visibility and stacking are available. JSON project files include layers; earlier projects open without extra layers.
 - PNG captures, rendered videos and the existing Buffer/Cloudinary publishing service use the same scene canvas. No publisher, database, authentication, or billing changes are included.
 
-This is a native, selective Canvix integration, not a complete port of its Next.js application. It does not yet include the full template library, server-side project database, collaboration, or AI tools.
+This is a native Canvix integration, not a complete port of its Next.js application. The full template library and AI tools are covered in [AD-STUDIO-TEMPLATES-AND-AI.md](AD-STUDIO-TEMPLATES-AND-AI.md). The standalone Canvix server-side project database and collaboration service remain outside this integration.
 
 Upstream license and provenance: `public/admin-ad-studio/canvix/`.
 

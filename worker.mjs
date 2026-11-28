@@ -2,6 +2,7 @@ import {campaignIdPattern, portfolioImage, portfolioItem, portfolioList, protect
 import {campaignPage} from "./lib/campaign-page.mjs";
 import {authenticatedAdmin} from "./lib/admin-access.mjs";
 import {clearPasswordSession, passwordAdmin, passwordConfigured, signInWithPassword} from "./lib/admin-session.mjs";
+import {handleAdStudioAI} from "./lib/ad-studio-ai.mjs";
 import {handleSocial} from "./lib/ad-studio-social.mjs";
 import {createCampaignOrders, sessionPattern} from "./lib/campaign-orders.mjs";
 import {campaignStore} from "./lib/campaign-store.mjs";
@@ -385,7 +386,8 @@ export default {
     const isStripeStatus = url.pathname === "/api/admin/stripe";
     const isMonthlyAdmin = url.pathname === "/api/admin/monthly-delivery";
     const isSocialApi = url.pathname.startsWith("/api/ad-studio/social/");
-    if (isEditor || isAdminApi || isAdminPortfolio || isStripeStatus || isMonthlyAdmin || isSocialApi) {
+    const isAiApi = url.pathname.startsWith("/api/ad-studio/ai/");
+    if (isEditor || isAdminApi || isAdminPortfolio || isStripeStatus || isMonthlyAdmin || isSocialApi || isAiApi) {
       const user = await adminUser(request, env, url);
       if (!user) {
         if (isEditor && (!url.pathname.split("/").at(-1) || url.pathname.endsWith(".html"))) {
@@ -398,6 +400,14 @@ export default {
       if (isStripeStatus) return stripeStatusRoute(request, env);
       if (isMonthlyAdmin) return monthlyAdminRoute(request, env, url);
       if (isSocialApi) return socialRoute(request, env, url, user);
+      if(isAiApi){
+        const action=url.pathname.slice("/api/ad-studio/ai/".length);
+        if(action==="config")return request.method==="GET"?handleAdStudioAI(action,{},env,user):methodNotAllowed("GET");
+        if(request.method!=="POST")return methodNotAllowed("POST");
+        if(!sameOriginJson(request,url))return apiError("Same-origin JSON requests required.",403);
+        try{return await handleAdStudioAI(action,await readJson(request,9_000_000),env,user);}
+        catch(error){return routeFailure(error,"AI request failed.");}
+      }
     }
 
     if (!["GET", "HEAD"].includes(request.method)) return methodNotAllowed("GET, HEAD");

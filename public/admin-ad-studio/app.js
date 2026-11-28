@@ -7,7 +7,9 @@ import {CAPTION_PLATFORMS} from "../ad-studio-rules.mjs";
 import {exportAdVideo} from "./video-export.js";
 import {renderMarketingAd, initMarketing} from "./marketing-layout.js";
 import {updateCharacterSelection, initCharacterGallery} from "./character-gallery.js";
-import {syncSocialCopy, initSocialPublishing} from "./social-publish.js";
+import {initAITools} from "./ai-tools.js";
+import {syncSocialCopy, initSocialPublishing,useGeneratedVideo} from "./social-publish.js";
+import {initTemplateLibrary,cleanDocument,paintTemplateBackground} from "./template-library.js";
 import {createDesignLayers, sanitizeLayers} from "./design-layers.js";
 import {initEmojiPicker} from "./emoji-picker.js";
 
@@ -20,6 +22,7 @@ const BUNDLED_ARTWORK = "/admin-ad-studio/assets/campaign-art/orbit-roast.webp";
 const OLD_BUNDLED_ARTWORK = "/assets/campaigns/orbit-roast.webp";
 const BUNDLED_LOGO = "/assets/pixel-shroom-logo-128.webp";
 state.layers = [];
+state.templateDocument = null;
 state.palette = AdPalette.defaultPalette;
 state.paletteName = "";
 const defaults = {...state};
@@ -28,11 +31,15 @@ let paletteTheme = AdPalette.roles(state.palette);
 let renderedPalette = state.palette;
 const designLayers = createDesignLayers({
   getLayers: () => state.layers,
-  setLayers: layers => { state.layers = layers; updateRenderRevision(); },
+  setLayers: layers => {
+    state.layers=layers;
+    if(state.layout==="freeform"&&state.templateDocument){const d=state.templateDocument;state.templateDocument={...d,pages:d.pages.map((p,i)=>i===d.page?{...p,layers}:p)};}
+    updateRenderRevision();
+  },
   canvas, getHeight: logicalHeightAccessor, getPalette: () => paletteTheme,
-  prepareImage, requestPreview, toast
+  prepareImage, requestPreview, toast, loadFont: family=>FontLibrary.catalogReady.then(()=>FontLibrary.load(family))
 });
-function logicalHeightAccessor(){return canvas.height * 864 / CANVAS_WIDTH;}
+function logicalHeightAccessor(){return canvas.height * 864 / canvas.width;}
 const syncPaletteEditor = AdPalette.editor((colors, name) => {
   state.palette = colors;
   state.paletteName = name;
@@ -212,15 +219,18 @@ function naturalArtworkHeight(width) {
     ? width * backdrop.naturalHeight / backdrop.naturalWidth : width * 2 / 3;
 }
 function updateCanvasSize() {
-  const height = canvasHeights[state.ratio] || 1350;
-  if (canvas.width !== CANVAS_WIDTH || canvas.height !== height) {
-    canvas.width = CANVAS_WIDTH;
+  const d=state.templateDocument;
+  const custom=state.ratio==="template"&&state.layout==="freeform"&&d;
+  const width=custom?Math.round(d.width/2)*2:CANVAS_WIDTH;
+  const height=custom?Math.round(d.height/2)*2:canvasHeights[state.ratio] || 1350;
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
     canvas.height = height;
   }
-  canvas.parentElement.style.setProperty("--scene-aspect", CANVAS_WIDTH / height);
-  setText("output-size", CANVAS_WIDTH + " × " + height + " px");
+  canvas.parentElement.style.setProperty("--scene-aspect", width / height);
+  setText("output-size", width + " × " + height + " px");
 }
-const logicalHeight = () => canvas.height * 864 / CANVAS_WIDTH;
+const logicalHeight = () => canvas.height * 864 / canvas.width;
 const hasCharacter = () => state.layout === "popout" || (state.layout === "marketing" && state.showCharacter);
 const characterImage = () => state.model === "custom" ? characterUpload : characters[state.model];
 
@@ -358,6 +368,7 @@ function draw(){if(!recording) updateCanvasSize();captionOverflow=false;if(state
 paintCanvas(h);
 if(state.layout==='freeform'){
   setText("fit-status","");setText("captionFit","Freeform designs use independent text layers.");
+  if(state.templateDocument)paintTemplateBackground(ctx,state.templateDocument.pages[state.templateDocument.page].background,864,h);
   if(state.bgImage)paintArtwork(0,0,864,h);
   designLayers.paint(ctx,h,t/PLAYBACK_RATE);
   updatePlaybackClock();
@@ -473,7 +484,10 @@ function sync() {
   FontLibrary.sync(state, paletteTheme);
 
   const isPopout = state.layout === "popout";
-  if (!Object.hasOwn(canvasHeights, state.ratio)) state.ratio = "portrait";
+  if(!Object.hasOwn(canvasHeights,state.ratio)&&!(state.ratio==="template"&&state.templateDocument&&state.layout==="freeform"))state.ratio="portrait";
+  const hasTemplateSize=!!state.templateDocument&&state.layout==="freeform",existingOption=$("template-ratio-option");
+  if(hasTemplateSize&&!existingOption){const option=new Option("Original template size","template");option.id="template-ratio-option";$("ratio").append(option);}
+  else if(!hasTemplateSize&&existingOption)existingOption.remove();
   const visible = hasCharacter();
   $("characterSection").hidden = $("character-placement").hidden = $("character-stage-note").hidden = !visible;
   $("depth-setting").hidden = state.motion === "none";
@@ -512,6 +526,7 @@ function sync() {
   syncPlacement();
   updateRenderRevision();
   designLayers.sync();
+  templateLibrary?.sync();
   for (const button of document.querySelectorAll("[data-motion]")) {
     const selected = button.dataset.motion === state.motion;
     button.classList.toggle("selected", selected);
@@ -593,7 +608,7 @@ canvas.onlostpointercapture = () => {
 function download(blob,name){let url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 $("save").onclick = () => {
   const project = JSON.stringify({...state, schemaVersion: PROJECT_SCHEMA_VERSION, duration: state.duration / PLAYBACK_RATE, orbit, tilt}, null, 2);
-  download(new Blob([project], {type: "application/json"}), state.layout === "marketing" ? "campaign-project.json" : "popout-project.json");
+  download(new Blob([project], {type: "application/json"}), state.layout === "freeform" ? "design-project.json" : state.layout === "marketing" ? "campaign-project.json" : "popout-project.json");
   toast("Project downloaded as JSON.");
 };
 $("load").onclick = () => { if (!recording) $("projectFile").click(); };
@@ -756,6 +771,21 @@ $("resetView").onclick = () => {
   sync();
 };
 
+function applyTemplateDocument(doc){
+  const d=cleanDocument(doc);if(!d||recording)return;state.layout="freeform";state.ratio="template";state.templateDocument=d;
+  state.layers=d.pages[d.page].layers;state.bgImage=null;state.outerImage=null;restoreCustomAssets();restartPreview();sync();
+}
+function changeTemplatePage(index){
+  const d=state.templateDocument;if(!d||recording||!d.pages[index])return;
+  state.templateDocument={...d,page:index};state.layers=d.pages[index].layers;restartPreview();sync();
+}
+function showTemplatePreview(preview,d){
+  const h=864*d.height/d.width;preview.width=300;preview.height=Math.max(1,Math.round(300*d.height/d.width));
+  const pc=preview.getContext("2d");pc.setTransform(300/864,0,0,300/864,0,0);
+  paintTemplateBackground(pc,d.pages[0].background,864,h);
+  designLayers.paint(pc,h,10,d.pages[0].layers);
+}
+let templateLibrary;
 function sanitizeProject() {
   const textFields = {brand: 45, cta: 45, website: 60, headline: 600, socialTitle: 100, socialCaption: 25000,
     pinterestBoard: 100, characterName: 60};
@@ -779,10 +809,12 @@ function sanitizeProject() {
       CAPTION_PLATFORMS.includes(key) && typeof value === "string").map(([key, value]) => [key, value.slice(0, 25000)]))
     : {};
   state.layers = sanitizeLayers(state.layers);
+  state.templateDocument=cleanDocument(state.templateDocument);
+  if(state.templateDocument&&state.layout==="freeform"){const d=state.templateDocument;state.layers=d.pages[d.page].layers;}
   state.palette = AdPalette.normalize(state.palette) || defaults.palette;
   state.paletteName = typeof state.paletteName === "string" ? state.paletteName.trim().slice(0, 48) : "";
   const options = {
-    layout: ["marketing", "popout", "freeform"], artworkPlacement: ["canvas", "template"], bgFit: ["cover", "contain"], ratio: Object.keys(canvasHeights),
+    layout: ["marketing", "popout", "freeform"], artworkPlacement: ["canvas", "template"], bgFit: ["cover", "contain"], ratio: [...Object.keys(canvasHeights),"template"],
     platform: ["Instagram", "Facebook", "TikTok"], captionAlign: ["left", "center", "right"], captionWeight: ["400", "700"],
     youtubePrivacy: ["public", "unlisted", "private"], weatherType: ["snow", "rain", "storm", "petals", "confetti"],
     weatherLayer: ["behind", "front", "both"], burnOrigin: ["bottom", "center"]
@@ -829,10 +861,27 @@ async function prepareExportSymbols() {
   requestPreview();
 }
 
+templateLibrary=initTemplateLibrary({getDocument:()=>state.layout==="freeform"?state.templateDocument:null,applyDocument:applyTemplateDocument,changePage:changeTemplatePage,drawPreview:showTemplatePreview});
 initCharacterGallery();
 initEmojiPicker();
 initMarketing();
 initSocialPublishing();
+initAITools({canvas,getState:()=>state,getSelected:designLayers.getSelected,prepareImage,applyDocument:d=>{state.aiGenerated=true;applyTemplateDocument(d);},
+  addLayer:designLayers.addLayer,
+  applyText:value=>{const selected=designLayers.getSelected();if(selected?.type==="text")designLayers.updateSelected({text:value});else{state.socialCaption=value.slice(0,25000);sync();}},
+  applyPalette:(colors,name)=>{
+    const p=AdPalette.normalize(colors);if(!p)throw Error("Invalid AI palette.");state.palette=p;state.paletteName=name;
+    if(state.layout==="freeform"){
+      const roles=AdPalette.roles(p);
+      if(state.templateDocument){const d=state.templateDocument;state.templateDocument={...d,pages:d.pages.map((page,i)=>i===d.page?{...page,background:{type:"solid",color:roles.post}}:page)};}
+      const recolor=l=>l.type==="image"?l:l.type==="text"?{...l,color:roles.ink}:{...l,color:l.color==="transparent"?"transparent":roles.button,stroke:l.stroke==="transparent"?"transparent":roles.outline,gradient:l.gradient?{...l.gradient,from:roles.scene,to:roles.button}:null};
+      designLayers.replaceLayers(state.layers.map(recolor));
+    }
+    sync();
+  },
+  applyImage:async(image,replace)=>{const l=designLayers.getSelected();state.aiGenerated=true;if(replace&&l?.type==="image")designLayers.updateSelected({image});else{const im=loadImage(image);await im.decode();const w=.7,h=Math.min(.7,w*864/logicalHeight()*im.naturalHeight/im.naturalWidth);designLayers.addLayer("image",{image,name:"AI artwork",shape:"none",w,h});}sync();},
+  useVideo:blob=>{state.aiGenerated=true;sync();useGeneratedVideo(blob);}
+});
 prepareExportSymbols().catch(() => {});
 sync();
 
