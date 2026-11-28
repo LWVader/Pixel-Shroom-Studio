@@ -8,6 +8,7 @@ import {exportAdVideo} from "./video-export.js";
 import {renderMarketingAd, initMarketing} from "./marketing-layout.js";
 import {updateCharacterSelection, initCharacterGallery} from "./character-gallery.js";
 import {syncSocialCopy, initSocialPublishing} from "./social-publish.js";
+import {createDesignLayers, sanitizeLayers} from "./design-layers.js";
 import {initEmojiPicker} from "./emoji-picker.js";
 
 'use strict';
@@ -18,12 +19,20 @@ const PLAYBACK_RATE = .5;
 const BUNDLED_ARTWORK = "/admin-ad-studio/assets/campaign-art/orbit-roast.webp";
 const OLD_BUNDLED_ARTWORK = "/assets/campaigns/orbit-roast.webp";
 const BUNDLED_LOGO = "/assets/pixel-shroom-logo-128.webp";
+state.layers = [];
 state.palette = AdPalette.defaultPalette;
 state.paletteName = "";
 const defaults = {...state};
 state.channelCaptions = {};
 let paletteTheme = AdPalette.roles(state.palette);
 let renderedPalette = state.palette;
+const designLayers = createDesignLayers({
+  getLayers: () => state.layers,
+  setLayers: layers => { state.layers = layers; updateRenderRevision(); },
+  canvas, getHeight: logicalHeightAccessor, getPalette: () => paletteTheme,
+  prepareImage, requestPreview, toast
+});
+function logicalHeightAccessor(){return canvas.height * 864 / CANVAS_WIDTH;}
 const syncPaletteEditor = AdPalette.editor((colors, name) => {
   state.palette = colors;
   state.paletteName = name;
@@ -212,7 +221,7 @@ function updateCanvasSize() {
   setText("output-size", CANVAS_WIDTH + " × " + height + " px");
 }
 const logicalHeight = () => canvas.height * 864 / CANVAS_WIDTH;
-const hasCharacter = () => state.layout === "popout" || state.showCharacter;
+const hasCharacter = () => state.layout === "popout" || (state.layout === "marketing" && state.showCharacter);
 const characterImage = () => state.model === "custom" ? characterUpload : characters[state.model];
 
 function artworkRect(height) {
@@ -347,9 +356,17 @@ function paintCharacter(rect, height) {
 
 function draw(){if(!recording) updateCanvasSize();captionOverflow=false;if(state.layout==="marketing"&&state.artworkPlacement==="canvas"&&state.bgImage){setText("fit-status","");setText("captionFit","Full canvas uses your finished image; editor copy stays in the social post text.");}const s=canvas.width/864;ctx.setTransform(s,0,0,s,0,0);const h=logicalHeight();
 paintCanvas(h);
+if(state.layout==='freeform'){
+  setText("fit-status","");setText("captionFit","Freeform designs use independent text layers.");
+  if(state.bgImage)paintArtwork(0,0,864,h);
+  designLayers.paint(ctx,h,t/PLAYBACK_RATE);
+  updatePlaybackClock();
+  return;
+}
 if(state.layout==='marketing'){
   renderMarketingAd(ctx,state,t,h,brandLogo);
   paintCharacter(artworkRect(h), h);
+  designLayers.paint(ctx,h,t/PLAYBACK_RATE);
   updatePlaybackClock();
   return;
 }
@@ -395,6 +412,7 @@ if(state.layout==='marketing'){
   }
   text(state.website, px + 30, story ? buttonY + 83 : h - 88, 15, ink, 400, state.captionFont, pw - 60);
   paintCharacter(rect, h);
+  designLayers.paint(ctx,h,t/PLAYBACK_RATE);
   updatePlaybackClock();
 }
 
@@ -432,7 +450,7 @@ function frame(now) {
     last = now;
     const dirty = previewDirty;
     previewDirty = false;
-    if (dirty || state.motion !== "none" || playing === false || lastPaintedRevision !== renderRevision) {
+    if (dirty || state.motion !== "none" || designLayers.hasAnimation() || playing === false || lastPaintedRevision !== renderRevision) {
       draw();
       lastPaintedRevision = renderRevision;
     } else updatePlaybackClock();
@@ -493,6 +511,7 @@ function sync() {
   $("safe-zone-guide").hidden = state.ratio !== "story" || !$("safe-zone").checked;
   syncPlacement();
   updateRenderRevision();
+  designLayers.sync();
   for (const button of document.querySelectorAll("[data-motion]")) {
     const selected = button.dataset.motion === state.motion;
     button.classList.toggle("selected", selected);
@@ -547,7 +566,9 @@ $("seek").oninput = () => {
 };
 
 canvas.onpointerdown = (event) => {
-  if (!hasCharacter() || recording || !event.isPrimary || event.button !== 0 || !characterHitArea) return;
+  if (recording || !event.isPrimary || event.button !== 0) return;
+  if (designLayers.start(event)) { setPlaying(false); return; }
+  if (!hasCharacter() || !characterHitArea) return;
   const bounds = canvas.getBoundingClientRect();
   const sx = 864 / bounds.width, sy = logicalHeight() / bounds.height;
   const x = (event.clientX - bounds.left) * sx, y = (event.clientY - bounds.top) * sy;
@@ -558,10 +579,12 @@ canvas.onpointerdown = (event) => {
   canvas.classList.add("character-dragging");
 };
 canvas.onpointermove = (event) => {
+  if (designLayers.dragMove(event)) return;
   if (drag?.pointer !== event.pointerId) return;
   syncPlacement(drag.startX + (event.clientX - drag.x) * drag.sx, drag.startY + (event.clientY - drag.y) * drag.sy);
 };
 canvas.onlostpointercapture = () => {
+  designLayers.end();
   drag = null;
   last = 0;
   canvas.classList.remove("character-dragging");
@@ -649,7 +672,7 @@ async function renderAnimation(onProgress = () => {}, {publish = false, announce
 $('export').onclick=async()=>{try{const blob=await renderAnimation();download(blob,(state.layout==='marketing'?'campaign-ad.':'popout-ad.')+(blob.type.includes('mp4')?'mp4':'webm'));toast('Video downloaded.')}catch(error){toast(error.message)}};
 
 function assetsReady() {
-  if (!FontLibrary.ready(state.captionFont)) return false;
+  if (!designLayers.ready() || !FontLibrary.ready(state.captionFont)) return false;
   const images = [brandLogo];
   images.push(backdrop, outerBackdrop);
   if (hasCharacter()) images.push(characterImage());
@@ -755,10 +778,11 @@ function sanitizeProject() {
     ? Object.fromEntries(Object.entries(state.channelCaptions).filter(([key, value]) =>
       CAPTION_PLATFORMS.includes(key) && typeof value === "string").map(([key, value]) => [key, value.slice(0, 25000)]))
     : {};
+  state.layers = sanitizeLayers(state.layers);
   state.palette = AdPalette.normalize(state.palette) || defaults.palette;
   state.paletteName = typeof state.paletteName === "string" ? state.paletteName.trim().slice(0, 48) : "";
   const options = {
-    layout: ["marketing", "popout"], artworkPlacement: ["canvas", "template"], bgFit: ["cover", "contain"], ratio: Object.keys(canvasHeights),
+    layout: ["marketing", "popout", "freeform"], artworkPlacement: ["canvas", "template"], bgFit: ["cover", "contain"], ratio: Object.keys(canvasHeights),
     platform: ["Instagram", "Facebook", "TikTok"], captionAlign: ["left", "center", "right"], captionWeight: ["400", "700"],
     youtubePrivacy: ["public", "unlisted", "private"], weatherType: ["snow", "rain", "storm", "petals", "confetti"],
     weatherLayer: ["behind", "front", "both"], burnOrigin: ["bottom", "center"]
