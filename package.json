@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "npm run test:api && npm run test:e2e",
-    "test:api": "node --test tests/worker.test.mjs",
+    "test:api": "node --experimental-strip-types --test tests/worker.test.mjs tests/design-layers.test.mjs",
     "test:e2e": "playwright test",
     "test:install-browsers": "playwright install chromium",
     "wrangler": "npx --yes wrangler@4.147.0",

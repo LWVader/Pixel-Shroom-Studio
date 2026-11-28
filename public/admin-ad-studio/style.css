@@ -138,3 +138,23 @@ header .brand h1{margin:0;line-height:1.3;letter-spacing:1px}
 
 .static-post-workspace select{width:100%}.static-post-workspace .still-actions{margin:8px 0}.static-post-workspace .feed-card header{padding:9px;flex-wrap:nowrap;min-height:0}.static-post-workspace .feed-caption{padding:0 9px 12px}.static-post-workspace .feed-card footer{font-size:10px}.static-post-workspace #staticBufferStatus.ready{color:#b8df9b}.static-post-workspace #staticBufferStatus{overflow-wrap:anywhere}.static-post-workspace #staticPostMode{margin-bottom:0}
 @media(max-width:950px){.static-post-workspace .feed-previews{max-width:330px;margin:16px auto}}
+
+/* Three-pane creative workspace; only the editor route is affected. */
+#editorPage main{grid-template-columns:minmax(232px,260px) minmax(0,1fr) minmax(280px,320px);gap:0;align-items:start}
+.design-tools{position:sticky;top:0;max-height:100dvh;overflow:auto;scrollbar-gutter:stable;padding:20px 16px;background:#15181b;border-right:1px solid #35383e;min-width:0}
+.design-panel-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.design-panel-title h2{font-size:23px;margin:7px 0 4px}.design-panel-title>span{font-size:12px;color:#b8ff65;font-variant-numeric:tabular-nums}
+.design-tools .muted{font-size:12px;color:#b3b8bc}.design-add,.design-history,.design-layer-actions,.layer-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.design-add button,.design-history button,.design-layer-actions button{min-height:44px;padding:8px;font-size:12px}
+.design-add button{display:flex;align-items:center;justify-content:center;gap:8px}.design-add button span{font-weight:700;font-size:18px}
+.design-upload{position:relative;grid-column:1/-1;display:grid;place-items:center;min-height:44px;margin:0;border:1px dashed #69726a;border-radius:8px;color:#d6e0d5;font-size:13px;cursor:pointer}
+.design-upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0!important}
+.design-history{margin:12px 0 18px}.design-base{margin:0;padding:12px;border:1px solid #3d4642;border-radius:8px;font-size:13px;color:#e2e7e4;display:grid;gap:4px;background:#202625}.design-base small{color:#a6b4ab}
+#design-layer-list{display:grid;gap:6px;margin:10px 0;max-height:240px;overflow:auto}.design-layer-row{display:flex;align-items:center;gap:9px;text-align:left;width:100%;min-height:46px;padding:8px;min-width:0}.design-layer-row>span:last-child{display:grid;gap:4px;min-width:0}.design-layer-row strong,.design-layer-row small{overflow-wrap:anywhere}.design-layer-row small{color:#b1b9b3;font-size:11px}.layer-swatch{width:28px;height:28px;border-radius:5px;flex:none;color:#111;font-weight:700;display:grid;place-items:center;border:1px solid #777}
+#design-layer-properties{border-top:1px solid #39423e;padding-top:10px;margin-top:14px}#design-layer-properties h3{font-size:14px;margin:5px 0 10px}#design-layer-properties label{font-size:12px;color:#c4ccc7;margin:10px 0}#design-layer-properties input,#design-layer-properties select{min-width:0;max-width:100%}#design-layer-properties textarea{width:100%;font:inherit;color:#f3f3f3;background:#1b1f1d;border:1px solid #475044;border-radius:7px;padding:10px;resize:vertical}.layer-fields{gap:0 8px}.design-layer-actions .danger{color:#ffc5c5;border-color:#814f56}
+.design-credit{border-top:1px solid #35383e;padding-top:12px;color:#aeb6b0;font-size:11px;line-height:1.6}.design-credit a{color:#b8ff65}.design-tools :focus-visible{outline:2px solid #b8ff65;outline-offset:3px}.design-upload:focus-within{outline:2px solid #b8ff65}
+#scene.design-layer-drag{cursor:grab;touch-action:none}
+body[data-ad-layout="freeform"] .popout-tools,body[data-ad-layout="freeform"] .marketing-tools{display:none}
+@media(min-width:1101px){#editorPage .workspace{padding:18px 20px}#editorPage .stage{height:clamp(840px,92dvh,1040px)}}
+@media(max-width:1100px){#editorPage main{grid-template-columns:minmax(0,1fr) minmax(280px,340px)}.design-tools{grid-column:1/-1;position:static;max-height:none;border-right:0;border-bottom:1px solid #35383e;order:2}#editorPage .workspace{grid-column:1}#editorPage .properties{grid-column:2}.design-add{grid-template-columns:repeat(3,minmax(0,1fr))}.design-upload{grid-column:auto}}
+@media(max-width:800px){#editorPage main{display:flex;flex-direction:column;align-items:stretch}.design-tools{order:0}.workspace{order:-1}.properties{order:1}.design-add{grid-template-columns:repeat(3,minmax(0,1fr))}.design-history,.design-layer-actions{max-width:480px}}
